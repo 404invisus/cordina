@@ -9,6 +9,17 @@ class AuthServiceClient
     {
         $this->baseUrl = rtrim(config("services.auth.url", "http://svc-auth"), "/");
     }
+    public function getStats(): array
+    {
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/api/v1/internal/stats");
+            if ($response->successful()) return $response->json("data") ?? [];
+        } catch (\Throwable $e) {
+            Log::error("AuthServiceClient::getStats exception", ["error" => $e->getMessage()]);
+        }
+        return [];
+    }
+
     public function getUsers(array $userIds): array
     {
         if (empty($userIds)) return [];

@@ -23,20 +23,28 @@ class CommentController extends Controller
             'mentions.*' => 'uuid',
         ]);
         $comment = Comment::create([
-            'task_id'  => $taskId,
-            'user_id'  => $this->authId(),
-            'content'  => $validated['content'],
-            'mentions' => $validated['mentions'] ?? [],
+            'task_id'     => $taskId,
+            'user_id'     => $this->authId(),
+            'author_name' => $request->attributes->get('jwt_fullname') ?? 'User',
+            'content'     => $validated['content'],
+            'mentions'    => $validated['mentions'] ?? [],
         ]);
         if (!empty($validated['mentions'])) {
+            $task = \App\Models\Task::find($taskId);
             foreach ($validated['mentions'] as $mentionedUserId) {
-                rescue(function () use ($mentionedUserId, $taskId, $comment) {
+                rescue(function () use ($mentionedUserId, $taskId, $comment, $task) {
                     Http::timeout(3)->post(
                         rtrim(config('services.notification.url'), '/') . '/api/v1/notifications/send',
                         [
                             'user_id' => $mentionedUserId,
-                            'type'    => 'task.commented',
-                            'payload' => ['task_id' => $taskId, 'comment_id' => $comment->id],
+                            'type'    => 'task.mentioned',
+                            'payload' => [
+                                'task_id'     => $taskId,
+                                'task_title'  => $task->title ?? 'N/A',
+                                'comment_id'  => $comment->id,
+                                'comment'     => $comment->content,
+                                'mentioned_by'=> $comment->author_name,
+                            ],
                         ]
                     );
                 });

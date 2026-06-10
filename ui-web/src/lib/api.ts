@@ -180,6 +180,21 @@ export const storageService = {
 
 export default api;
 
+export const changeRequestService = {
+  list: (params?: any) => api.get('/api/v1/change-requests', { params }),
+  create: (data: any) => api.post('/api/v1/change-requests', data),
+  show: (id: string) => api.get(`/api/v1/change-requests/${id}`),
+  update: (id: string, data: any) => api.put(`/api/v1/change-requests/${id}`, data),
+  delete: (id: string) => api.delete(`/api/v1/change-requests/${id}`),
+  submit: (id: string) => api.post(`/api/v1/change-requests/${id}/submit`),
+  approve: (id: string, note?: string) => api.post(`/api/v1/change-requests/${id}/approve`, { note }),
+  reject: (id: string, note: string) => api.post(`/api/v1/change-requests/${id}/reject`, { note }),
+};
+
+export const dailyBriefService = {
+  get: () => api.get('/api/v1/reports/daily-brief'),
+};
+
 export const adminNotifService = {
   telegramUsers: () => api.get('/api/v1/notifications/telegram/users'),
 };

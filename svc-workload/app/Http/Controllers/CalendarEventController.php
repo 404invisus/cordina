@@ -87,6 +87,11 @@ class CalendarEventController extends Controller
             'end_time'         => 'nullable|date_format:H:i',
             'all_day'          => 'boolean',
             'location'         => 'nullable|string|max:255',
+            'status'           => 'sometimes|in:upcoming,ongoing,done',
+            'notulensi'        => 'nullable|string',
+            'hasil_pembahasan' => 'nullable|string',
+            'tindak_lanjut'    => 'nullable|string',
+            'attachments'      => 'nullable|array',
             'participant_ids'   => 'sometimes|array',
             'participant_ids.*' => 'uuid',
         ]);
@@ -150,10 +155,19 @@ class CalendarEventController extends Controller
             'start_time'  => 'nullable|date_format:H:i',
             'end_time'    => 'nullable|date_format:H:i',
             'all_day'     => 'boolean',
-            'location'    => 'nullable|string|max:255',
+            'location'          => 'nullable|string|max:255',
+            'status'            => 'sometimes|in:upcoming,ongoing,done',
+            'notulensi'         => 'nullable|string',
+            'hasil_pembahasan'  => 'nullable|string',
+            'tindak_lanjut'     => 'nullable|string',
+            'attachments'       => 'nullable|array',
         ]);
 
+        $wasNotDone = $event->status !== 'done';
         $event->update($validated);
+        if ($wasNotDone && ($validated['status'] ?? '') === 'done') {
+            $this->sendDoneReport($event->fresh('participants'));
+        }
 
         return response()->json(['data' => $event->load('participants')]);
     }
@@ -310,6 +324,73 @@ class CalendarEventController extends Controller
             'status'    => $p->status,
         ]);
         return $arr;
+    }
+
+    private function sendDoneReport(CalendarEvent $event): void
+    {
+        $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
+
+        $startTime = $event->start_time ? substr($event->start_time, 0, 5) . ' WIB' : null;
+        $endTime   = $event->end_time   ? substr($event->end_time,   0, 5) . ' WIB' : null;
+        $waktu     = $event->all_day
+            ? 'Seharian'
+            : ($startTime && $endTime ? "{$startTime} s.d. {$endTime}" : ($startTime ?? 'N/A'));
+
+        $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        $tgl = $event->start_date->format('j') . ' ' . $months[(int)$event->start_date->format('n')] . ' ' . $event->start_date->format('Y');
+
+        // Ambil nama peserta
+        $participantIds = $event->participants->pluck('user_id')->toArray();
+        $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+        $peserta  = '-';
+        try {
+            $resp    = Http::timeout(5)->post("{$authUrl}/api/v1/internal/users/batch", ['ids' => $participantIds]);
+            $names   = collect($resp->json('data') ?? [])->pluck('full_name')->toArray();
+            $peserta = implode(', ', $names) ?: '-';
+        } catch (\Throwable) {}
+
+        $lines = [];
+        $lines[] = "📌 *Laporan Kegiatan*";
+        $lines[] = "";
+        $lines[] = "📌 Nama Kegiatan: {$event->title}";
+        $lines[] = "📍 Tempat: " . ($event->location ?? '-');
+        $lines[] = "🕒 Waktu: {$tgl}, {$waktu}";
+        $lines[] = "👤 Peserta: {$peserta}";
+
+        if ($event->description) {
+            $lines[] = "🗒 Deskripsi Singkat: {$event->description}";
+        }
+        if ($event->notulensi) {
+            $lines[] = "";
+            $lines[] = "📝 Notulensi:";
+            $lines[] = $event->notulensi;
+        }
+        if ($event->hasil_pembahasan) {
+            $lines[] = "";
+            $lines[] = "📝 Hasil Pembahasan:";
+            $lines[] = $event->hasil_pembahasan;
+        }
+        if ($event->tindak_lanjut) {
+            $lines[] = "";
+            $lines[] = "📋 Tindak Lanjut:";
+            $lines[] = $event->tindak_lanjut;
+        }
+
+        $message = implode("\n", $lines);
+
+        try {
+            Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send", [
+                'user_id' => $event->user_id,
+                'type'    => 'calendar.event_done',
+                'payload' => [
+                    'event_id'    => $event->id,
+                    'event_title' => $event->title,
+                    'message'     => $message,
+                    'group_only'  => true,
+                ],
+            ]);
+        } catch (\Throwable) {}
     }
 
     private function sendNotification(CalendarEvent $event, string $creatorId, bool $creatorIsAdmin): void

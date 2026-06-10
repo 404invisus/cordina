@@ -35,7 +35,7 @@ class NotificationDispatcher
             match ($channel) {
                 'telegram' => $this->dispatchTelegram(
                     $notif->id, $userId, $chatId, $message,
-                    groupOnly: in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public',
+                    groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
                     privateOnly: in_array($type, ['calendar.event_assigned']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
@@ -131,6 +131,31 @@ class NotificationDispatcher
 🏛 Tempat: ".($payload['location'] ?? '-')."
 👥 Peserta: ".($payload['participants'] ?? '-');
             })(),
+            'task.mentioned' => sprintf(
+                "*[mention]* %s menyebut Anda dalam task *\"%s\"*\nKomentar: \"%s\"",
+                $payload['mentioned_by'] ?? $userName,
+                $payload['task_title']   ?? 'N/A',
+                $payload['comment']      ?? ''
+            ),
+            'calendar.event_done' => $payload['message'] ?? sprintf("*[kegiatan selesai]* %s", $payload['event_title'] ?? 'N/A'),
+            'change_request.submitted' => sprintf(
+                "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nSegera ditinjau di aplikasi Cordina.",
+                $userName,
+                $payload['cr_title'] ?? 'N/A',
+                strtoupper($payload['cr_priority'] ?? 'medium'),
+                ucfirst($payload['cr_type'] ?? 'normal')
+            ),
+            'change_request.approved' => sprintf(
+                "*[change request disetujui]* CR *\"%s\"* telah disetujui.%s",
+                $payload['cr_title'] ?? 'N/A',
+                !empty($payload['reviewer_note']) ? "\nCatatan: " . $payload['reviewer_note'] : ''
+            ),
+            'change_request.rejected' => sprintf(
+                "*[change request ditolak]* CR *\"%s\"* ditolak.\nCatatan: %s",
+                $payload['cr_title'] ?? 'N/A',
+                $payload['reviewer_note'] ?? '-'
+            ),
+            default => sprintf("*[notifikasi]* %s", $payload['message'] ?? $type),
         };
     }
     private function getEnabledChannels(string $userId, string $type): array

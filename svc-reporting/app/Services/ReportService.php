@@ -9,6 +9,29 @@ class ReportService
         private readonly ProjectServiceClient $projectClient,
     ) {}
 
+    public function dailyBrief(): array
+    {
+        $authStats    = $this->authClient->getStats();
+        $projectStats = $this->projectClient->getDailyStats();
+
+        return [
+            "users" => [
+                "total"  => $authStats["total_users"]  ?? 0,
+                "active" => $authStats["active_users"] ?? 0,
+            ],
+            "projects" => [
+                "active"    => $projectStats["active_projects"]    ?? 0,
+                "total"     => $projectStats["total_projects"]     ?? 0,
+            ],
+            "tasks" => [
+                "due_today"  => $projectStats["tasks_due_today"]   ?? 0,
+                "done_today" => $projectStats["tasks_done_today"]  ?? 0,
+                "overdue"    => $projectStats["tasks_overdue"]     ?? 0,
+            ],
+            "generated_at" => now()->toIso8601String(),
+        ];
+    }
+
     public function workloadReport(string $sprintId): array
     {
         $tasks = collect($this->projectClient->getSprintTasks($sprintId));

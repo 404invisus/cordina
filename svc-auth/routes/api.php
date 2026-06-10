@@ -50,6 +50,27 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('internal')->prefix('internal')->group(function () {
+        Route::get('/users-by-role/{role}', function (string $role) {
+            $users = \Illuminate\Support\Facades\DB::table('users')
+                ->join('model_has_roles', \Illuminate\Support\Facades\DB::raw('users.id::text'), '=', \Illuminate\Support\Facades\DB::raw('model_has_roles.model_id::text'))
+                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                ->where('roles.name', $role)
+                ->where('users.is_active', true)
+                ->whereNull('users.deleted_at')
+                ->select('users.id', 'users.full_name', 'users.email', 'users.telegram_chat_id')
+                ->get();
+            return response()->json(['data' => $users]);
+        });
+
+        Route::get('/stats', function () {
+            $total  = \App\Models\User::count();
+            $active = \App\Models\User::where('is_active', true)->count();
+            return response()->json(['data' => [
+                'total_users'  => $total,
+                'active_users' => $active,
+            ]]);
+        });
+
         Route::get('/users/{id}', function (string $id) {
             $user = User::findOrFail($id);
             return response()->json(['data' => [

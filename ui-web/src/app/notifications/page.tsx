@@ -23,6 +23,18 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: st
     label: 'Status Berubah', bg: 'bg-amber-50', dot: 'bg-amber-500',
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-amber-500"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>,
   },
+  'change_request.submitted': {
+    label: 'CR Diajukan', bg: 'bg-violet-50', dot: 'bg-violet-500',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-violet-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  },
+  'change_request.approved': {
+    label: 'CR Disetujui', bg: 'bg-emerald-50', dot: 'bg-emerald-500',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500"><polyline points="20 6 9 17 4 12"/></svg>,
+  },
+  'change_request.rejected': {
+    label: 'CR Ditolak', bg: 'bg-red-50', dot: 'bg-red-500',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-red-500"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  },
   'sprint.started': {
     label: 'Sprint Dimulai', bg: 'bg-emerald-50', dot: 'bg-emerald-500',
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,

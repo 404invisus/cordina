@@ -1,9 +1,7 @@
 <?php
-
 namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CalendarEvent extends Model
@@ -14,12 +12,14 @@ class CalendarEvent extends Model
         'user_id', 'title', 'description', 'type', 'visibility',
         'start_date', 'end_date', 'start_time', 'end_time',
         'all_day', 'location', 'created_by',
+        'status', 'notulensi', 'hasil_pembahasan', 'tindak_lanjut', 'attachments',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date'   => 'date',
-        'all_day'    => 'boolean',
+        'start_date'  => 'date',
+        'end_date'    => 'date',
+        'all_day'     => 'boolean',
+        'attachments' => 'array',
     ];
 
     public function participants(): HasMany

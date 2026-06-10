@@ -28,6 +28,11 @@ class ProjectServiceClient
     {
         return $this->get("/api/v1/internal/projects/{$projectId}/sprints");
     }
+    public function getDailyStats(): array
+    {
+        return $this->get("/api/v1/internal/daily-stats");
+    }
+
     private function get(string $path, array $query = []): array
     {
         try {

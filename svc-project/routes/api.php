@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ChangeRequestController;
 use App\Http\Controllers\EpicController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SprintController;
@@ -24,6 +25,16 @@ Route::prefix('v1')->group(function () {
             Route::get('/projects/{id}/members',       [AdminProjectController::class, 'members']);
             Route::get('/tasks',                       [AdminProjectController::class, 'allTasks']);
         });
+
+        // Change Management
+        Route::get('change-requests',              [ChangeRequestController::class, 'index']);
+        Route::post('change-requests',             [ChangeRequestController::class, 'store']);
+        Route::get('change-requests/{id}',         [ChangeRequestController::class, 'show']);
+        Route::put('change-requests/{id}',         [ChangeRequestController::class, 'update']);
+        Route::delete('change-requests/{id}',      [ChangeRequestController::class, 'destroy']);
+        Route::post('change-requests/{id}/submit', [ChangeRequestController::class, 'submit']);
+        Route::post('change-requests/{id}/approve',[ChangeRequestController::class, 'approve']);
+        Route::post('change-requests/{id}/reject', [ChangeRequestController::class, 'reject']);
 
         Route::apiResource('projects', ProjectController::class);
         Route::post('projects/{project}/members', [ProjectController::class, 'addMember']);
@@ -198,6 +209,17 @@ Route::prefix('v1')->group(function () {
                     'completed_by_day' => $completedByDay,
                 ],
             ]);
+        });
+
+        Route::get('/daily-stats', function () {
+            $today = now()->toDateString();
+            return response()->json(['data' => [
+                'total_projects'   => DB::table('projects')->whereNull('deleted_at')->count(),
+                'active_projects'  => DB::table('projects')->where('status', 'active')->whereNull('deleted_at')->count(),
+                'tasks_due_today'  => DB::table('tasks')->whereDate('due_date', $today)->whereNull('deleted_at')->count(),
+                'tasks_done_today' => DB::table('tasks')->where('status', 'done')->whereDate('updated_at', $today)->whereNull('deleted_at')->count(),
+                'tasks_overdue'    => DB::table('tasks')->where('status', '!=', 'done')->where('due_date', '<', $today)->whereNull('deleted_at')->count(),
+            ]]);
         });
 
         Route::get('/sprints/by-user', function (Request $request) {

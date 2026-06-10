@@ -9,6 +9,11 @@ class ReportController extends Controller
 {
     public function __construct(private readonly ReportService $service) {}
 
+    public function dailyBrief(Request $request): JsonResponse
+    {
+        return response()->json(["data" => $this->service->dailyBrief()]);
+    }
+
     public function workloadReport(Request $request): JsonResponse
     {
         $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);

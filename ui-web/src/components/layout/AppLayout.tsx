@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FolderKanban, CheckSquare, Users, BarChart3,
   Bell, Settings, LogOut, Menu, ChevronDown, Layers,
-  Activity, HardDrive, Shield, ChevronRight, Calendar,
+  Activity, HardDrive, Shield, ChevronRight, Calendar, GitMerge,
   UserCog, FolderOpen, CalendarRange, MessageCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -28,6 +28,8 @@ const navItems = [
   { label: 'Reports',       icon: BarChart3,       href: '/reports',             roles: ['kepala_balai','kepala_seksi','project_manager'] },
   { label: 'Notifications', icon: Bell,            href: '/notifications',       roles: ['administrator','kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Storage',       icon: HardDrive,       href: '/storage',             roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
+  { label: 'Change Mgmt',   icon: GitMerge,        href: '/change-management',   roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
+  { label: 'Daily Brief',   icon: Activity,        href: '/daily-brief',         roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
 ];
 
 const adminNavItems = [
@@ -84,10 +86,10 @@ function SidebarContent({
     <div className="flex flex-col h-full">
       <div className="px-5 py-5 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center border border-white/20">
-            <Layers className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 flex items-center justify-center">
+            <img src="/logo-only-white.png" alt="Cordina" className="w-8 h-8 object-contain" />
           </div>
-          <span className="font-bold text-xl text-white tracking-tight">Agrawork</span>
+          <span className="font-bold text-xl text-white tracking-tight">Cordina</span>
         </div>
       </div>
 

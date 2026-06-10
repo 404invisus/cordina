@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { ChevronLeft, Send, Plus } from 'lucide-react';
@@ -65,6 +65,10 @@ export default function TaskDetailPage() {
   const [assignOpen, setAssignOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [comment, setComment] = useState('');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
+  const commentRef = useRef<HTMLTextAreaElement>(null);
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
 
   const { data: task, isLoading } = useQuery({
@@ -79,7 +83,7 @@ export default function TaskDetailPage() {
   const { data: projectMembers } = useQuery({
     queryKey: ['members', projectId],
     queryFn: () => projectService.members(projectId).then(r => r.data.data),
-    enabled: !!projectId && assignOpen,
+    enabled: !!projectId,
   });
   const users = projectMembers?.map((m: any) => ({
     id: m.user_id,
@@ -105,8 +109,11 @@ export default function TaskDetailPage() {
   });
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => taskService.addComment(id, { content }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['comments', id] }); setComment(''); },
+    mutationFn: (content: string) => taskService.addComment(id, {
+      content,
+      mentions: mentionedUsers.map((u: any) => u.id),
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['comments', id] }); setComment(''); setMentionedUsers([]); },
   });
   
   const { data: assigneeUser } = useQuery({
@@ -229,7 +236,11 @@ export default function TaskDetailPage() {
                         <span className="text-xs text-slate-400">{timeAgo(c.created_at)}</span>
                       </div>
                       <div className="text-sm text-slate-600 bg-slate-50 rounded-xl rounded-tl-sm px-4 py-3 leading-relaxed border border-slate-100">
-                        {c.content}
+                        {c.content.split(/(@\w[\w\s]*)/g).map((part: string, i: number) =>
+                          part.startsWith('@') ? (
+                            <span key={i} className="text-[#284074] font-semibold bg-[#284074]/8 px-1 rounded">{part}</span>
+                          ) : part
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -240,21 +251,89 @@ export default function TaskDetailPage() {
               )}
             </div>
 
-            <div className="flex gap-3 items-end">
+            <div className="flex gap-3 items-start">
               <Avatar name={user?.full_name || 'U'} size="sm" />
-              <div className="flex-1 flex gap-2">
-                <input value={comment} onChange={e => setComment(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && comment.trim() && commentMutation.mutate(comment)}
-                  placeholder="Tulis komentar... (Enter untuk kirim)"
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all" />
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => comment.trim() && commentMutation.mutate(comment)}
-                  disabled={!comment.trim()}
-                  className="w-10 h-10 rounded-xl bg-[#284074] text-white flex items-center justify-center hover:bg-[#1e3060] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </motion.button>
+              <div className="flex-1 relative">
+                {showMentions && mentionQuery && (
+                  <div className="absolute bottom-full mb-1 left-0 w-64 bg-white rounded-xl border border-slate-200 shadow-lg z-10 overflow-hidden">
+                    {(users || [])
+                      .filter((u: any) => u.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()) && u.id !== user?.id)
+                      .slice(0, 5)
+                      .map((u: any) => (
+                        <button key={u.id} onMouseDown={e => {
+                          e.preventDefault();
+                          const before = comment.slice(0, comment.lastIndexOf('@'));
+                          setComment(before + '@' + u.full_name + ' ');
+                          setMentionedUsers(prev => prev.find(p => p.id === u.id) ? prev : [...prev, u]);
+                          setShowMentions(false);
+                          setMentionQuery('');
+                          commentRef.current?.focus();
+                        }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left">
+                          <div className="w-7 h-7 rounded-lg bg-[#284074]/10 flex items-center justify-center text-[#284074] text-xs font-bold flex-shrink-0">
+                            {u.full_name?.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-slate-700">{u.full_name}</div>
+                            {u.division && <div className="text-xs text-slate-400">{u.division}</div>}
+                          </div>
+                        </button>
+                      ))}
+                    {(users || []).filter((u: any) => u.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()) && u.id !== user?.id).length === 0 && (
+                      <div className="px-3 py-2 text-xs text-slate-400">User tidak ditemukan</div>
+                    )}
+                  </div>
+                )}
+                {mentionedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {mentionedUsers.map((u: any) => (
+                      <span key={u.id} className="inline-flex items-center gap-1 bg-[#284074]/10 text-[#284074] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        @{u.full_name}
+                        <button onClick={() => setMentionedUsers(prev => prev.filter(p => p.id !== u.id))} className="hover:text-red-400">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <textarea
+                    ref={commentRef}
+                    value={comment}
+                    rows={2}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setComment(val);
+                      const atIndex = val.lastIndexOf('@');
+                      if (atIndex !== -1 && atIndex === val.length - 1 - (val.length - 1 - atIndex)) {
+                        const query = val.slice(atIndex + 1);
+                        if (!query.includes(' ')) {
+                          setMentionQuery(query);
+                          setShowMentions(true);
+                        } else {
+                          setShowMentions(false);
+                        }
+                      } else if (!val.includes('@')) {
+                        setShowMentions(false);
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey && comment.trim()) {
+                        e.preventDefault();
+                        commentMutation.mutate(comment);
+                      }
+                      if (e.key === 'Escape') setShowMentions(false);
+                    }}
+                    placeholder="Tulis komentar... ketik @ untuk mention (Enter kirim, Shift+Enter baris baru)"
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all resize-none"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => comment.trim() && commentMutation.mutate(comment)}
+                    disabled={!comment.trim() || commentMutation.isPending}
+                    className="w-10 h-10 rounded-xl bg-[#284074] text-white flex items-center justify-center hover:bg-[#1e3060] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  >
+                    <Send className="w-4 h-4" />
+                  </motion.button>
+                </div>
               </div>
             </div>
           </div>

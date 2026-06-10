@@ -75,7 +75,7 @@ export default function SuperAdminDashboard() {
     <AppLayout>
       <PageHeader
         title="Super Admin"
-        subtitle="Kelola keseluruhan sistem Agrawork"
+        subtitle="Kelola keseluruhan sistem Cordina"
         icon={Shield}
       />
 
