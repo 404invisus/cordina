@@ -28,6 +28,7 @@ class Task extends Model
     public function parent()     { return $this->belongsTo(Task::class, 'parent_task_id'); }
     public function blockedBy()  { return $this->belongsToMany(Task::class, 'task_dependencies', 'task_id', 'depends_on_task_id'); }
     public function blocks()     { return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_task_id', 'task_id'); }
+    public function assignees()   { return $this->hasMany(\App\Models\TaskAssignee::class); }
     public function comments()   { return $this->hasMany(Comment::class); }
     public function attachments(){ return $this->hasMany(Attachment::class); }
     public function timeLogs()   { return $this->hasMany(TimeLog::class); }

@@ -8,6 +8,8 @@ const AUTHENTICATED_ROUTES = [
   '/calendar',
   '/daily-brief',
   '/change-management',
+  '/assets',
+  '/documents',
   '/tasks',
   '/projects',
   '/storage',

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, FolderKanban, CheckSquare, Users, BarChart3,
   Bell, Settings, LogOut, Menu, ChevronDown, Layers,
-  Activity, HardDrive, Shield, ChevronRight, Calendar, GitMerge,
+  Activity, HardDrive, Shield, ChevronRight, Calendar, GitMerge, Archive, FileText,
   UserCog, FolderOpen, CalendarRange, MessageCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -28,6 +28,8 @@ const navItems = [
   { label: 'Reports',       icon: BarChart3,       href: '/reports',             roles: ['kepala_balai','kepala_seksi','project_manager'] },
   { label: 'Notifications', icon: Bell,            href: '/notifications',       roles: ['administrator','kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Storage',       icon: HardDrive,       href: '/storage',             roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
+  { label: 'Aset Fisik',     icon: Archive,        href: '/assets',              roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
+  { label: 'Dokumen Resmi',  icon: FileText,        href: '/documents',           roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Change Mgmt',   icon: GitMerge,        href: '/change-management',   roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Daily Brief',   icon: Activity,        href: '/daily-brief',         roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
 ];

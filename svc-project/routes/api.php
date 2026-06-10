@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
 
         Route::apiResource('tasks', TaskController::class);
         Route::post('tasks/{task}/assign',       [TaskController::class, 'assign']);
+        Route::delete('tasks/{task}/assignees/{userId}', [TaskController::class, 'removeAssignee']);
         Route::post('tasks/{task}/log-time',     [TaskController::class, 'logTime']);
         Route::post('tasks/{task}/dependencies', [TaskController::class, 'addDependency']);
 

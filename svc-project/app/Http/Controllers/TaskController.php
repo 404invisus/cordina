@@ -60,6 +60,16 @@ class TaskController extends Controller
         )]);
     }
 
+    public function removeAssignee(Request $request, string $id, string $userId): JsonResponse
+    {
+        $this->requireRole(["kepala_balai", "kepala_seksi", "project_manager", "scrum_master"]);
+        \App\Models\TaskAssignee::where("task_id", $id)->where("user_id", $userId)->delete();
+        $task = $this->service->findOrFail($id);
+        $first = \App\Models\TaskAssignee::where("task_id", $id)->first();
+        $task->update(["assignee_id" => $first?->user_id]);
+        return response()->json(["data" => new TaskResource($task->fresh(["assignees"]))]);
+    }
+
     public function logTime(Request $request, string $id): JsonResponse
     {
         $request->validate([

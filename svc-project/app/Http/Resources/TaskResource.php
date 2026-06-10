@@ -19,6 +19,7 @@ class TaskResource extends JsonResource
             'project_id'       => $this->sprint_id ? \App\Models\Sprint::find($this->sprint_id)?->project_id : null,
             'parent_task_id'   => $this->parent_task_id,
             'assignee_id'      => $this->assignee_id,
+            'assignee_ids'     => $this->assignees ? $this->assignees->pluck('user_id')->toArray() : ($this->assignee_id ? [$this->assignee_id] : []),
             'reporter_id'      => $this->reporter_id,
             'estimated_hours'  => $this->estimated_hours,
             'actual_hours'     => $this->actual_hours,

@@ -19,20 +19,51 @@ class TaskService
 
     public function create(array $data, string $reporterId): Task
     {
-        $task = Task::create(array_merge($data, ['reporter_id' => $reporterId, 'status' => $data['status'] ?? 'todo']));
-        if (!empty($data['assignee_id'])) {
-            event(new TaskAssigned($task->fresh(), $data['assignee_id']));
+        $assigneeIds = $data['assignee_ids'] ?? [];
+        unset($data['assignee_ids']);
+
+        // Set assignee_id ke assignee pertama untuk backward compat
+        if (!empty($assigneeIds) && empty($data['assignee_id'])) {
+            $data['assignee_id'] = $assigneeIds[0];
         }
-        return $task;
+
+        $task = Task::create(array_merge($data, ['reporter_id' => $reporterId, 'status' => $data['status'] ?? 'todo']));
+
+        // Sync task_assignees
+        $allAssignees = array_unique(array_filter(
+            array_merge($assigneeIds, $data['assignee_id'] ? [$data['assignee_id']] : [])
+        ));
+        foreach ($allAssignees as $userId) {
+            \App\Models\TaskAssignee::firstOrCreate(['task_id' => $task->id, 'user_id' => $userId]);
+            event(new TaskAssigned($task->fresh(), $userId));
+        }
+
+        return $task->fresh();
     }
 
     public function findOrFail(string $id): Task
     {
-        return Task::with(['story', 'subtasks', 'blockedBy', 'blocks', 'comments', 'timeLogs'])->findOrFail($id);
+        return Task::with(['story', 'subtasks', 'blockedBy', 'blocks', 'comments', 'timeLogs', 'assignees'])->findOrFail($id);
     }
 
     public function update(Task $task, array $data): Task
     {
+        $assigneeIds = $data['assignee_ids'] ?? null;
+        unset($data['assignee_ids']);
+
+        if ($assigneeIds !== null) {
+            // Set assignee_id ke assignee pertama untuk backward compat
+            if (!empty($assigneeIds)) {
+                $data['assignee_id'] = $assigneeIds[0];
+            }
+            // Sync task_assignees — hapus yang tidak ada lagi, tambah yang baru
+            \App\Models\TaskAssignee::where('task_id', $task->id)->delete();
+            foreach (array_unique($assigneeIds) as $userId) {
+                \App\Models\TaskAssignee::create(['task_id' => $task->id, 'user_id' => $userId]);
+                event(new TaskAssigned($task->fresh(), $userId));
+            }
+        }
+
         $task->update($data);
         return $task->fresh();
     }
@@ -40,6 +71,7 @@ class TaskService
     public function assign(Task $task, string $assigneeId): Task
     {
         $task->update(['assignee_id' => $assigneeId]);
+        \App\Models\TaskAssignee::firstOrCreate(['task_id' => $task->id, 'user_id' => $assigneeId]);
         event(new TaskAssigned($task->fresh(), $assigneeId));
         return $task->fresh();
     }

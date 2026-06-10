@@ -131,6 +131,7 @@ export const taskService = {
   assign: (id: string, assignee_id: string) => api.post(`/api/v1/tasks/${id}/assign`, { assignee_id }),
   logTime: (id: string, data: any) => api.post(`/api/v1/tasks/${id}/log-time`, data),
   move: (id: string, status: string) => api.patch(`/api/v1/tasks/${id}/move`, { status }),
+  removeAssignee: (id: string, userId: string) => api.delete(`/api/v1/tasks/${id}/assignees/${userId}`),
   delete: (id: string) => api.delete(`/api/v1/tasks/${id}`),
   comments: (id: string) => api.get(`/api/v1/tasks/${id}/comments`),
   addComment: (id: string, data: any) => api.post(`/api/v1/tasks/${id}/comments`, data),
@@ -179,6 +180,23 @@ export const storageService = {
 };
 
 export default api;
+
+export const assetService = {
+  list: (params?: any) => api.get('/api/v1/assets', { params }),
+  create: (data: any) => api.post('/api/v1/assets', data),
+  show: (id: string) => api.get(`/api/v1/assets/${id}`),
+  update: (id: string, data: any) => api.put(`/api/v1/assets/${id}`, data),
+  delete: (id: string) => api.delete(`/api/v1/assets/${id}`),
+};
+
+export const documentService = {
+  list: (params?: any) => api.get('/api/v1/documents', { params }),
+  create: (formData: FormData) => api.post('/api/v1/documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  show: (id: string) => api.get(`/api/v1/documents/${id}`),
+  update: (id: string, formData: FormData) => api.put(`/api/v1/documents/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  download: (id: string) => api.get(`/api/v1/documents/${id}/download`, { responseType: 'blob' }),
+  delete: (id: string) => api.delete(`/api/v1/documents/${id}`),
+};
 
 export const changeRequestService = {
   list: (params?: any) => api.get('/api/v1/change-requests', { params }),

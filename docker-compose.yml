@@ -83,7 +83,6 @@ services:
      - ./svc-project/config:/var/www/html/config
      - ./svc-project/database:/var/www/html/database
      - ./svc-project/routes:/var/www/html/routes
-     - ./svc-project/app:/var/www/html/app
     build:
       context: ./svc-project
       dockerfile: Dockerfile
