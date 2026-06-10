@@ -2,6 +2,7 @@
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('jwt.auth')->group(function () {
@@ -17,6 +18,14 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/assets/{id}',    [AssetController::class, 'show']);
     Route::put('/assets/{id}',    [AssetController::class, 'update']);
     Route::delete('/assets/{id}', [AssetController::class, 'destroy']);
+
+    // Attendance
+    Route::get('/attendance/today',          [AttendanceController::class, 'today']);
+    Route::post('/attendance/clock-in',      [AttendanceController::class, 'clockIn']);
+    Route::post('/attendance/clock-out',     [AttendanceController::class, 'clockOut']);
+    Route::get('/attendance/history',        [AttendanceController::class, 'history']);
+    Route::get('/attendance/report',         [AttendanceController::class, 'report']);
+    Route::get('/attendance/download/{id}',  [AttendanceController::class, 'downloadFile']);
 
     // Documents
     Route::get('/documents',              [DocumentController::class, 'index']);

@@ -181,6 +181,15 @@ export const storageService = {
 
 export default api;
 
+export const attendanceService = {
+  today: () => api.get('/api/v1/attendance/today'),
+  clockIn: (formData: FormData) => api.post('/api/v1/attendance/clock-in', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  clockOut: (data: any) => api.post('/api/v1/attendance/clock-out', data),
+  history: (params?: any) => api.get('/api/v1/attendance/history', { params }),
+  report: (params: any) => api.get('/api/v1/attendance/report', { params }),
+  downloadFile: (id: string) => api.get(`/api/v1/attendance/download/${id}`, { responseType: 'blob' }),
+};
+
 export const assetService = {
   list: (params?: any) => api.get('/api/v1/assets', { params }),
   create: (data: any) => api.post('/api/v1/assets', data),
