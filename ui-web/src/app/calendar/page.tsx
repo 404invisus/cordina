@@ -41,10 +41,26 @@ function EventChip({ event, onClick }: { event: any; onClick: () => void }) {
   );
 }
 
-function DetailModal({ event, onClose, onDelete, canDelete }: any) {
+const STATUS_EVENT_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
+  upcoming: { label: 'Akan Datang', bg: 'bg-blue-50',    text: 'text-blue-600' },
+  ongoing:  { label: 'Berlangsung', bg: 'bg-amber-50',   text: 'text-amber-600' },
+  done:     { label: 'Selesai',     bg: 'bg-emerald-50', text: 'text-emerald-600' },
+};
+
+function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
   const tc = TYPE_CONFIG[event.type] || TYPE_CONFIG.lainnya;
+  const sc = STATUS_EVENT_CONFIG[event.status] || STATUS_EVENT_CONFIG.upcoming;
+  const [editMode, setEditMode] = React.useState(false);
+  const [form, setForm] = React.useState({
+    status:           event.status           || 'upcoming',
+    notulensi:        event.notulensi        || '',
+    hasil_pembahasan: event.hasil_pembahasan || '',
+    tindak_lanjut:    event.tindak_lanjut    || '',
+  });
+  const canEdit = canDelete;
+
   return (
-    <Modal open={!!event} onClose={onClose} title="Detail Kegiatan" size="sm">
+    <Modal open={!!event} onClose={() => { setEditMode(false); onClose(); }} title="Detail Kegiatan" size="sm">
       <div className="space-y-4">
         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold ${tc.bg} ${tc.text}`}>
           <div className={`w-2 h-2 rounded-full ${tc.dot}`} />
@@ -130,6 +146,83 @@ function DetailModal({ event, onClose, onDelete, canDelete }: any) {
           </div>
         )}
 
+        {/* Status */}
+        <div className="flex items-center justify-between">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text}`}>
+            {sc.label}
+          </span>
+          {canEdit && !editMode && (
+            <button onClick={() => setEditMode(true)}
+              className="text-xs font-semibold text-[#284074] hover:underline">
+              + Isi Laporan
+            </button>
+          )}
+        </div>
+
+        {/* Laporan section */}
+        {editMode ? (
+          <div className="space-y-3 bg-slate-50 rounded-2xl p-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status Kegiatan</label>
+              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
+                <option value="upcoming">Akan Datang</option>
+                <option value="ongoing">Berlangsung</option>
+                <option value="done">Selesai</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Notulensi</label>
+              <textarea value={form.notulensi} onChange={e => setForm(f => ({ ...f, notulensi: e.target.value }))}
+                rows={3} placeholder="Catatan selama kegiatan berlangsung..."
+                className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 resize-none" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hasil Pembahasan</label>
+              <textarea value={form.hasil_pembahasan} onChange={e => setForm(f => ({ ...f, hasil_pembahasan: e.target.value }))}
+                rows={3} placeholder="1. Poin pertama&#10;2. Poin kedua..."
+                className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 resize-none" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tindak Lanjut</label>
+              <textarea value={form.tindak_lanjut} onChange={e => setForm(f => ({ ...f, tindak_lanjut: e.target.value }))}
+                rows={3} placeholder="1. Follow up pertama&#10;2. Follow up kedua..."
+                className="mt-1 w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setEditMode(false)}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                Batal
+              </button>
+              <button onClick={() => { onUpdate(event.id, form); setEditMode(false); }}
+                className="flex-1 px-4 py-2 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors">
+                Simpan
+              </button>
+            </div>
+          </div>
+        ) : (event.notulensi || event.hasil_pembahasan || event.tindak_lanjut) ? (
+          <div className="space-y-3">
+            {event.notulensi && (
+              <div className="bg-slate-50 rounded-xl p-3">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Notulensi</div>
+                <p className="text-sm text-slate-600 whitespace-pre-line">{event.notulensi}</p>
+              </div>
+            )}
+            {event.hasil_pembahasan && (
+              <div className="bg-slate-50 rounded-xl p-3">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Hasil Pembahasan</div>
+                <p className="text-sm text-slate-600 whitespace-pre-line">{event.hasil_pembahasan}</p>
+              </div>
+            )}
+            {event.tindak_lanjut && (
+              <div className="bg-slate-50 rounded-xl p-3">
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Tindak Lanjut</div>
+                <p className="text-sm text-slate-600 whitespace-pre-line">{event.tindak_lanjut}</p>
+              </div>
+            )}
+          </div>
+        ) : null}
+
         <div className="flex gap-2 pt-2 border-t border-slate-100">
           {canDelete && (
             <button onClick={() => onDelete(event.id)}
@@ -137,7 +230,7 @@ function DetailModal({ event, onClose, onDelete, canDelete }: any) {
               Hapus
             </button>
           )}
-          <button onClick={onClose}
+          <button onClick={() => { setEditMode(false); onClose(); }}
             className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors">
             Tutup
           </button>
@@ -282,6 +375,12 @@ export default function CalendarPage() {
   const createMutation = useMutation({
     mutationFn: (data: any) => calendarService.create(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['calendar'] }); toast.success('Kegiatan ditambahkan!'); setCreateOpen(false); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => calendarService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['calendar'] }); toast.success('Kegiatan diperbarui!'); setDetailEvent(null); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
   });
 
@@ -531,6 +630,7 @@ export default function CalendarPage() {
       {detailEvent && (
         <DetailModal event={detailEvent} onClose={() => setDetailEvent(null)}
           onDelete={(id: string) => deleteMutation.mutate(id)}
+          onUpdate={(id: string, data: any) => updateMutation.mutate({ id, data })}
           canDelete={detailEvent.user_id === user?.id} />
       )}
     </AppLayout>

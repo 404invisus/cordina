@@ -34,7 +34,7 @@ export default function Modal({ open, onClose, title, subtitle, children, size =
                 </button>
               </div>
             )}
-            <div className={cn('px-6 pb-6', !title && 'pt-6')}>{children}</div>
+            <div className={cn('px-6 pb-6 overflow-y-auto max-h-[70vh]', !title && 'pt-6')}>{children}</div>
           </motion.div>
         </div>
       )}

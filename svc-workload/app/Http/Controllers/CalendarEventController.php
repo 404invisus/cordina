@@ -407,8 +407,18 @@ class CalendarEventController extends Controller
                         'event_type'       => $event->type,
                         'start_date'       => $event->start_date->toDateString(),
                         'end_date'         => $event->end_date->toDateString(),
+                        'start_time'       => $event->start_time,
+                        'end_time'         => $event->end_time,
+                        'all_day'          => $event->all_day,
+                        'location'         => $event->location,
                         'visibility'       => 'public',
                         'created_by_admin' => $creatorIsAdmin,
+                        'participants'     => implode(', ', array_filter(array_map(
+                            fn($u) => $u['full_name'] ?? '',
+                            array_values($this->resolveUserNames(
+                                $event->load('participants')->participants->pluck('user_id')->toArray()
+                            ))
+                        ))),
                     ],
                 ]);
             } elseif ($creatorIsAdmin) {
