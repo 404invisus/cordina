@@ -61,7 +61,7 @@ function Avatar({ name, size = 'md', color = 'default' }: { name: string; size?:
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
-  const { user, hasRole } = useAuthStore();
+  const { user, hasRole, hasPermission } = useAuthStore();
   const [assignOpen, setAssignOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [comment, setComment] = useState('');
@@ -69,7 +69,7 @@ export default function TaskDetailPage() {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
   const commentRef = useRef<HTMLTextAreaElement>(null);
-  const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+  const canManage = hasPermission('task.edit_all');
 
   const { data: task, isLoading } = useQuery({
     queryKey: ['task', id],

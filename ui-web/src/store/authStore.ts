@@ -17,9 +17,13 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  permissions: string[];
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  permissions: string[];
+  setPermissions: (permissions: string[]) => void;
+  hasPermission: (permission: string) => boolean;
   hasRole: (role: string | string[]) => boolean;
   isAdmin: () => boolean;
   primaryRole: () => string | null;
@@ -53,6 +57,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user:            isBrowser ? safeGetUser()  : null,
   token:           isBrowser ? safeGetToken() : null,
   isAuthenticated: isBrowser ? !!safeGetToken() : false,
+  permissions:     isBrowser ? JSON.parse(localStorage.getItem('permissions') || '[]') : [],
 
   setAuth: (user, token) => {
     Cookies.set('token', token, { expires: 1 });
@@ -67,7 +72,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     Cookies.remove('user_roles');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    set({ user: null, token: null, isAuthenticated: false });
+    localStorage.removeItem('permissions');
+    set({ user: null, token: null, isAuthenticated: false, permissions: [] });
   },
 
   updateUser: (userData) => {
@@ -79,6 +85,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  setPermissions: (permissions) => {
+    localStorage.setItem('permissions', JSON.stringify(permissions));
+    set({ permissions });
+  },
+  hasPermission: (permission) => {
+    return get().permissions.includes(permission);
+  },
   hasRole: (role) => {
     const user = get().user;
     if (!user) return false;

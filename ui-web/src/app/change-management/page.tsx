@@ -171,8 +171,9 @@ export default function ChangeManagementPage() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('');
 
-  const isReviewer = user?.roles?.some(r => r === 'kepala_seksi');
-  const canViewAll = user?.roles?.some(r => ['kepala_balai', 'kepala_seksi', 'administrator'].includes(r));
+  const { hasPermission } = useAuthStore();
+  const isReviewer = hasPermission('cr.approve');
+  const canViewAll = hasPermission('attendance.view_all') || user?.roles?.some(r => ['kepala_balai', 'kepala_seksi', 'administrator'].includes(r));
 
   const { data, isLoading } = useQuery({
     queryKey: ['change-requests', filterStatus],

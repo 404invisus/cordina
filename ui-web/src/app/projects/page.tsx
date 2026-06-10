@@ -173,7 +173,7 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
 }
 
 export default function ProjectsPage() {
-  const { hasRole } = useAuthStore();
+  const { hasRole, hasPermission } = useAuthStore();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -192,7 +192,7 @@ export default function ProjectsPage() {
     return matchSearch && matchStatus;
   });
 
-  const canCreate = hasRole(['kepala_balai']);
+  const canCreate = hasPermission('project.create');
   const stats = {
     total:     projects?.length || 0,
     active:    projects?.filter((p: any) => p.status === 'active').length || 0,

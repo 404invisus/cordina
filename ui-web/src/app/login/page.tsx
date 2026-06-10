@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, ArrowRight, Lock, Mail,
   Calendar, GitMerge, FileText, Shield, Zap
 } from 'lucide-react';
-import { authService } from '@/lib/api';
+import { authService, permissionService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getDashboardPath } from '@/lib/utils';
 
@@ -55,6 +55,15 @@ export default function LoginPage() {
       try {
         const meRes = await authService.me();
         if (meRes.data?.data) updateUser(meRes.data.data);
+      } catch {}
+
+      // Fetch permissions
+      try {
+        const permRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/auth/me/permissions`, {
+          headers: { Authorization: `Bearer ${access_token}` }
+        });
+        const permData = await permRes.json();
+        if (permData.data) useAuthStore.getState().setPermissions(permData.data);
       } catch {}
 
       toast.success(`Welcome, ${user.full_name}!`);
