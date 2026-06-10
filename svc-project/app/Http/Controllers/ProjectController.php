@@ -22,7 +22,7 @@ class ProjectController extends Controller
 
     public function store(StoreProjectRequest $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai']);
+        $this->requirePermission('project.create');
         $project = $this->service->create($request->validated(), $this->authId());
         return response()->json(['data' => new ProjectResource($project)], 201);
     }
@@ -35,7 +35,7 @@ class ProjectController extends Controller
 
     public function update(UpdateProjectRequest $request, string $id): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requirePermission('project.edit');
         $project = $this->service->findOrFail($id);
         return response()->json(['data' => new ProjectResource(
             $this->service->update($project, $request->validated())
@@ -44,7 +44,7 @@ class ProjectController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $this->requireRole(['kepala_balai']);
+        $this->requirePermission('project.delete');
         $project = $this->service->findOrFail($id);
         $this->service->delete($project);
         return response()->json(null, 204);
@@ -52,7 +52,7 @@ class ProjectController extends Controller
 
     public function addMember(Request $request, string $projectId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requirePermission('project.manage_members');
         $validated = $request->validate([
             'user_id' => 'required|uuid',
             'role'    => 'required|in:manager,scrum_master,member',

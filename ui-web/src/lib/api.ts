@@ -181,6 +181,15 @@ export const storageService = {
 
 export default api;
 
+export const permissionService = {
+  definitions: () => api.get('/api/v1/permissions/definitions'),
+  getUserPermissions: (userId: string) => api.get(`/api/v1/permissions/users/${userId}`),
+  setPermission: (userId: string, permission: string, granted: boolean) =>
+    api.post(`/api/v1/permissions/users/${userId}`, { permission, granted }),
+  resetPermissions: (userId: string) => api.delete(`/api/v1/permissions/users/${userId}/reset`),
+  myPermissions: () => api.get('/api/v1/auth/me/permissions'),
+};
+
 export const attendanceService = {
   today: () => api.get('/api/v1/attendance/today'),
   clockIn: (formData: FormData) => api.post('/api/v1/attendance/clock-in', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),

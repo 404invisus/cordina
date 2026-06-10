@@ -148,7 +148,7 @@ class ChangeRequestController extends Controller
     public function approve(string $id, Request $request): JsonResponse
     {
         $roles = (array) ($request->attributes->get('jwt_roles') ?? []);
-        abort_if(empty(array_intersect($roles, ['kepala_seksi'])), 403, 'Forbidden');
+        $this->requirePermission('cr.approve');
 
         $cr = ChangeRequest::findOrFail($id);
         abort_if($cr->status !== 'submitted', 422, 'Hanya CR berstatus submitted yang bisa diapprove');
@@ -168,7 +168,7 @@ class ChangeRequestController extends Controller
     public function reject(Request $request, string $id): JsonResponse
     {
         $roles = (array) ($request->attributes->get('jwt_roles') ?? []);
-        abort_if(empty(array_intersect($roles, ['kepala_seksi'])), 403, 'Forbidden');
+        $this->requirePermission('cr.approve');
 
         $request->validate(['note' => 'required|string']);
 

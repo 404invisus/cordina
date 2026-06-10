@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Resources\UserResource;
@@ -14,6 +15,12 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login',    [AuthController::class, 'login']);
 
     Route::middleware('jwt.auth')->group(function () {
+        Route::get('/permissions/definitions',           [PermissionController::class, 'definitions']);
+        Route::get('/permissions/users/{userId}',        [PermissionController::class, 'userPermissions']);
+        Route::post('/permissions/users/{userId}',       [PermissionController::class, 'setPermission']);
+        Route::delete('/permissions/users/{userId}/reset',[PermissionController::class, 'resetPermissions']);
+        Route::get('/auth/me/permissions',               [PermissionController::class, 'myPermissions']);
+
         Route::get('/auth/me',       [AuthController::class, 'me']);
         Route::post('/auth/logout',  [AuthController::class, 'logout']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
@@ -50,6 +57,27 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('internal')->prefix('internal')->group(function () {
+        Route::post('/check-permission', function (\Illuminate\Http\Request $request) {
+            $request->validate([
+                'user_id'    => 'required|string',
+                'roles'      => 'required|array',
+                'permission' => 'required|string',
+            ]);
+
+            $cacheKey = "perm:{$request->user_id}";
+            $permissions = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($request) {
+                $service = app(\App\Services\PermissionService::class);
+                return $service->getUserPermissions($request->user_id, $request->roles);
+            });
+
+            return response()->json([
+                'data' => [
+                    'allowed'     => in_array($request->permission, $permissions),
+                    'permissions' => $permissions,
+                ]
+            ]);
+        });
+
         Route::get('/users-by-role/{role}', function (string $role) {
             $users = \Illuminate\Support\Facades\DB::table('users')
                 ->join('model_has_roles', \Illuminate\Support\Facades\DB::raw('users.id::text'), '=', \Illuminate\Support\Facades\DB::raw('model_has_roles.model_id::text'))

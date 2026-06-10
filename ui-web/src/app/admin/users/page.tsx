@@ -7,7 +7,7 @@ import {
   Pencil, Trash2, X, Users, TrendingUp, ChevronDown,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminUserService } from '@/lib/api';
+import { adminUserService, permissionService } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const ROLES = ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff', 'administrator'];
@@ -223,7 +223,142 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
   );
 }
 
-function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onClose }: any) {
+function PermissionModal({ user, onClose }: any) {
+  const qc = useQueryClient();
+  const { data: permData, isLoading } = useQuery({
+    queryKey: ['user-permissions', user?.id],
+    queryFn: () => permissionService.getUserPermissions(user.id).then(r => r.data.data),
+    enabled: !!user,
+  });
+
+  const setMutation = useMutation({
+    mutationFn: ({ permission, granted }: any) =>
+      permissionService.setPermission(user.id, permission, granted),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: () => permissionService.resetPermissions(user.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }); toast.success('Permission direset ke default'); },
+  });
+
+  if (!user) return null;
+
+  const effective: string[] = permData?.effective || [];
+  const defaults: string[] = permData?.default || [];
+  const extras = permData?.extra || [];
+
+  const ALL_PERMISSIONS: Record<string, string> = {
+    'project.create':         'Membuat project baru',
+    'project.edit':           'Mengedit project',
+    'project.delete':         'Menghapus project',
+    'project.manage_members': 'Tambah/hapus anggota project',
+    'sprint.manage':          'Buat, mulai, selesaikan sprint',
+    'sprint.view':            'Lihat detail sprint dan backlog',
+    'task.create':            'Membuat task baru',
+    'task.edit_own':          'Edit task milik sendiri',
+    'task.edit_all':          'Edit task milik siapapun',
+    'task.assign':            'Assign task ke anggota',
+    'task.delete':            'Hapus task',
+    'task.log_time':          'Log waktu pengerjaan',
+    'cr.submit':              'Mengajukan Change Request',
+    'cr.approve':             'Menyetujui/menolak Change Request',
+    'calendar.view':          'Lihat kalender',
+    'calendar.create_own':    'Buat event untuk diri sendiri',
+    'calendar.manage':        'Buat/edit event untuk semua user',
+    'user.manage':            'Kelola user, role, dan privilege',
+    'report.view':            'Lihat laporan analitik',
+    'report.export':          'Export laporan ke file',
+    'attendance.clock':       'Clock-in/out absensi',
+    'attendance.view_own':    'Lihat absensi sendiri',
+    'attendance.view_all':    'Lihat absensi semua pegawai',
+    'asset.view':             'Lihat daftar aset',
+    'asset.manage':           'Tambah/edit/hapus aset',
+    'document.view':          'Lihat dokumen',
+    'document.manage':        'Tambah/edit/hapus dokumen',
+    'notification.manage':    'Kelola konfigurasi notifikasi Telegram',
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Kelola Privilege</h2>
+            <p className="text-sm text-slate-400 mt-0.5">{user.full_name} · <span className="capitalize">{user.roles?.[0]?.replace('_', ' ')}</span></p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-500"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-2">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-slate-400">Toggle untuk tambah/cabut privilege di luar role default</p>
+            <button onClick={() => resetMutation.mutate()} disabled={resetMutation.isPending}
+              className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-50">
+              Reset ke default
+            </button>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[#284074]/20 border-t-[#284074] rounded-full animate-spin" />
+            </div>
+          ) : Object.entries(ALL_PERMISSIONS).map(([key, label]) => {
+            const isDefault  = defaults.includes(key);
+            const isEffective = effective.includes(key);
+            const extraEntry = extras.find((e: any) => e.permission === key);
+            const isOverridden = !!extraEntry;
+
+            return (
+              <div key={key} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                isEffective ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-100'
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700">{label}</span>
+                    {isDefault && !isOverridden && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-500 font-semibold">DEFAULT</span>
+                    )}
+                    {isOverridden && extraEntry?.granted && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-600 font-semibold">+EXTRA</span>
+                    )}
+                    {isOverridden && !extraEntry?.granted && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-500 font-semibold">DICABUT</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono">{key}</span>
+                </div>
+                <button
+                  onClick={() => setMutation.mutate({ permission: key, granted: !isEffective })}
+                  disabled={setMutation.isPending}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                    isEffective ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${
+                    isEffective ? 'left-5' : 'left-0.5'
+                  }`} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="p-6 pt-0">
+          <button onClick={onClose}
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors">
+            Selesai
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onPermission, onClose }: any) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }}
       className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-20">
@@ -234,6 +369,10 @@ function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onClose }: any) 
       <button onClick={() => { onRole(); onClose(); }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
         <Shield className="w-3.5 h-3.5" /> Ubah Role
+      </button>
+      <button onClick={() => { onPermission(); onClose(); }}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-violet-600 hover:bg-violet-50 transition-colors">
+        <Shield className="w-3.5 h-3.5" /> Kelola Privilege
       </button>
       <button onClick={() => { onToggle(); onClose(); }}
         className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
@@ -260,6 +399,10 @@ export default function AdminUsersPage() {
   const [editUser, setEditUser]     = useState<any>(null);
   const [roleUser, setRoleUser]     = useState<any>(null);
   const [deleteUser, setDeleteUser] = useState<any>(null);
+  const [permissionUser, setPermissionUser] = useState<any>(null);
+
+  // Render permission modal
+  const permissionModal = permissionUser ? <PermissionModal user={permissionUser} onClose={() => setPermissionUser(null)} /> : null;
 
   const { data: stats } = useQuery({
     queryKey: ['admin-user-stats'],
@@ -296,6 +439,7 @@ export default function AdminUsersPage() {
 
   return (
     <AppLayout>
+      {permissionModal}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-gradient-to-br from-[#284074]/10 to-[#284074]/5 rounded-2xl flex items-center justify-center border border-[#284074]/10">
@@ -423,6 +567,7 @@ export default function AdminUsersPage() {
                               onRole={() => setRoleUser(u)}
                               onToggle={() => toggleStatus.mutate(u)}
                               onDelete={() => setDeleteUser(u)}
+                              onPermission={() => setPermissionUser(u)}
                               onClose={() => setOpenMenu(null)} />
                           )}
                         </AnimatePresence>

@@ -28,6 +28,39 @@ abstract class Controller
         abort_if(!$this->hasRole($allowed), 403, 'Forbidden: insufficient role');
     }
 
+    protected function hasPermission(string $permission): bool
+    {
+        $userId = $this->authId();
+        $roles  = $this->authRoles();
+        if (!$userId) return false;
+
+        $authUrl = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+
+        static $cache = [];
+        $cacheKey = "{$userId}:{$permission}";
+        if (isset($cache[$cacheKey])) return $cache[$cacheKey];
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(3)
+                ->post("{$authUrl}/api/v1/internal/check-permission", [
+                    'user_id'    => $userId,
+                    'roles'      => $roles,
+                    'permission' => $permission,
+                ]);
+            $result = $response->json('data.allowed', false);
+        } catch (\Throwable) {
+            $result = $this->hasRole(['kepala_balai', 'administrator']);
+        }
+
+        $cache[$cacheKey] = $result;
+        return $result;
+    }
+
+    protected function requirePermission(string $permission): void
+    {
+        abort_if(!$this->hasPermission($permission), 403, "Forbidden: missing permission [{$permission}]");
+    }
+
     protected function getRolesFromJwt(): array
     {
         return $this->authRoles();
