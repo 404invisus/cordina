@@ -11,7 +11,7 @@ class WorkloadController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requirePermission('report.view');
         $request->validate(['sprint_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->summary($request->sprint_id)]);
     }
@@ -24,7 +24,7 @@ class WorkloadController extends Controller
 
     public function setCapacity(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requirePermission('report.view');
         $request->validate([
             'sprint_id'       => 'required|uuid',
             'user_id'         => 'required|uuid',
@@ -60,14 +60,14 @@ class WorkloadController extends Controller
     // Semua task user di semua project
     public function assignmentsByUser(Request $request, string $userId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requirePermission('report.view');
         return response()->json(['data' => $this->service->assignmentsByUser($userId)]);
     }
 
     // Distribusi assignment semua user di satu project
     public function assignmentsByProject(Request $request, string $projectId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requirePermission('report.view');
         return response()->json(['data' => $this->service->assignmentsByProject($projectId)]);
     }
 }

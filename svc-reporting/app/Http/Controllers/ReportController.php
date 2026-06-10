@@ -16,21 +16,21 @@ class ReportController extends Controller
 
     public function workloadReport(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requirePermission('report.view');
         $request->validate(['sprint_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->workloadReport($request->sprint_id)]);
     }
 
     public function divisionReport(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi']);
+        $this->requirePermission('report.view');
         $request->validate(['sprint_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->divisionReport($request->sprint_id)]);
     }
 
     public function timeTrackingReport(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requirePermission('report.view');
         $request->validate([
             'project_id' => 'required|uuid',
             'from'       => 'required|date',
@@ -43,13 +43,13 @@ class ReportController extends Controller
 
     public function sprintReport(Request $request, string $sprintId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requirePermission('report.view');
         return response()->json(['data' => $this->service->sprintReport($sprintId)]);
     }
 
     public function velocityReport(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requirePermission('report.view');
         $request->validate(['project_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->velocityReport($request->project_id)]);
     }

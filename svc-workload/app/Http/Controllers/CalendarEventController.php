@@ -33,7 +33,7 @@ class CalendarEventController extends Controller
 
         $authId  = $this->authId();
         $roles   = $this->authRoles();
-        $isAdmin = in_array('kepala_balai', $roles) || in_array('administrator', $roles);
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         $query = CalendarEvent::with('participants')
             ->where(function ($date) use ($request) {
@@ -73,7 +73,7 @@ class CalendarEventController extends Controller
     {
         $authId  = $this->authId();
         $roles   = $this->authRoles();
-        $isAdmin = in_array('kepala_balai', $roles) || in_array('administrator', $roles);
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         $validated = $request->validate([
             'user_id'          => 'sometimes|uuid',
@@ -122,7 +122,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::with('participants')->findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         if ($event->visibility === 'private' && $event->user_id !== $authId && !$isAdmin) {
             $isParticipant = $event->participants->contains('user_id', $authId);
@@ -141,7 +141,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         abort_if($event->user_id !== $authId && !$isAdmin, 403, 'Tidak punya akses');
 
@@ -176,7 +176,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         abort_if($event->user_id !== $authId && !$isAdmin, 403, 'Tidak punya akses');
 
@@ -192,7 +192,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::with('participants')->findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         abort_if(
             $event->user_id !== $authId && !$isAdmin,
@@ -221,7 +221,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         abort_if(
             $event->user_id !== $authId && !$isAdmin,
@@ -257,7 +257,7 @@ class CalendarEventController extends Controller
     {
         $event   = CalendarEvent::findOrFail($id);
         $authId  = $this->authId();
-        $isAdmin = in_array('kepala_balai', $this->authRoles()) || in_array('administrator', $this->authRoles());
+        $isAdmin = $this->hasPermission('calendar.manage');
 
         abort_if(
             $event->user_id !== $authId && !$isAdmin,

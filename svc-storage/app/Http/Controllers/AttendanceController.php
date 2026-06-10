@@ -210,10 +210,7 @@ class AttendanceController extends Controller
     public function report(Request $request): JsonResponse
     {
         $roles = (array) ($request->attributes->get('jwt_roles') ?? []);
-        abort_if(
-            empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator'])),
-            403, 'Forbidden'
-        );
+        $this->requirePermission('attendance.view_all');
 
         $request->validate([
             'from' => 'required|date',
