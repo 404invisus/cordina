@@ -1,0 +1,87 @@
+worker_processes auto;
+events { worker_connections 2048; }
+
+http {
+    limit_req_zone $binary_remote_addr zone=api:10m rate=60r/m;
+    limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+
+    resolver 127.0.0.11 valid=10s;
+
+    upstream svc_auth         { server svc-auth:80; }
+    upstream svc_project      { server svc-project:80; }
+    upstream svc_workload     { server svc-workload:80; }
+    upstream svc_notification { server svc-notification:80; }
+    upstream svc_reporting    { server svc-reporting:80; }
+    upstream svc_storage      { server svc-storage:80; }
+
+    server {
+        listen 80;
+
+        add_header X-Frame-Options "DENY";
+        add_header X-Content-Type-Options "nosniff";
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+        location /v1/auth/ {
+            set $upstream http://svc-auth:80;
+            proxy_pass $upstream;
+            limit_req zone=auth burst=5 nodelay;
+            proxy_pass http://svc_auth;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+
+        location /v1/users {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://svc_auth;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location ~ ^/v1/(projects|tasks|epics|stories|sprints) {
+            limit_req zone=api burst=30 nodelay;
+            proxy_pass http://svc_project;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /v1/workload {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://svc_workload;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /v1/notifications {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://svc_notification;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /v1/reports {
+            limit_req zone=api burst=10 nodelay;
+            proxy_pass http://svc_reporting;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /v1/storage {
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://svc_storage;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            client_max_body_size 20M;
+        }
+
+        location ~ ^/v1/internal/ {
+            return 403;
+        }
+
+        location /health {
+            return 200 '{"status":"ok"}';
+            add_header Content-Type application/json;
+        }
+    }
+}

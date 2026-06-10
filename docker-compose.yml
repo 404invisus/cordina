@@ -1,0 +1,219 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pm_postgres
+    environment:
+      POSTGRES_USER: ymjsty
+      POSTGRES_PASSWORD: namamuji
+      POSTGRES_DB: pm_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pm_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pmuser"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: pm_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pm_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: pm_gateway
+    ports:
+      - "8000:80"
+    depends_on:
+      - svc-auth
+      - svc-project
+      - svc-workload
+      - svc-notification
+      - svc-reporting
+      - svc-storage
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+ 
+  svc-auth:
+    volumes:
+     - ./svc-auth/.env:/var/www/html/.env
+     - ./svc-auth/config:/var/www/html/config
+     - ./svc-auth/database:/var/www/html/database
+     - ./svc-auth/app:/var/www/html/app
+     - ./svc-auth/routes:/var/www/html/routes
+    build:
+      context: ./svc-auth
+      dockerfile: Dockerfile
+    container_name: pm_svc_auth
+    env_file: ./svc-auth/.env
+    ports:
+      - "8001:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+  svc-project:
+    volumes:
+     - ./svc-project/.env:/var/www/html/.env
+     - ./svc-project/config:/var/www/html/config
+     - ./svc-project/database:/var/www/html/database
+     - ./svc-project/routes:/var/www/html/routes
+     - ./svc-project/app:/var/www/html/app
+    build:
+      context: ./svc-project
+      dockerfile: Dockerfile
+    container_name: pm_svc_project
+    env_file: ./svc-project/.env
+    ports:
+      - "8002:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      svc-auth:
+        condition: service_started
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+  svc-workload:
+    volumes:
+     - ./svc-workload/.env:/var/www/html/.env
+     - ./svc-workload/config:/var/www/html/config
+     - ./svc-workload/database:/var/www/html/database
+     - ./svc-workload/app:/var/www/html/app
+    build:
+      context: ./svc-workload
+      dockerfile: Dockerfile
+    container_name: pm_svc_workload
+    env_file: ./svc-workload/.env
+    ports:
+      - "8003:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+  svc-notification:
+    volumes:
+     - ./svc-notification/.env:/var/www/html/.env
+     - ./svc-notification/app:/var/www/html/app
+     - ./svc-notification/config:/var/www/html/config
+     - ./svc-notification/database:/var/www/html/database
+     - ./svc-notification/routes:/var/www/html/routes
+    build:
+      context: ./svc-notification
+      dockerfile: Dockerfile
+    container_name: pm_svc_notification
+    env_file: ./svc-notification/.env
+    ports:
+      - "8004:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+
+  svc-notification-worker:
+    volumes:
+      - ./svc-notification/.env:/var/www/html/.env
+      - ./svc-notification/config:/var/www/html/config
+    build:
+      context: ./svc-notification
+      dockerfile: Dockerfile
+    container_name: pm_notif_worker
+    env_file: ./svc-notification/.env
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=60"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+  svc-reporting:
+    volumes:
+      - ./svc-reporting/.env:/var/www/html/.env
+      - ./svc-reporting/config:/var/www/html/config
+      - ./svc-reporting/database:/var/www/html/database
+      - ./svc-reporting/app:/var/www/html/app
+      - ./svc-reporting/routes:/var/www/html/routes
+    build:
+      context: ./svc-reporting
+      dockerfile: Dockerfile
+    container_name: pm_svc_reporting
+    env_file: ./svc-reporting/.env
+    ports:
+      - "8005:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+  svc-storage:
+    volumes:
+      - ./svc-storage/.env:/var/www/html/.env
+      - storage_data:/var/www/html/storage/app
+      - ./svc-storage/config:/var/www/html/config
+      - ./svc-storage/database:/var/www/html/database
+      - ./svc-storage/app:/var/www/html/app
+      - ./svc-storage/routes:/var/www/html/routes
+    build:
+      context: ./svc-storage
+      dockerfile: Dockerfile
+    container_name: pm_svc_storage
+    env_file: ./svc-storage/.env
+    ports:
+      - "8006:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
+networks:
+  pm_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  storage_data:
