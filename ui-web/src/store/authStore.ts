@@ -60,8 +60,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setAuth: (user, token) => {
     // Token hanya di cookie — JANGAN simpan di localStorage
-    Cookies.set('token', token, { expires: 1, sameSite: 'strict' });
-    Cookies.set('user_roles', encodeURIComponent(JSON.stringify(user.roles)), { expires: 1, sameSite: 'strict' });
+    const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    Cookies.set('token', token, { expires: 1, sameSite: 'strict', secure: isProduction });
+    Cookies.set('user_roles', encodeURIComponent(JSON.stringify(user.roles)), { expires: 1, sameSite: 'strict', secure: isProduction });
     // User data di sessionStorage (bukan localStorage) — hilang saat tab tutup
     sessionStorage.setItem('user', JSON.stringify(user));
     set({ user, token, isAuthenticated: true });

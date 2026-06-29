@@ -29,7 +29,7 @@ class DocumentController extends Controller
             'issued_at'   => 'nullable|date',
             'expires_at'  => 'nullable|date|after_or_equal:issued_at',
             'description' => 'nullable|string',
-            'file'        => 'nullable|file|max:20480',
+            'file'        => 'nullable|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,zip,txt,csv',
         ]);
 
         if ($request->hasFile('file')) {
@@ -63,7 +63,7 @@ class DocumentController extends Controller
             'issued_at'   => 'nullable|date',
             'expires_at'  => 'nullable|date',
             'description' => 'nullable|string',
-            'file'        => 'nullable|file|max:20480',
+            'file'        => 'nullable|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,zip,txt,csv',
         ]);
 
         if ($request->hasFile('file')) {

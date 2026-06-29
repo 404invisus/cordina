@@ -21,7 +21,7 @@ class StorageController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'file'       => 'required|file|max:20480', // 20MB
+            'file'       => 'required|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,zip,rar,txt,csv',
             'entity_id'  => 'nullable|string',
             'entity_type'=> 'nullable|string',
         ]);
