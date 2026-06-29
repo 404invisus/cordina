@@ -37,6 +37,19 @@ class AuthController extends Controller
 
     public function logout(): JsonResponse
     {
+        try {
+            $token = auth()->getToken();
+            $exp   = auth()->payload()->get('exp');
+            $ttl   = max(0, $exp - time());
+            if ($ttl > 0) {
+                \Illuminate\Support\Facades\Redis::setex(
+                    'blacklist:' . $token,
+                    $ttl,
+                    '1'
+                );
+            }
+        } catch (\Throwable) {}
+
         auth()->logout();
         return response()->json(['message' => 'Successfully logged out']);
     }

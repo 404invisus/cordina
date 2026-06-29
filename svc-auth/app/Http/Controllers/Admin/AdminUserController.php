@@ -65,7 +65,7 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'full_name' => 'required|string|max:255',
             'email'     => 'required|email|unique:users,email',
-            'password'  => 'required|string|min:8',
+            'password'  => 'required|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
             'role'      => 'required|string|in:kepala_balai,kepala_seksi,project_manager,scrum_master,staff,administrator',
             'division'  => 'sometimes|nullable|string|max:100',
             'position'  => 'sometimes|nullable|string|max:100',
@@ -87,7 +87,7 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'full_name'        => 'sometimes|string|max:255',
             'email'            => 'sometimes|email|unique:users,email,' . $id,
-            'password'         => 'sometimes|string|min:8',
+            'password'         => 'sometimes|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
             'division'         => 'sometimes|nullable|string|max:100',
             'position'         => 'sometimes|nullable|string|max:100',
             'telegram_chat_id' => 'sometimes|nullable|string|max:50',

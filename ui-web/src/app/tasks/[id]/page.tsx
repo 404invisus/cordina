@@ -465,12 +465,10 @@ export default function TaskDetailPage() {
           <div className="p-3 space-y-1.5 max-h-72 overflow-y-auto">
           {users?.map((u: any) => {
             const isSelected = selectedAssignees.includes(u.id);
-            // DEBUG: console.log('selectedAssignees', selectedAssignees, 'u.id', u.id, 'isSelected', isSelected);
             return (
             <motion.button key={u.id} whileHover={{ x: 2 }} onClick={() => {
               setSelectedAssignees(prev => {
                 const next = prev.includes(u.id) ? prev.filter(id => id !== u.id) : [...prev, u.id];
-                console.log('TOGGLE', u.id, 'prev:', prev, 'next:', next);
                 return next;
               });
             }}
