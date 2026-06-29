@@ -1,0 +1,10 @@
+.env
+*.env.local
+node_modules/
+.next/
+svc-auth/.env
+svc-project/.env
+svc-workload/.env
+svc-notification/.env
+svc-reporting/.env
+svc-storage/.env
