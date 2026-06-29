@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   postgres:
@@ -80,6 +79,7 @@ services:
      - ./svc-project/.env:/var/www/html/.env
      - ./svc-project/config:/var/www/html/config
      - ./svc-project/database:/var/www/html/database
+     - ./svc-project/app:/var/www/html/app
      - ./svc-project/routes:/var/www/html/routes
     build:
       context: ./svc-project
