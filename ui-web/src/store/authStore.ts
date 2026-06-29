@@ -21,7 +21,6 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
-  permissions: string[];
   setPermissions: (permissions: string[]) => void;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string | string[]) => boolean;
@@ -31,18 +30,18 @@ interface AuthState {
 
 function safeGetUser(): User | null {
   try {
-    const raw = localStorage.getItem('user');
+    const raw = sessionStorage.getItem('user');
     if (!raw || raw === 'undefined' || raw === 'null') return null;
     return JSON.parse(raw) as User;
   } catch {
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
     return null;
   }
 }
 
 function safeGetToken(): string | null {
   try {
-    return Cookies.get('token') || localStorage.getItem('token') || null;
+    return Cookies.get('token') || null;
   } catch {
     return null;
   }
@@ -57,22 +56,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user:            isBrowser ? safeGetUser()  : null,
   token:           isBrowser ? safeGetToken() : null,
   isAuthenticated: isBrowser ? !!safeGetToken() : false,
-  permissions:     isBrowser ? JSON.parse(localStorage.getItem('permissions') || '[]') : [],
+  permissions:     isBrowser ? JSON.parse(sessionStorage.getItem('permissions') || '[]') : [],
 
   setAuth: (user, token) => {
-    Cookies.set('token', token, { expires: 1 });
-    Cookies.set('user_roles', encodeURIComponent(JSON.stringify(user.roles)), { expires: 1 });
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    // Token hanya di cookie — JANGAN simpan di localStorage
+    Cookies.set('token', token, { expires: 1, sameSite: 'strict' });
+    Cookies.set('user_roles', encodeURIComponent(JSON.stringify(user.roles)), { expires: 1, sameSite: 'strict' });
+    // User data di sessionStorage (bukan localStorage) — hilang saat tab tutup
+    sessionStorage.setItem('user', JSON.stringify(user));
     set({ user, token, isAuthenticated: true });
   },
 
   logout: () => {
     Cookies.remove('token');
     Cookies.remove('user_roles');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('permissions');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('permissions');
+    // Bersihkan localStorage lama jika masih ada
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('permissions');
+    }
     set({ user: null, token: null, isAuthenticated: false, permissions: [] });
   },
 
@@ -80,18 +85,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const current = get().user;
     if (current) {
       const updated = { ...current, ...userData };
-      localStorage.setItem('user', JSON.stringify(updated));
+      sessionStorage.setItem('user', JSON.stringify(updated));
       set({ user: updated });
     }
   },
 
   setPermissions: (permissions) => {
-    localStorage.setItem('permissions', JSON.stringify(permissions));
+    sessionStorage.setItem('permissions', JSON.stringify(permissions));
     set({ permissions });
   },
-  hasPermission: (permission) => {
-    return get().permissions.includes(permission);
-  },
+
+  hasPermission: (permission) => get().permissions.includes(permission),
+
   hasRole: (role) => {
     const user = get().user;
     if (!user) return false;
@@ -103,12 +108,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAdmin: () => {
     const user = get().user;
     if (!user) return false;
-    return ADMIN_ROLES.some(r => user.roles.includes(r));
+    return user.roles.some(r => ADMIN_ROLES.includes(r));
   },
 
   primaryRole: () => {
     const user = get().user;
-    if (!user?.roles?.length) return null;
-    return ROLE_ORDER.find(r => user.roles.includes(r)) ?? user.roles[0];
+    if (!user) return null;
+    return ROLE_ORDER.find(r => user.roles.includes(r)) ?? user.roles[0] ?? null;
   },
 }));

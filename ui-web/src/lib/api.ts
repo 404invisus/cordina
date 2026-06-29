@@ -6,7 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const api = axios.create({ baseURL: BASE_URL, timeout: 15000 });
 
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('token') || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+  const token = Cookies.get('token') || null;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -16,7 +16,10 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       Cookies.remove('token');
+      Cookies.remove('user_roles');
       if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('permissions');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -190,14 +193,6 @@ export const permissionService = {
   myPermissions: () => api.get('/api/v1/auth/me/permissions'),
 };
 
-export const attendanceService = {
-  today: () => api.get('/api/v1/attendance/today'),
-  clockIn: (formData: FormData) => api.post('/api/v1/attendance/clock-in', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  clockOut: (data: any) => api.post('/api/v1/attendance/clock-out', data),
-  history: (params?: any) => api.get('/api/v1/attendance/history', { params }),
-  report: (params: any) => api.get('/api/v1/attendance/report', { params }),
-  downloadFile: (id: string) => api.get(`/api/v1/attendance/download/${id}`, { responseType: 'blob' }),
-};
 
 export const assetService = {
   list: (params?: any) => api.get('/api/v1/assets', { params }),
