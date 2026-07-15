@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import AppLayout from '@/components/layout/AppLayout';
-import { authService, notificationService } from '@/lib/api';
+import api, { authService, notificationService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getRoleLabel } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -96,6 +96,9 @@ function NotifSettings() {
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore();
   const [telegramId, setTelegramId] = useState(user?.telegram_chat_id || '');
+  const [nik, setNik] = useState(user?.nik || '');
+  const [specimenFile, setSpecimenFile] = useState<File | null>(null);
+  const [specimenBlobUrl, setSpecimenBlobUrl] = useState<string | null>(null);
   const [tab, setTab] = useState('profile');
 
   useEffect(() => {
@@ -104,9 +107,39 @@ export default function SettingsPage() {
       if (u) {
         updateUser(u);
         setTelegramId(u.telegram_chat_id || '');
+        setNik(u.nik || '');
       }
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!user?.tte_specimen_url) return;
+    api.get(`/api/v1/storage/${user.tte_specimen_url}/download`, { responseType: 'blob' })
+      .then(res => {
+        const url = URL.createObjectURL(res.data);
+        setSpecimenBlobUrl(url);
+      })
+      .catch(() => setSpecimenBlobUrl(null));
+  }, [user?.tte_specimen_url]);
+
+  const tteMutation = useMutation({
+    mutationFn: async () => {
+      let specimenUrl = user?.tte_specimen_url || '';
+      if (specimenFile) {
+        const fd = new FormData();
+        fd.append('file', specimenFile);
+        const res = await api.post('/api/v1/storage/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        specimenUrl = res.data?.data?.id || '';
+      }
+      return api.put(`/api/v1/users/${user?.id}`, { nik, tte_specimen_url: specimenUrl || undefined });
+    },
+    onSuccess: (res: any) => {
+      updateUser({ nik, tte_specimen_url: res.data?.data?.tte_specimen_url || user?.tte_specimen_url });
+      toast.success('Data TTE disimpan!');
+      setSpecimenFile(null);
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menyimpan'),
+  });
 
   const telegramMutation = useMutation({
     mutationFn: (id: string) => authService.setTelegram(id),
@@ -180,6 +213,47 @@ export default function SettingsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* TTE Section */}
+                <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
+                  <div>
+                    <h3 className="font-bold text-slate-800 mb-1">Tanda Tangan Elektronik (TTE)</h3>
+                    <p className="text-xs text-slate-400">Data ini digunakan saat Anda ditunjuk sebagai penandatangan dokumen</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">NIK</label>
+                    <input
+                      value={nik}
+                      onChange={e => setNik(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 font-mono placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
+                      placeholder="16 digit NIK" maxLength={16} />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spesimen Tanda Tangan</label>
+                    {user?.tte_specimen_url && (
+                      <div className="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                        <img
+                          src={specimenBlobUrl ?? undefined}
+                          alt="Spesimen TTD"
+                          className="h-12 object-contain rounded"
+                          onError={e => (e.currentTarget.style.display = 'none')}
+                        />
+                        <div className="text-xs text-slate-500">Spesimen tersimpan. Upload baru untuk mengganti.</div>
+                      </div>
+                    )}
+                    <input type="file" accept="image/png,image/jpeg,image/jpg"
+                      onChange={e => setSpecimenFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#284074]/8 file:text-[#284074] hover:file:bg-[#284074]/15 transition-all" />
+                    <p className="text-xs text-slate-400 mt-1.5">Format PNG/JPG, disarankan latar transparan</p>
+                  </div>
+
+                  <button onClick={() => tteMutation.mutate()} disabled={tteMutation.isPending || (!nik && !specimenFile)}
+                    className="px-5 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-50 transition-all">
+                    {tteMutation.isPending ? 'Menyimpan...' : 'Simpan Data TTE'}
+                  </button>
                 </div>
 
                 <NotifSettings />

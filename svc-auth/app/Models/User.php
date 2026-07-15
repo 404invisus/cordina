@@ -16,7 +16,9 @@ class User extends Authenticatable implements JWTSubject
 
     protected $fillable = [
         'id', 'full_name', 'email', 'password',
-        'telegram_chat_id', 'avatar', 'is_active',
+        'telegram_chat_id',
+        'nik',
+        'tte_specimen_url', 'avatar', 'is_active',
         'division', 'position',
     ];
 

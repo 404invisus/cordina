@@ -38,6 +38,7 @@ export const authService = {
   me: () => api.get('/api/v1/auth/me'),
   refresh: () => api.post('/api/v1/auth/refresh'),
   setTelegram: (telegram_chat_id: string) => api.post('/api/v1/auth/telegram', { telegram_chat_id }),
+  updateMe: (data: any) => api.put(`/api/v1/users/${data.id || ''}`, data),
 };
 
 export const userService = {
