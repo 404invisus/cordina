@@ -4,7 +4,7 @@ import { Providers } from "@/components/Providers";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Cordina: Integrated Internal Work Management",
+  title: "ConnectOne: Integrated Internal Work Management",
   description: "Integrated internal work management platform for productive teams",
   icons: { icon: "/logo-only-black.png" },
 };

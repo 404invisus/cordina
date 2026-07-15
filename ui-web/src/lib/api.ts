@@ -15,14 +15,17 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      Cookies.remove('token');
-      Cookies.remove('user_roles');
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('user');
-        sessionStorage.removeItem('permissions');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+      if (!isLoginPage) {
+        Cookies.remove('token');
+        Cookies.remove('user_roles');
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('permissions');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(err);
@@ -106,6 +109,7 @@ export const projectService = {
 
 export const sprintService = {
   list: (projectId: string) => api.get(`/api/v1/projects/${projectId}/sprints`),
+  stories: (sprintId: string) => api.get(`/api/v1/sprints/${sprintId}/stories`),
   create: (projectId: string, data: any) => api.post(`/api/v1/projects/${projectId}/sprints`, data),
   start: (projectId: string, sprintId: string) => api.post(`/api/v1/projects/${projectId}/sprints/${sprintId}/start`),
   complete: (projectId: string, sprintId: string) => api.post(`/api/v1/projects/${projectId}/sprints/${sprintId}/complete`),

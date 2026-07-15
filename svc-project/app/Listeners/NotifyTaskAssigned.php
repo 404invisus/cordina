@@ -10,12 +10,18 @@ class NotifyTaskAssigned
         $notifUrl = config('services.notification.url');
         if (!$notifUrl) return;
 
+        $task = $event->task->load(['story.sprint', 'story.epic.project']);
+        $sprint = $task->story?->sprint;
+        $project = $task->story?->epic?->project;
         Http::post("{$notifUrl}/api/v1/notifications/send", [
             'user_id' => $event->assigneeId,
             'type'    => 'task.assigned',
             'payload' => [
-                'task_id'    => $event->task->id,
-                'task_title' => $event->task->title,
+                'task_id'      => $task->id,
+                'task_title'   => $task->title,
+                'project_name' => $project?->name ?? 'N/A',
+                'sprint_name'  => $sprint?->name ?? 'N/A',
+                'priority'     => $task->priority ?? 'normal',
             ],
         ]);
     }

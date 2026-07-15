@@ -60,12 +60,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <img
               src={scrolled ? "/logo-only-black.png" : "/logo-only-white.png"}
-              alt="Cordina"
+              alt="ConnectOne"
               width={20}
               height={20}
               className="object-contain"
             />
-            <span className={`font-semibold text-sm tracking-tight ${scrolled ? 'text-[#083858]' : 'text-white'}`}>Cordina</span>
+            <span className={`font-semibold text-sm tracking-tight ${scrolled ? 'text-[#083858]' : 'text-white'}`}>ConnectOne</span>
           </div>
           <Link
             href="/login"
@@ -105,7 +105,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="text-[#e8e4dc]/65 text-base leading-relaxed max-w-lg mb-10"
           >
-            Cordina menghubungkan penjadwalan kegiatan, manajemen proyek,
+            ConnectOne menghubungkan penjadwalan kegiatan, manajemen proyek,
             proses persetujuan perubahan, dan pengelolaan aset dalam satu
             platform 
           </motion.p>
@@ -119,7 +119,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150"
             >
-              Buka Cordina
+              Buka ConnectOne
             </Link>
           </motion.div>
         </div>
@@ -163,7 +163,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150 flex-shrink-0"
           >
-            Masuk ke Cordina
+            Masuk ke ConnectOne
           </Link>
         </div>
       </section>
@@ -173,7 +173,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <img src="/logo-only-white.png" alt="" width={16} height={16} className="object-contain opacity-50" />
-            <span className="text-white/35 text-xs font-medium">Cordina</span>
+            <span className="text-white/35 text-xs font-medium">ConnectOne</span>
           </div>
           <p className="text-white/25 text-xs">
             Balai Layanan Penghubung Identitas Digital &middot; BSSN &middot; 2026

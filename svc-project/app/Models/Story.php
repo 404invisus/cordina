@@ -9,6 +9,7 @@ class Story extends Model
     protected $fillable = [
         'epic_id', 'sprint_id', 'title', 'description',
         'status', 'story_points', 'priority', 'assignee_id',
+        'due_date', 'estimated_hours', 'type',
     ];
 
     public function epic()     { return $this->belongsTo(Epic::class); }

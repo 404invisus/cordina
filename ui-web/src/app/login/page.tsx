@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff } from 'lucide-react';
 import { authService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { permissionService } from '@/lib/api';
 import { getDashboardPath } from '@/lib/utils';
 
 interface LoginForm {
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const router     = useRouter();
   const setAuth    = useAuthStore(s => s.setAuth);
   const updateUser = useAuthStore(s => s.updateUser);
+  const setPermissions = useAuthStore(s => s.setPermissions);
   const [showPass, setShowPass] = useState(false);
   const [loading,  setLoading]  = useState(false);
 
@@ -41,6 +43,10 @@ export default function LoginPage() {
       try {
         const meRes = await authService.me();
         if (meRes.data?.data) updateUser(meRes.data.data);
+      } catch {}
+      try {
+        const permRes = await permissionService.myPermissions();
+        if (permRes.data?.data) setPermissions(permRes.data.data);
       } catch {}
       toast.success(`Selamat datang, ${user.full_name.split(' ')[0]}.`);
       router.push(getDashboardPath(user.roles?.[0]));
@@ -66,7 +72,7 @@ export default function LoginPage() {
 <div />
 
         <div className="flex items-center justify-center">
-          <img src="/logo-only-white.png" alt="Cordina" width={120} height={120} className="object-contain opacity-10" />
+          <img src="/logo-only-white.png" alt="ConnectOne" width={120} height={120} className="object-contain opacity-10" />
         </div>
 
         <p className="text-white/20 text-xs">
@@ -78,8 +84,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col bg-[#f4f2ee]">
         {/* Mobile nav */}
         <div className="lg:hidden px-6 py-5 flex items-center gap-2 border-b border-[#083858]/8">
-          <img src="/logo-only-black.png" alt="Cordina" width={20} height={20} className="object-contain" />
-          <span className="font-semibold text-[#083858] text-sm">Cordina</span>
+          <img src="/logo-only-black.png" alt="ConnectOne" width={20} height={20} className="object-contain" />
+          <span className="font-semibold text-[#083858] text-sm">ConnectOne</span>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-8 py-12">

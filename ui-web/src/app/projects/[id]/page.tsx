@@ -7,7 +7,7 @@ import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import Modal from '@/components/ui/Modal';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
-import { projectService, sprintService, epicService } from '@/lib/api';
+import { projectService, sprintService, epicService, storyService } from '@/lib/api';
 import { getStatusLabel, formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
@@ -42,10 +42,89 @@ const TABS = [
   { id: 'members',  label: 'Members',   icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
 ];
 
+function AddBacklogToSprintModal({ open, onClose, sprintId, projectId }: { open: boolean; onClose: () => void; sprintId: string; projectId: string }) {
+  const qc = useQueryClient();
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const { data: epics } = useQuery({
+    queryKey: ['epics', projectId],
+    queryFn: () => epicService.list(projectId).then(r => r.data.data),
+    enabled: open,
+  });
+
+  const { data: allStories, isLoading } = useQuery({
+    queryKey: ['all-stories-unassigned', projectId],
+    queryFn: async () => {
+      if (!epics) return [];
+      const results = await Promise.all(epics.map((e: any) => storyService.list(e.id).then(r => r.data.data.map((s: any) => ({ ...s, epic_title: e.title })))));
+      return results.flat().filter((s: any) => !s.sprint_id);
+    },
+    enabled: open && !!epics,
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: () => Promise.all(selected.map(id => storyService.update(id, { sprint_id: sprintId }))),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sprints', projectId] });
+      qc.invalidateQueries({ queryKey: ['all-stories-unassigned', projectId] });
+      epics?.forEach((e: any) => qc.invalidateQueries({ queryKey: ['stories', e.id] }));
+      toast.success(`${selected.length} backlog ditambahkan ke sprint!`);
+      setSelected([]);
+      onClose();
+    },
+    onError: () => toast.error('Gagal menambahkan backlog'),
+  });
+
+  const toggle = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const PRIORITY_COLOR: Record<string, string> = { critical: 'text-red-600 bg-red-50', high: 'text-orange-600 bg-orange-50', medium: 'text-amber-600 bg-amber-50', low: 'text-emerald-600 bg-emerald-50' };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Pilih Backlog untuk Sprint">
+      <div className="space-y-3">
+        {isLoading && <div className="py-8 text-center text-sm text-slate-400">Memuat backlog...</div>}
+        {!isLoading && (!allStories || allStories.length === 0) && (
+          <div className="py-8 text-center text-sm text-slate-400">Tidak ada backlog yang belum masuk sprint</div>
+        )}
+        {allStories && allStories.length > 0 && (
+          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+            {allStories.map((s: any) => (
+              <div key={s.id} onClick={() => toggle(s.id)}
+                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${selected.includes(s.id) ? 'border-[#284074] bg-[#284074]/4' : 'border-slate-100 hover:border-slate-200'}`}>
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected.includes(s.id) ? 'bg-[#284074] border-[#284074]' : 'border-slate-300'}`}>
+                  {selected.includes(s.id) && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-800 truncate">{s.title}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{s.epic_title}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {s.story_points && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">{s.story_points} pts</span>}
+                  {s.priority && <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${PRIORITY_COLOR[s.priority] || ''}`}>{s.priority}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+          <span className="text-xs text-slate-400">{selected.length} backlog dipilih</span>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
+            <button onClick={() => mutate()} disabled={isPending || selected.length === 0}
+              className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#284074] text-white hover:bg-[#1e3260] transition-colors disabled:opacity-60 flex items-center gap-2">
+              {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : `Tambahkan (${selected.length})`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
   const qc = useQueryClient();
   const { hasRole } = useAuthStore();
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+  const [addBacklogOpen, setAddBacklogOpen] = useState(false);
 
   const startMutation = useMutation({
     mutationFn: () => sprintService.start(projectId, sprint.id),
@@ -93,8 +172,13 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
             </svg> Board
           </Link>
+          <button onClick={() => setAddBacklogOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs border-2 border-slate-200 text-slate-600 px-3.5 py-2 rounded-xl font-semibold hover:border-[#284074] hover:text-[#284074] transition-all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Tambah Backlog
+          </button>
         </div>
       )}
+      <AddBacklogToSprintModal open={addBacklogOpen} onClose={() => setAddBacklogOpen(false)} sprintId={sprint.id} projectId={projectId} />
     </div>
   );
 }
@@ -155,6 +239,150 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
         </div>
       </form>
     </Modal>
+  );
+}
+
+
+function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean; onClose: () => void; epicId: string; projectId: string }) {
+  const qc = useQueryClient();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<any>();
+  const [focused, setFocused] = useState<string | null>(null);
+  const fw = (f: string) => `rounded-xl border-2 transition-all duration-200 ${focused === f ? 'border-[#284074] shadow-[0_0_0_4px_rgba(40,64,116,0.08)]' : 'border-slate-200 hover:border-slate-300'}`;
+  const inp = 'w-full px-4 py-3 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400';
+
+  const { data: members } = useQuery({
+    queryKey: ['members', projectId],
+    queryFn: () => projectService.members(projectId).then(r => r.data.data),
+    enabled: open,
+  });
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data: any) => storyService.create(epicId, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['stories', epicId] }); toast.success('Backlog dibuat!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat backlog'),
+  });
+  return (
+    <Modal open={open} onClose={onClose} title="Tambah Backlog Baru">
+      <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Judul Backlog</label>
+          <div className={fw('title')}><input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={inp} placeholder="Deskripsikan backlog secara singkat..." /></div>
+          {errors.title && <p className="text-xs text-red-500 mt-1">Judul wajib diisi</p>}
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Deskripsi</label>
+          <div className={fw('desc')}><textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${inp} h-20 resize-none`} placeholder="Detail tambahan tentang backlog ini..." /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Prioritas</label>
+            <div className={fw('priority')}><select {...register('priority')} onFocus={() => setFocused('priority')} onBlur={() => setFocused(null)} className={inp}>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select></div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tipe</label>
+            <div className={fw('type')}><select {...register('type')} onFocus={() => setFocused('type')} onBlur={() => setFocused(null)} className={inp}>
+              <option value="story">Story</option>
+              <option value="bug">Bug</option>
+              <option value="feature">Feature</option>
+              <option value="task">Task</option>
+            </select></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Story Points</label>
+            <div className={fw('points')}><input type="number" {...register('story_points')} onFocus={() => setFocused('points')} onBlur={() => setFocused(null)} className={inp} placeholder="0" min={1} max={100} /></div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Estimasi (Jam)</label>
+            <div className={fw('hours')}><input type="number" {...register('estimated_hours')} onFocus={() => setFocused('hours')} onBlur={() => setFocused(null)} className={inp} placeholder="0" min={1} /></div>
+          </div>
+        </div>
+        <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Due Date</label>
+            <div className={fw('due')}><input type="date" {...register('due_date')} onFocus={() => setFocused('due')} onBlur={() => setFocused(null)} className={inp} /></div>
+          </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={() => { reset(); onClose(); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
+          <button type="submit" disabled={isPending} className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#284074] text-white hover:bg-[#1e3260] transition-colors disabled:opacity-60 flex items-center gap-2">
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Tambah Backlog'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: boolean; onAddStory: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const { data: stories } = useQuery({
+    queryKey: ['stories', e.id],
+    queryFn: () => storyService.list(e.id).then(r => r.data.data),
+    enabled: expanded,
+  });
+  const PRIORITY_DOT: Record<string, string> = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-amber-400', low: 'bg-emerald-400' };
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 hover:border-[#284074]/20 hover:shadow-[0_4px_20px_rgba(40,64,116,0.08)] transition-all overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: e.color ? `${e.color}20` : '#28407420' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={e.color || '#284074'} strokeWidth="2" className="w-4 h-4">
+                <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+              </svg>
+            </div>
+            <div>
+              <div className="font-semibold text-slate-800">{e.title}</div>
+              {e.description && <div className="text-sm text-slate-400 mt-0.5">{e.description}</div>}
+              {(e.start_date || e.end_date) && (
+                <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  {formatDate(e.start_date)} – {formatDate(e.end_date)}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {e.color && <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ background: e.color }} />}
+            <StatusBadge status={e.status || 'todo'} />
+            <button onClick={() => setExpanded(v => !v)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      {expanded && (
+        <div className="border-t border-slate-100 px-5 pb-4 pt-3 space-y-2">
+          {stories && stories.length > 0 ? stories.map((s: any) => (
+            <div key={s.id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[s.priority] || 'bg-slate-300'}`} />
+              <span className="text-sm text-slate-700 flex-1">{s.title}</span>
+              {s.story_points && <span className="text-xs font-semibold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-lg">{s.story_points} pts</span>}
+              <span className={`text-xs px-2 py-0.5 rounded-lg font-semibold ${s.sprint_id ? 'bg-[#284074]/10 text-[#284074]' : 'bg-slate-200 text-slate-500'}`}>
+                {s.sprint_id ? 'Dalam sprint' : 'Backlog'}
+              </span>
+            </div>
+          )) : (
+            <p className="text-xs text-slate-400 text-center py-3">Belum ada backlog</p>
+          )}
+          {canManage && (
+            <button onClick={onAddStory} className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#284074]/40 hover:bg-[#284074]/4 text-slate-400 hover:text-[#284074] text-xs font-semibold transition-all">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Tambah Backlog
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -301,6 +529,7 @@ export default function ProjectDetailPage() {
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
   const [createEpicOpen, setCreateEpicOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [createStoryEpicId, setCreateStoryEpicId] = useState<string | null>(null);
   const { hasRole } = useAuthStore();
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
   const canAdmin = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
@@ -480,33 +709,7 @@ export default function ProjectDetailPage() {
                 )}
                 <div className="space-y-3">
                   {epics?.map((e: any) => (
-                    <div key={e.id} className="bg-white rounded-2xl border border-slate-100 p-5 hover:border-[#284074]/20 hover:shadow-[0_4px_20px_rgba(40,64,116,0.08)] transition-all">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: e.color ? `${e.color}20` : '#284074' + '20' }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke={e.color || '#284074'} strokeWidth="2" className="w-4 h-4">
-                              <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
-                            </svg>
-                          </div>
-                          <div>
-                            <div className="font-semibold text-slate-800">{e.title}</div>
-                            {e.description && <div className="text-sm text-slate-400 mt-0.5">{e.description}</div>}
-                            {(e.start_date || e.end_date) && (
-                              <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                                </svg>
-                                {formatDate(e.start_date)} – {formatDate(e.end_date)}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {e.color && <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ background: e.color }} />}
-                          <StatusBadge status={e.status || 'todo'} />
-                        </div>
-                      </div>
-                    </div>
+                    <EpicCard key={e.id} epic={e} canManage={canManage} onAddStory={() => setCreateStoryEpicId(e.id)} />
                   ))}
                   {(!epics || epics.length === 0) && (
                     <div className="bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center py-16 text-slate-300">
@@ -519,6 +722,7 @@ export default function ProjectDetailPage() {
                   )}
                 </div>
                 <CreateEpicModal open={createEpicOpen} onClose={() => setCreateEpicOpen(false)} projectId={id} />
+              <CreateStoryModal open={!!createStoryEpicId} onClose={() => setCreateStoryEpicId(null)} epicId={createStoryEpicId || ''} projectId={id} />
               </div>
             )}
 

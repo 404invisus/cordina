@@ -16,13 +16,17 @@ class StoryController extends Controller
 
     public function store(Request $request, string $epicId): JsonResponse
     {
-        $this->requireRole(['kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
         $validated = $request->validate([
-            'title'        => 'required|string|max:255',
-            'description'  => 'nullable|string',
-            'sprint_id'    => 'nullable|uuid|exists:sprints,id',
-            'story_points' => 'nullable|integer|min:1|max:100',
-            'priority'     => 'nullable|in:low,medium,high,critical',
+            'title'           => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'sprint_id'       => 'nullable|uuid|exists:sprints,id',
+            'story_points'    => 'nullable|integer|min:1|max:100',
+            'priority'        => 'nullable|in:low,medium,high,critical',
+            'assignee_id'     => 'nullable|uuid',
+            'due_date'        => 'nullable|date',
+            'estimated_hours' => 'nullable|integer|min:1',
+            'type'            => 'nullable|in:story,bug,feature,task',
         ]);
         $story = Story::create(array_merge($validated, ['epic_id' => $epicId]));
         return response()->json(['data' => $story], 201);
@@ -36,15 +40,19 @@ class StoryController extends Controller
 
     public function update(Request $request, string $storyId): JsonResponse
     {
-        $this->requireRole(['kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
         $story = Story::findOrFail($storyId);
         $validated = $request->validate([
-            'title'        => 'sometimes|string|max:255',
-            'description'  => 'nullable|string',
-            'sprint_id'    => 'nullable|uuid|exists:sprints,id',
-            'story_points' => 'nullable|integer|min:1|max:100',
-            'priority'     => 'nullable|in:low,medium,high,critical',
-            'status'       => 'sometimes|in:todo,in_progress,done',
+            'title'           => 'sometimes|string|max:255',
+            'description'     => 'nullable|string',
+            'sprint_id'       => 'nullable|uuid|exists:sprints,id',
+            'story_points'    => 'nullable|integer|min:1|max:100',
+            'priority'        => 'nullable|in:low,medium,high,critical',
+            'status'         => 'sometimes|in:todo,in_progress,done',
+            'assignee_id'     => 'nullable|uuid',
+            'due_date'        => 'nullable|date',
+            'estimated_hours' => 'nullable|integer|min:1',
+            'type'            => 'nullable|in:story,bug,feature,task',
         ]);
         $story->update($validated);
         return response()->json(['data' => $story->fresh()]);
@@ -52,7 +60,7 @@ class StoryController extends Controller
 
     public function destroy(string $storyId): JsonResponse
     {
-        $this->requireRole(['kepala_seksi', 'project_manager', 'scrum_master']);
+        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
         Story::findOrFail($storyId)->delete();
         return response()->json(null, 204);
     }

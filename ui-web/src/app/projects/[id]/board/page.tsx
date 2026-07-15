@@ -8,7 +8,7 @@ import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import Modal from '@/components/ui/Modal';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
-import { projectService, taskService, epicService } from '@/lib/api';
+import { projectService, taskService, sprintService, epicService, storyService } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
@@ -182,18 +182,26 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
   );
 }
 
-function CreateTaskModal({ open, onClose, sprintId, projectId }: any) {
+function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
   const qc = useQueryClient();
-  const { register, handleSubmit, reset } = useForm();
-  const { mutate, isPending } = useMutation({
-    mutationFn: (data: any) => taskService.create({ ...data, sprint_id: sprintId }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['board', projectId] }); toast.success('Task dibuat!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
-  });
+  const [selected, setSelected] = useState<string | null>(null);
+  const [assigneeId, setAssigneeId] = useState('');
+
   const { data: epics } = useQuery({
     queryKey: ['epics', projectId],
     queryFn: () => epicService.list(projectId).then(r => r.data.data),
     enabled: open,
+  });
+  const { data: allStories, isLoading } = useQuery({
+    queryKey: ['all-backlog', projectId],
+    queryFn: async () => {
+      if (!epics) return [];
+      const results = await Promise.all(
+        epics.map((e: any) => storyService.list(e.id).then(r => r.data.data.map((s: any) => ({ ...s, epic_title: e.title }))))
+      );
+      return results.flat();
+    },
+    enabled: open && !!epics,
   });
   const { data: members } = useQuery({
     queryKey: ['members', projectId],
@@ -201,140 +209,86 @@ function CreateTaskModal({ open, onClose, sprintId, projectId }: any) {
     enabled: open,
   });
 
+  const unassignedStories = (allStories || []).filter((s: any) => !s.sprint_id);
+  const stories = allStories;
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      const story = stories?.find((s: any) => s.id === selected);
+      console.log('[AddBacklog] selected:', selected, 'sprintId:', sprintId, 'story:', story);
+      // assign story ke sprint ini dulu
+      await storyService.update(selected!, { sprint_id: sprintId });
+      // buat task dari backlog ini
+      return taskService.create({
+        title: story?.title,
+        story_id: selected,
+        sprint_id: sprintId,
+        assignee_id: assigneeId || undefined,
+        priority: story?.priority || 'medium',
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['board', projectId, sprintId] });
+      qc.invalidateQueries({ queryKey: ['all-backlog', projectId] });
+      toast.success('Backlog ditambahkan ke board!');
+      setSelected(null);
+      setAssigneeId('');
+      onClose();
+    },
+    onError: (e: any) => { console.error('[AddBacklog] error:', e); toast.error(e?.response?.data?.message || 'Gagal'); },
+  });
+
+  const PRIORITY_COLOR: Record<string, string> = { critical: 'text-red-600 bg-red-50', high: 'text-orange-500 bg-orange-50', medium: 'text-amber-600 bg-amber-50', low: 'text-emerald-600 bg-emerald-50' };
   return (
-    <Modal open={open} onClose={onClose} title="Buat Task Baru" subtitle="Tambahkan task ke sprint aktif" size="md">
-  <form onSubmit={handleSubmit(d => mutate(d))} className="space-y-5">
-    <div>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Judul Task</label>
-      <input
-        {...register('title', { required: true })}
-        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-        placeholder="Deskripsikan task secara singkat..."
-      />
-    </div>
-
-    <div>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Deskripsi</label>
-      <textarea
-        {...register('description')}
-        rows={3}
-        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all resize-none"
-        placeholder="Detail tambahan tentang task ini..."
-      />
-    </div>
-
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Priority</label>
-        <div className="relative">
-          <select
-            {...register('priority')}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all appearance-none bg-white cursor-pointer"
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
+    <Modal open={open} onClose={onClose} title="Tambah Backlog ke Board" subtitle="Pilih backlog dari sprint ini">
+      <div className="space-y-4">
+        {isLoading && <div className="py-8 text-center text-sm text-slate-400">Memuat backlog...</div>}
+        {!isLoading && unassignedStories.length === 0 && (
+          <div className="py-8 text-center text-sm text-slate-400">Semua backlog sudah ada di board</div>
+        )}
+        {console.log('[modal] unassigned:', unassignedStories?.length, 'isLoading:', isLoading)}
+        {unassignedStories.length > 0 && (
+          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+            {unassignedStories.map((s: any) => (
+              <div key={s.id} onClick={() => { console.log('[select]', s.id); setSelected(s.id); }}
+                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${selected === s.id ? 'border-[#284074] bg-[#284074]/4' : 'border-slate-100 hover:border-slate-200'}`}>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected === s.id ? 'bg-[#284074] border-[#284074]' : 'border-slate-300'}`}>
+                  {selected === s.id && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-800 truncate">{s.title}</div>
+                  {s.description && <div className="text-xs text-slate-400 truncate mt-0.5">{s.description}</div>}
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {s.story_points && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-lg">{s.story_points}pts</span>}
+                  {s.priority && <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${PRIORITY_COLOR[s.priority] || ''}`}>{s.priority}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {selected && (
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Assignee</label>
+            <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all">
+              <option value="">— Pilih Assignee (opsional) —</option>
+              {(members || []).map((m: any) => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email}</option>)}
+            </select>
+          </div>
+        )}
+        <div className="flex gap-3 pt-1">
+          <button onClick={() => { setSelected(null); setAssigneeId(''); onClose(); }}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            Batal
+          </button>
+          <button onClick={() => mutate()} disabled={isPending || !selected}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#1e3060] disabled:opacity-60 transition-colors">
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Plus className="w-4 h-4" />Tambahkan</>}
+          </button>
         </div>
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
-        <div className="relative">
-          <select
-            {...register('type')}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all appearance-none bg-white cursor-pointer"
-          >
-            <option value="task">Task</option>
-            <option value="bug">Bug</option>
-            <option value="feature">Feature</option>
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </div>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Estimasi (jam)</label>
-        <div className="relative">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <input
-            {...register('estimated_hours')}
-            type="number" step="0.5" min="0"
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-            placeholder="0"
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Due Date</label>
-        <div className="relative">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          <input
-            {...register('due_date')}
-            type="date"
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-3">
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Epic</label>
-        <div className="relative">
-          <select {...register('epic_id')}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all appearance-none bg-white cursor-pointer">
-            <option value="">— Tanpa Epic —</option>
-            {(epics || []).map((e: any) => <option key={e.id} value={e.id}>{e.title}</option>)}
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Assignee</label>
-        <div className="relative">
-          <select {...register('assignee_id')}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all appearance-none bg-white cursor-pointer">
-            <option value="">— Pilih Assignee —</option>
-            {(members || []).map((m: any) => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email || m.user_id}</option>)}
-          </select>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-    </div>
-
-    <div className="flex gap-3 pt-1">
-      <button type="button" onClick={onClose}
-        className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-        Batal
-      </button>
-      <button type="submit" disabled={isPending}
-        className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#1e3060] disabled:opacity-60 transition-colors">
-        {isPending
-          ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Membuat...</>
-          : <><Plus className="w-4 h-4" />Buat Task</>
-        }
-      </button>
-    </div>
-  </form>
-</Modal>
+    </Modal>
   );
 }
 
@@ -350,11 +304,12 @@ export default function BoardPage() {
   const { data: board, isLoading } = useQuery({
     queryKey: ['board', id, sprintId],
     queryFn: () => projectService.board(id, sprintId || undefined).then(r => r.data.data),
+    enabled: true,
   });
 
   const moveMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: string; status: string }) => taskService.move(taskId, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['board', id] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['board', id, sprintId] }),
     onError: () => toast.error('Gagal memindahkan task'),
   });
 
@@ -380,7 +335,7 @@ export default function BoardPage() {
           {canCreate && sprintId && (
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-2 text-sm text-[#284074]">
               <Plus className="w-4 h-4" />
-              Buat Task
+              Tambah Backlog
             </motion.button>
           )}
         </div>
@@ -468,7 +423,7 @@ export default function BoardPage() {
                     className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border-2 border-dashed border-slate-200 text-xs font-semibold text-slate-400 hover:border-[#284074]/30 hover:text-[#284074] hover:bg-white/80 transition-all mt-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Tambah task
+                    Tambah Backlog
                   </motion.button>
                 )}
               </div>
@@ -477,7 +432,7 @@ export default function BoardPage() {
         ))}
       </div>
 
-      <CreateTaskModal open={createOpen} onClose={() => setCreateOpen(false)} sprintId={sprintId} projectId={id} />
+      <AddBacklogModal open={createOpen} onClose={() => setCreateOpen(false)} sprintId={sprintId} projectId={id} />
     </AppLayout>
   );
 }

@@ -75,7 +75,7 @@ export default function SuperAdminDashboard() {
     <AppLayout>
       <PageHeader
         title="Super Admin"
-        subtitle="Kelola keseluruhan sistem Cordina"
+        subtitle="Kelola keseluruhan sistem ConnectOne"
         icon={Shield}
       />
 

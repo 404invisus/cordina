@@ -89,9 +89,9 @@ function SidebarContent({
       <div className="px-5 py-5 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 flex items-center justify-center">
-            <img src="/logo-only-white.png" alt="Cordina" className="w-8 h-8 object-contain" />
+            <img src="/logo-only-white.png" alt="ConnectOne" className="w-8 h-8 object-contain" />
           </div>
-          <span className="font-bold text-xl text-white tracking-tight">Cordina</span>
+          <span className="font-bold text-xl text-white tracking-tight">ConnectOne</span>
         </div>
       </div>
 

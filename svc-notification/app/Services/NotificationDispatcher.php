@@ -139,7 +139,7 @@ class NotificationDispatcher
             ),
             'calendar.event_done' => $payload['message'] ?? sprintf("*[kegiatan selesai]* %s", $payload['event_title'] ?? 'N/A'),
             'change_request.submitted' => sprintf(
-                "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nSegera ditinjau di aplikasi Cordina.",
+                "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nSegera ditinjau di aplikasi ConnectOne.",
                 $userName,
                 $payload['cr_title'] ?? 'N/A',
                 strtoupper($payload['cr_priority'] ?? 'medium'),
