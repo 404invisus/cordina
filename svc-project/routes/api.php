@@ -32,7 +32,9 @@ Route::prefix('v1')->group(function () {
         Route::get('change-requests/{id}',         [ChangeRequestController::class, 'show']);
         Route::put('change-requests/{id}',         [ChangeRequestController::class, 'update']);
         Route::delete('change-requests/{id}',      [ChangeRequestController::class, 'destroy']);
-        Route::post('change-requests/{id}/submit', [ChangeRequestController::class, 'submit']);
+        Route::post('change-requests/{id}/submit',   [ChangeRequestController::class, 'submit']);
+        Route::post('change-requests/{id}/sign',      [ChangeRequestController::class, 'sign']);
+        Route::get('change-requests/{id}/document',   [ChangeRequestController::class, 'downloadDocument']);
         Route::post('change-requests/{id}/approve',[ChangeRequestController::class, 'approve']);
         Route::post('change-requests/{id}/reject', [ChangeRequestController::class, 'reject']);
 

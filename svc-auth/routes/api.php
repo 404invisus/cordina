@@ -78,6 +78,10 @@ Route::prefix('v1')->group(function () {
             ]);
         });
 
+        Route::get('/users/{id}', function (string $id) {
+            $user = \App\Models\User::findOrFail($id);
+            return response()->json(['data' => new \App\Http\Resources\UserResource($user)]);
+        });
         Route::get('/users-by-role/{role}', function (string $role) {
             $users = \Illuminate\Support\Facades\DB::table('users')
                 ->join('model_has_roles', \Illuminate\Support\Facades\DB::raw('users.id::text'), '=', \Illuminate\Support\Facades\DB::raw('model_has_roles.model_id::text'))

@@ -62,15 +62,24 @@ class ChangeRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'        => 'required|string|max:255',
-            'description'  => 'required|string',
-            'reason'       => 'required|string',
-            'impact'       => 'nullable|string',
-            'priority'     => 'required|in:low,medium,high,critical',
-            'change_type'  => 'required|in:normal,emergency,standard',
-            'reviewer_ids' => 'required|array|min:1',
-            'reviewer_ids.*' => 'required|uuid',
-            'signer_id'    => 'required|uuid',
+            'title'                       => 'required|string|max:255',
+            'description'                 => 'required|string',
+            'reason'                      => 'required|string',
+            'impact'                      => 'nullable|string',
+            'priority'                    => 'required|in:low,medium,high,critical',
+            'change_type'                 => 'required|in:normal,emergency,standard',
+            'rincian'                     => 'nullable|string',
+            'rencana_waktu'               => 'nullable|date',
+            'dependensi_layanan'          => 'nullable|string',
+            'si_terdampak'                => 'nullable|string',
+            'langkah_mitigasi'            => 'nullable|string',
+            'risiko_tidak_dilakukan'      => 'nullable|string',
+            'langkah_penanganan_kegagalan'=> 'nullable|string',
+            'pelaksana_ids'               => 'nullable|array',
+            'pelaksana_ids.*'             => 'uuid',
+            'reviewer_ids'                => 'required|array|min:1',
+            'reviewer_ids.*'              => 'required|uuid',
+            'signer_id'                   => 'required|uuid',
         ]);
 
         $reviewerIds = $data['reviewer_ids'];
@@ -134,12 +143,21 @@ class ChangeRequestController extends Controller
         abort_if(!in_array($cr->status, ['draft', 'rejected']), 422, 'Hanya CR berstatus draft atau rejected yang bisa diedit');
 
         $data = $request->validate([
-            'title'       => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-            'reason'      => 'sometimes|string',
-            'impact'      => 'nullable|string',
-            'priority'    => 'sometimes|in:low,medium,high,critical',
-            'change_type' => 'sometimes|in:normal,emergency,standard',
+            'title'                       => 'sometimes|string|max:255',
+            'description'                 => 'sometimes|string',
+            'reason'                      => 'sometimes|string',
+            'impact'                      => 'nullable|string',
+            'priority'                    => 'sometimes|in:low,medium,high,critical',
+            'change_type'                 => 'sometimes|in:normal,emergency,standard',
+            'rincian'                     => 'nullable|string',
+            'rencana_waktu'               => 'nullable|date',
+            'dependensi_layanan'          => 'nullable|string',
+            'si_terdampak'                => 'nullable|string',
+            'langkah_mitigasi'            => 'nullable|string',
+            'risiko_tidak_dilakukan'      => 'nullable|string',
+            'langkah_penanganan_kegagalan'=> 'nullable|string',
+            'pelaksana_ids'               => 'nullable|array',
+            'pelaksana_ids.*'             => 'uuid',
         ]);
 
         $cr->update($data);
@@ -272,4 +290,144 @@ class ChangeRequestController extends Controller
         $cr->delete();
         return response()->json(null, 204);
     }
+    // ── POST /v1/change-requests/{id}/sign ──
+    public function sign(string $id, Request $request): JsonResponse
+    {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        abort_if($cr->status !== 'submitted', 422, 'CR harus berstatus submitted');
+
+        $approval = $cr->approvals
+            ->where('order', $cr->current_step)
+            ->where('approver_id', $userId)
+            ->where('status', 'pending')
+            ->where('role', 'signer')
+            ->first();
+
+        abort_if(!$approval, 403, 'Anda bukan penandatangan CR ini atau bukan giliran Anda');
+
+        $request->validate(['passphrase' => 'required|string']);
+
+        // Ambil data user dari svc-auth
+        $authUrl = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+        $signerData    = Http::timeout(5)->get("{$authUrl}/api/v1/internal/users/{$userId}")->json('data') ?? [];
+        $requesterData = Http::timeout(5)->get("{$authUrl}/api/v1/internal/users/{$cr->requester_id}")->json('data') ?? [];
+
+        // Ambil data reviewers
+        $reviewerApprovals = $cr->approvals->where('role', 'reviewer')->sortBy('order');
+        $reviewers = [];
+        foreach ($reviewerApprovals as $ra) {
+            $u = Http::timeout(5)->get("{$authUrl}/api/v1/internal/users/{$ra->approver_id}")->json('data') ?? [];
+            if ($u) $reviewers[] = $u;
+        }
+
+        // Ambil data pelaksana
+        $pelaksana = [];
+        foreach (($cr->pelaksana_ids ?? []) as $pid) {
+            $u = Http::timeout(5)->get("{$authUrl}/api/v1/internal/users/{$pid}")->json('data') ?? [];
+            if ($u) $pelaksana[] = $u;
+        }
+
+        // Generate PDF
+        $pdfService = new \App\Services\CrPdfService();
+        $pdfContent = $pdfService->generate($cr, $requesterData, $signerData, $reviewers, $pelaksana);
+
+        // Sign via TTE API
+        $nik        = $signerData['nik'] ?? null;
+        $specimenId = $signerData['tte_specimen_url'] ?? null;
+
+        abort_if(!$nik, 422, 'NIK penandatangan belum diset di profil');
+
+        $tteBase  = config('services.tte.base_url', 'https://esign-dev.layanan.go.id');
+        $tteUser  = config('services.tte.username', 'esign');
+        $ttePass  = config('services.tte.password', '');
+        $tteKey   = config('services.tte.api_key', '');
+
+        $signProps = [[
+            'tampilan' => 'VISIBLE',
+            'page'     => 1,
+            'originX'  => 340.0,
+            'originY'  => 680.0,
+            'width'    => 120.0,
+            'height'   => 60.0,
+            'location' => 'Jakarta',
+            'reason'   => 'Menyetujui CR: ' . $cr->title,
+        ]];
+
+        // Ambil spesimen jika ada
+        if ($specimenId) {
+            $storagePath = \Illuminate\Support\Facades\Storage::disk('local')->path('');
+            $attachment  = \Illuminate\Support\Facades\DB::table('attachments')->where('id', $specimenId)->first();
+            if ($attachment && \Illuminate\Support\Facades\Storage::disk('local')->exists($attachment->file_path)) {
+                $specimenB64 = base64_encode(file_get_contents(\Illuminate\Support\Facades\Storage::disk('local')->path($attachment->file_path)));
+                $signProps[0]['imageBase64'] = $specimenB64;
+            }
+        }
+
+        $tteResponse = Http::timeout(30)
+            ->withBasicAuth($tteUser, $ttePass)
+            ->withHeaders(['Authorization' => 'Basic ' . base64_encode("{$tteUser}:{$ttePass}"), 'x-api-key' => $tteKey])
+            ->post("{$tteBase}/api/v2/sign/pdf", [
+                'nik'                 => $nik,
+                'passphrase'          => $request->passphrase,
+                'signatureProperties' => $signProps,
+                'file'                => [base64_encode($pdfContent)],
+            ]);
+
+        abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->status()));
+
+        $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
+        abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');
+
+        // Simpan PDF ter-TTE ke storage
+        $filename = 'cr_signed_' . $cr->id . '_' . time() . '.pdf';
+        $path     = 'change_requests/' . $filename;
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, base64_decode($signedPdfB64));
+
+        $attachId = (string) \Illuminate\Support\Str::uuid();
+        \Illuminate\Support\Facades\DB::table('attachments')->insert([
+            'id'         => $attachId,
+            'user_id'    => $userId,
+            'file_name'  => $filename,
+            'file_path'  => $path,
+            'mime_type'  => 'application/pdf',
+            'file_size'  => strlen(base64_decode($signedPdfB64)),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Update CR
+        DB::transaction(function () use ($cr, $approval, $userId, $attachId) {
+            $approval->update(['status' => 'approved', 'acted_at' => now()]);
+            $cr->update([
+                'status'             => 'approved',
+                'reviewer_id'        => $userId,
+                'reviewed_at'        => now(),
+                'current_step'       => $cr->total_steps,
+                'signed_document_id' => $attachId,
+            ]);
+        });
+
+        $this->notifyUser($cr->requester_id, 'change_request.approved', $this->notifyPayload($cr));
+
+        return response()->json(['data' => $cr->fresh('approvals'), 'message' => 'Dokumen berhasil ditandatangani']);
+    }
+
+    // ── GET /v1/change-requests/{id}/document ──
+    public function downloadDocument(string $id, Request $request): mixed
+    {
+        $cr = ChangeRequest::findOrFail($id);
+        abort_if(!$cr->signed_document_id, 404, 'Dokumen belum ditandatangani');
+
+        $attachment = \Illuminate\Support\Facades\DB::table('attachments')->where('id', $cr->signed_document_id)->first();
+        abort_if(!$attachment, 404, 'File tidak ditemukan');
+        abort_if(!\Illuminate\Support\Facades\Storage::disk('local')->exists($attachment->file_path), 404, 'File tidak ditemukan di storage');
+
+        return response()->download(
+            \Illuminate\Support\Facades\Storage::disk('local')->path($attachment->file_path),
+            $attachment->file_name
+        );
+    }
+
 }

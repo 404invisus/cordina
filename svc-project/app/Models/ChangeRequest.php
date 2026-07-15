@@ -15,13 +15,19 @@ class ChangeRequest extends Model
         'requester_id', 'reviewer_id', 'signer_id',
         'reviewer_note', 'reviewed_at', 'submitted_at',
         'current_step', 'total_steps',
+        'signed_document_id',
+        'rincian', 'rencana_waktu', 'dependensi_layanan',
+        'si_terdampak', 'langkah_mitigasi', 'risiko_tidak_dilakukan',
+        'langkah_penanganan_kegagalan', 'pelaksana_ids',
     ];
 
     protected $casts = [
         'reviewed_at'  => 'datetime',
         'submitted_at' => 'datetime',
-        'current_step' => 'integer',
-        'total_steps'  => 'integer',
+        'current_step'  => 'integer',
+        'total_steps'   => 'integer',
+        'rencana_waktu' => 'date',
+        'pelaksana_ids' => 'array',
     ];
 
     public function approvals()

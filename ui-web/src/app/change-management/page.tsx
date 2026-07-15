@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitMerge, Plus, X, AlertTriangle, CheckCircle2, Clock,
-  FileEdit, ChevronDown, ChevronUp, User, Check, Pen,
+  FileEdit, ChevronDown, ChevronUp, Check, Pen,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import { changeRequestService } from '@/lib/api';
@@ -16,10 +16,11 @@ import api from '@/lib/api';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; icon: any }> = {
-  draft:     { label: 'Draft',     bg: 'bg-slate-100',  text: 'text-slate-600',   icon: FileEdit },
-  submitted: { label: 'Diajukan', bg: 'bg-blue-50',    text: 'text-blue-600',    icon: Clock },
-  approved:  { label: 'Disetujui',bg: 'bg-emerald-50', text: 'text-emerald-600', icon: CheckCircle2 },
-  rejected:  { label: 'Ditolak',  bg: 'bg-red-50',     text: 'text-red-600',     icon: AlertTriangle },
+  draft:       { label: 'Draft',      bg: 'bg-slate-100',  text: 'text-slate-600',   icon: FileEdit },
+  submitted:   { label: 'Diajukan',   bg: 'bg-blue-50',    text: 'text-blue-600',    icon: Clock },
+  approved:    { label: 'Disetujui',  bg: 'bg-emerald-50', text: 'text-emerald-600', icon: CheckCircle2 },
+  rejected:    { label: 'Ditolak',    bg: 'bg-red-50',     text: 'text-red-600',     icon: AlertTriangle },
+  implemented: { label: 'Implemented',bg: 'bg-violet-50',  text: 'text-violet-600',  icon: Pen },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
@@ -34,16 +35,66 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// ── Timeline Progress ────────────────────────────────────────────────────────
+// ── Multi-select user picker ──────────────────────────────────────────────────
+
+function UserMultiSelect({ label, users, selected, onChange, exclude = [] }: {
+  label: string; users: any[]; selected: string[]; onChange: (ids: string[]) => void; exclude?: string[];
+}) {
+  const toggle = (uid: string) => onChange(selected.includes(uid) ? selected.filter(id => id !== uid) : [...selected, uid]);
+  const filtered = users.filter(u => !exclude.includes(u.id));
+  return (
+    <div>
+      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
+      <div className="mt-1 border border-slate-200 rounded-xl overflow-hidden">
+        <div className="max-h-32 overflow-y-auto divide-y divide-slate-50">
+          {filtered.map((u: any) => {
+            const checked = selected.includes(u.id);
+            const idx = selected.indexOf(u.id);
+            return (
+              <div key={u.id} onClick={() => toggle(u.id)}
+                className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-[#284074]/5' : 'hover:bg-slate-50'}`}>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all ${checked ? 'bg-[#284074] border-[#284074] text-white' : 'border-slate-300'}`}>
+                  {checked ? idx + 1 : ''}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-800 truncate">{u.full_name || u.email}</div>
+                  <div className="text-xs text-slate-400">{u.roles?.[0] || u.email}</div>
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && <div className="px-3 py-4 text-sm text-slate-400 text-center">Tidak ada pengguna</div>}
+        </div>
+      </div>
+      {selected.length > 0 && (
+        <div className="flex gap-1.5 flex-wrap mt-1.5">
+          {selected.map((uid, i) => {
+            const u = users.find(u => u.id === uid);
+            return (
+              <span key={uid} className="inline-flex items-center gap-1 text-xs bg-[#284074]/10 text-[#284074] px-2 py-0.5 rounded-full font-medium">
+                {i + 1}. {u?.full_name || uid}
+                <button onClick={e => { e.stopPropagation(); onChange(selected.filter(id => id !== uid)); }} className="hover:text-red-500"><X className="w-3 h-3" /></button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Timeline Progress ─────────────────────────────────────────────────────────
 
 function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string> }) {
   const approvals: any[] = cr.approvals || [];
   const currentStep: number = cr.current_step || 0;
 
   const steps = [
-    { label: 'CR Dibuat', role: 'creator', order: 0, status: 'done', actedAt: cr.created_at, note: null, approver: null },
+    { label: 'CR Dibuat', role: 'creator', order: 0, status: 'done', actedAt: cr.created_at, note: null },
     ...approvals.map((a: any) => ({
-      label: a.role === 'signer' ? `Penandatangan: ${usersMap?.[a.approver_id] || ''}` : `Penilai ${a.order}: ${usersMap?.[a.approver_id] || ''}`,
+      label: a.role === 'signer'
+        ? `Penandatangan: ${usersMap?.[a.approver_id] || '...'}`
+        : `Penilai ${a.order}: ${usersMap?.[a.approver_id] || '...'}`,
       role: a.role,
       order: a.order,
       status: a.status === 'approved' ? 'done' : a.status === 'rejected' ? 'rejected' : a.order === currentStep && cr.status === 'submitted' ? 'active' : 'pending',
@@ -55,12 +106,9 @@ function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string
 
   return (
     <div className="relative pl-7 mt-4 space-y-0">
-      {/* vertical line */}
       <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-slate-100 rounded-full" />
-
       {steps.map((step, i) => (
         <div key={i} className="relative pb-5 last:pb-0">
-          {/* dot */}
           <div className={`absolute -left-7 top-1 w-5 h-5 rounded-full border-2 flex items-center justify-center
             ${step.status === 'done'     ? 'bg-emerald-500 border-emerald-500' :
               step.status === 'rejected' ? 'bg-red-500 border-red-500' :
@@ -70,31 +118,20 @@ function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string
             {step.status === 'rejected' && <X className="w-3 h-3 text-white" strokeWidth={3} />}
             {step.status === 'active'   && <Clock className="w-2.5 h-2.5 text-white" />}
             {step.status === 'pending'  && <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
-            {step.role === 'signer' && step.status === 'done' && <Pen className="w-3 h-3 text-white" strokeWidth={2} />}
           </div>
-
           <div className={`ml-1 ${step.status === 'pending' ? 'opacity-40' : ''}`}>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-semibold
                 ${step.status === 'done'     ? 'text-emerald-700' :
                   step.status === 'rejected' ? 'text-red-600' :
-                  step.status === 'active'   ? 'text-blue-700' :
-                                               'text-slate-400'}`}>
+                  step.status === 'active'   ? 'text-blue-700' : 'text-slate-400'}`}>
                 {step.label}
               </span>
-              {step.role === 'signer' && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600">TTE</span>
-              )}
-              {step.status === 'active' && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 animate-pulse">Menunggu</span>
-              )}
+              {step.role === 'signer' && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600">TTE</span>}
+              {step.status === 'active' && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 animate-pulse">Menunggu</span>}
             </div>
-            {step.actedAt && (
-              <div className="text-xs text-slate-400 mt-0.5">{formatDate(step.actedAt)}</div>
-            )}
-            {step.note && (
-              <div className="text-xs text-slate-500 mt-1 bg-slate-50 rounded-lg px-2 py-1.5 italic">"{step.note}"</div>
-            )}
+            {step.actedAt && <div className="text-xs text-slate-400 mt-0.5">{formatDate(step.actedAt)}</div>}
+            {step.note && <div className="text-xs text-slate-500 mt-1 bg-slate-50 rounded-lg px-2 py-1.5 italic">"{step.note}"</div>}
           </div>
         </div>
       ))}
@@ -102,42 +139,46 @@ function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string
   );
 }
 
-// ── CR Form Modal ────────────────────────────────────────────────────────────
+// ── CR Form Modal ─────────────────────────────────────────────────────────────
+
+const EMPTY_FORM = {
+  title: '', description: '', reason: '', impact: '',
+  priority: 'medium', change_type: 'normal',
+  rincian: '', rencana_waktu: '', dependensi_layanan: '',
+  si_terdampak: '', langkah_mitigasi: '', risiko_tidak_dilakukan: '',
+  langkah_penanganan_kegagalan: '',
+};
 
 function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState({
-    title: '', description: '', reason: '', impact: '',
-    priority: 'medium', change_type: 'normal',
-  });
+  const [form, setForm]             = useState<any>(EMPTY_FORM);
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [signerId, setSignerId]       = useState('');
+  const [pelaksanaIds, setPelaksanaIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (editData) {
-      setForm({
-        title: editData.title || '', description: editData.description || '',
-        reason: editData.reason || '', impact: editData.impact || '',
-        priority: editData.priority || 'medium', change_type: editData.change_type || 'normal',
-      });
-    } else {
-      setForm({ title: '', description: '', reason: '', impact: '', priority: 'medium', change_type: 'normal' });
-      setReviewerIds([]);
-      setSignerId('');
+    if (open) {
+      if (editData) {
+        setForm({ ...EMPTY_FORM, ...editData });
+        setPelaksanaIds(editData.pelaksana_ids || []);
+      } else {
+        setForm(EMPTY_FORM);
+        setReviewerIds([]);
+        setSignerId('');
+        setPelaksanaIds([]);
+      }
     }
   }, [editData, open]);
 
   const { data: usersData } = useQuery({
     queryKey: ['all-users-cr'],
     queryFn: () => api.get('/api/v1/users', { params: { per_page: 100 } }).then(r => r.data.data),
-    enabled: open && !editData,
+    enabled: open,
   });
   const users: any[] = usersData || [];
 
-  const toggleReviewer = (uid: string) => {
-    if (uid === signerId) return; // tidak bisa jadi reviewer kalau sudah jadi signer
-    setReviewerIds(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
-  };
+  const f = (key: string) => (e: any) => setForm((p: any) => ({ ...p, [key]: e.target.value }));
+  const ta = (key: string) => (e: any) => setForm((p: any) => ({ ...p, [key]: e.target.value }));
 
   const mutation = useMutation({
     mutationFn: (data: any) => editData
@@ -154,147 +195,93 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
   const handleSubmit = () => {
     if (!editData && reviewerIds.length === 0) return toast.error('Pilih minimal 1 penilai');
     if (!editData && !signerId) return toast.error('Pilih penandatangan');
-    mutation.mutate(editData ? form : { ...form, reviewer_ids: reviewerIds, signer_id: signerId });
+    const payload = editData
+      ? { ...form, pelaksana_ids: pelaksanaIds }
+      : { ...form, reviewer_ids: reviewerIds, signer_id: signerId, pelaksana_ids: pelaksanaIds };
+    mutation.mutate(payload);
   };
 
   if (!open) return null;
+
+  const inputCls = "mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]";
+  const taCls = inputCls + " resize-none";
+  const lbl = (t: string, req = false) => (
+    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{t}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
+  );
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
           <h2 className="text-lg font-bold text-slate-900">{editData ? 'Edit Change Request' : 'Buat Change Request'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-            <X className="w-4 h-4 text-slate-500" />
-          </button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X className="w-4 h-4 text-slate-500" /></button>
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Judul */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Judul *</label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]"
-              placeholder="Judul perubahan" />
-          </div>
-
-          {/* Deskripsi */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi *</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              rows={3} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] resize-none"
-              placeholder="Jelaskan perubahan yang diajukan" />
-          </div>
-
-          {/* Alasan */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alasan *</label>
-            <textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
-              rows={2} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] resize-none"
-              placeholder="Mengapa perubahan ini diperlukan?" />
-          </div>
-
-          {/* Dampak */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dampak</label>
-            <textarea value={form.impact} onChange={e => setForm(f => ({ ...f, impact: e.target.value }))}
-              rows={2} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] resize-none"
-              placeholder="Dampak jika perubahan diterapkan (opsional)" />
-          </div>
-
-          {/* Prioritas + Tipe */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Prioritas</label>
-              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+          {/* Informasi Dasar */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Dasar</div>
+            <div>{lbl('Judul', true)}<input value={form.title} onChange={f('title')} className={inputCls} placeholder="Judul perubahan" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>{lbl('Prioritas')}<select value={form.priority} onChange={f('priority')} className={inputCls}>
+                <option value="low">Low</option><option value="medium">Medium</option>
+                <option value="high">High</option><option value="critical">Critical</option>
+              </select></div>
+              <div>{lbl('Tipe Perubahan')}<select value={form.change_type} onChange={f('change_type')} className={inputCls}>
+                <option value="normal">Normal</option><option value="standard">Standard</option><option value="emergency">Emergency</option>
+              </select></div>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipe</label>
-              <select value={form.change_type} onChange={e => setForm(f => ({ ...f, change_type: e.target.value }))}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]">
-                <option value="normal">Normal</option>
-                <option value="standard">Standard</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
+            <div>{lbl('Rencana Waktu Perubahan')}<input type="date" value={form.rencana_waktu} onChange={f('rencana_waktu')} className={inputCls} /></div>
           </div>
 
-          {/* Penilai (hanya saat create) */}
-          {!editData && (
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Penilai * <span className="text-slate-400 normal-case font-normal">(urutan sesuai pilihan)</span>
-              </label>
-              <div className="mt-1 border border-slate-200 rounded-xl overflow-hidden">
-                <div className="max-h-36 overflow-y-auto divide-y divide-slate-50">
-                  {users.filter(u => u.id !== signerId).map((u: any) => {
-                    const idx = reviewerIds.indexOf(u.id);
-                    const checked = idx >= 0;
-                    return (
-                      <div key={u.id} onClick={() => toggleReviewer(u.id)}
-                        className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors
-                          ${checked ? 'bg-[#284074]/5' : 'hover:bg-slate-50'}`}>
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all
-                          ${checked ? 'bg-[#284074] border-[#284074] text-white' : 'border-slate-300'}`}>
-                          {checked ? idx + 1 : ''}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-slate-800 truncate">{u.full_name || u.email}</div>
-                          <div className="text-xs text-slate-400">{u.roles?.[0] || u.email}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {users.length === 0 && <div className="px-3 py-4 text-sm text-slate-400 text-center">Memuat pengguna...</div>}
+          {/* Informasi Perubahan */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Perubahan</div>
+            <div>{lbl('Perubahan yang Diajukan', true)}<textarea value={form.description} onChange={ta('description')} rows={3} className={taCls} placeholder="Apa yang akan diubah?" /></div>
+            <div>{lbl('Rincian Perubahan')}<textarea value={form.rincian} onChange={ta('rincian')} rows={3} className={taCls} placeholder="Langkah-langkah detail perubahan" /></div>
+            <div>{lbl('Latar Belakang / Alasan', true)}<textarea value={form.reason} onChange={ta('reason')} rows={2} className={taCls} placeholder="Mengapa perubahan ini diperlukan?" /></div>
+            <div>{lbl('Dependensi Layanan')}<textarea value={form.dependensi_layanan} onChange={ta('dependensi_layanan')} rows={2} className={taCls} placeholder="Layanan yang berkaitan" /></div>
+            <div>{lbl('SI yang Terdampak')}<textarea value={form.si_terdampak} onChange={ta('si_terdampak')} rows={2} className={taCls} placeholder="Sistem informasi yang terdampak" /></div>
+          </div>
+
+          {/* Analisis Risiko */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Analisis Risiko</div>
+            <div>{lbl('Analisis/Kajian Risiko Perubahan')}<textarea value={form.impact} onChange={ta('impact')} rows={2} className={taCls} placeholder="Risiko yang mungkin terjadi" /></div>
+            <div>{lbl('Langkah Mitigasi Risiko')}<textarea value={form.langkah_mitigasi} onChange={ta('langkah_mitigasi')} rows={2} className={taCls} placeholder="Langkah untuk mengurangi risiko" /></div>
+            <div>{lbl('Risiko Apabila Perubahan Tidak Dilakukan')}<textarea value={form.risiko_tidak_dilakukan} onChange={ta('risiko_tidak_dilakukan')} rows={2} className={taCls} placeholder="Dampak jika tidak dilakukan" /></div>
+            <div>{lbl('Langkah Penanganan Kegagalan')}<textarea value={form.langkah_penanganan_kegagalan} onChange={ta('langkah_penanganan_kegagalan')} rows={2} className={taCls} placeholder="Rollback plan jika terjadi kegagalan" /></div>
+          </div>
+
+          {/* Personil */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Personil</div>
+            <UserMultiSelect label="Pelaksana" users={users} selected={pelaksanaIds} onChange={setPelaksanaIds} />
+            {!editData && (
+              <>
+                <UserMultiSelect
+                  label="Penilai * (urutan sesuai pilihan)"
+                  users={users}
+                  selected={reviewerIds}
+                  onChange={setReviewerIds}
+                  exclude={[signerId].filter(Boolean)}
+                />
+                <div>{lbl('Penandatangan * (1 orang, TTD via TTE)')}
+                  <select value={signerId} onChange={e => { setSignerId(e.target.value); setReviewerIds(prev => prev.filter(id => id !== e.target.value)); }} className={inputCls}>
+                    <option value="">-- Pilih penandatangan --</option>
+                    {users.map((u: any) => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
+                  </select>
                 </div>
-              </div>
-              {reviewerIds.length > 0 && (
-                <div className="flex gap-1.5 flex-wrap mt-2">
-                  {reviewerIds.map((uid, i) => {
-                    const u = users.find(u => u.id === uid);
-                    return (
-                      <span key={uid} className="inline-flex items-center gap-1 text-xs bg-[#284074]/10 text-[#284074] px-2 py-1 rounded-full font-medium">
-                        <span className="font-bold">{i+1}.</span> {u?.full_name || uid}
-                        <button onClick={() => setReviewerIds(prev => prev.filter(id => id !== uid))} className="hover:text-red-500">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Penandatangan (hanya saat create) */}
-          {!editData && (
-            <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Penandatangan * <span className="text-slate-400 normal-case font-normal">(1 orang, TTD via TTE)</span>
-              </label>
-              <select value={signerId} onChange={e => { setSignerId(e.target.value); setReviewerIds(prev => prev.filter(id => id !== e.target.value)); }}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-200 focus:border-violet-400">
-                <option value="">-- Pilih penandatangan --</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
-                ))}
-              </select>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-3 p-6 pt-0">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-            Batal
-          </button>
+        <div className="flex gap-3 p-6 pt-0 sticky bottom-0 bg-white border-t border-slate-100">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
           <button onClick={handleSubmit} disabled={mutation.isPending || !form.title || !form.description || !form.reason}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors disabled:opacity-50">
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-50">
             {mutation.isPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -303,19 +290,14 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
   );
 }
 
-// ── Reject Modal ─────────────────────────────────────────────────────────────
+// ── Reject Modal ──────────────────────────────────────────────────────────────
 
 function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const mutation = useMutation({
     mutationFn: () => changeRequestService.reject(crId, note),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR ditolak');
-      onClose();
-      setNote('');
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('CR ditolak'); onClose(); setNote(''); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
   });
   if (!open) return null;
@@ -325,7 +307,7 @@ function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onC
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-4">Tolak Change Request</h2>
         <textarea value={note} onChange={e => setNote(e.target.value)} rows={4}
-          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 resize-none"
+          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 resize-none"
           placeholder="Catatan penolakan (wajib diisi)" />
         <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
@@ -339,9 +321,56 @@ function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onC
   );
 }
 
-// ── CR Card ──────────────────────────────────────────────────────────────────
+// ── Sign Modal ────────────────────────────────────────────────────────────────
 
-function CRCard({ cr, onEdit, onReject, userId, usersMap }: { cr: any; onEdit: (cr: any) => void; onReject: (id: string) => void; userId: string; usersMap: Record<string, string> }) {
+function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const { user } = useAuthStore();
+  const [passphrase, setPassphrase] = useState('');
+  const mutation = useMutation({
+    mutationFn: () => api.post(`/api/v1/change-requests/${cr?.id}/sign`, { passphrase }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('Dokumen berhasil ditandatangani!'); onClose(); setPassphrase(''); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menandatangani'),
+  });
+  if (!open || !cr) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-1">Tandatangani Dokumen</h2>
+        <p className="text-sm text-slate-400 mb-4">{cr.title}</p>
+        <div className="flex items-center gap-2 mb-4 p-3 bg-slate-50 rounded-xl text-sm text-slate-600">
+          <span className="font-medium">Menandatangani sebagai:</span> {user?.full_name}
+        </div>
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Passphrase TTE</label>
+          <input type="password" value={passphrase} onChange={e => setPassphrase(e.target.value)}
+            className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]"
+            placeholder="Masukkan passphrase TTE Anda" />
+        </div>
+        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl mb-4 text-xs text-amber-700">
+          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+          Passphrase tidak disimpan di sistem. Dokumen akan ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE.
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+          <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !passphrase}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 flex items-center justify-center gap-2">
+            <Pen className="w-3.5 h-3.5" />
+            {mutation.isPending ? 'Menandatangani...' : 'Tandatangani'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── CR Card ───────────────────────────────────────────────────────────────────
+
+function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
+  cr: any; onEdit: (cr: any) => void; onReject: (id: string) => void;
+  onSign: (cr: any) => void; userId: string; usersMap: Record<string, string>;
+}) {
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_CONFIG[cr.status] || STATUS_CONFIG.draft;
@@ -351,7 +380,8 @@ function CRCard({ cr, onEdit, onReject, userId, usersMap }: { cr: any; onEdit: (
   const approvals: any[] = cr.approvals || [];
   const currentStep: number = cr.current_step || 0;
   const myApproval = approvals.find((a: any) => a.approver_id === userId && a.order === currentStep && a.status === 'pending');
-  const isMyTurn = !!myApproval && cr.status === 'submitted';
+  const isMyTurn   = !!myApproval && cr.status === 'submitted';
+  const isSigner   = myApproval?.role === 'signer';
 
   const submitMutation = useMutation({
     mutationFn: () => changeRequestService.submit(cr.id),
@@ -374,40 +404,39 @@ function CRCard({ cr, onEdit, onReject, userId, usersMap }: { cr: any; onEdit: (
   return (
     <motion.div layout className="bg-white rounded-2xl border border-slate-100 hover:border-[#284074]/20 hover:shadow-md transition-all overflow-hidden">
       <div className="p-5">
-        {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-900 text-base leading-snug">{cr.title}</h3>
             <p className="text-xs text-slate-400 mt-0.5">{formatDate(cr.created_at)}</p>
           </div>
           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text} flex-shrink-0`}>
-            <StatusIcon className="w-3 h-3" />
-            {sc.label}
+            <StatusIcon className="w-3 h-3" />{sc.label}
           </div>
         </div>
 
-        {/* Badges */}
         <div className="flex gap-2 flex-wrap mb-3">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pc.bg} ${pc.text}`}>{pc.label}</span>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 capitalize">{cr.change_type}</span>
-          {cr.total_steps > 0 && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
-              {currentStep > 0 ? `Step ${currentStep}/${cr.total_steps}` : `${cr.total_steps} step`}
-            </span>
-          )}
+          {cr.rencana_waktu && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{new Date(cr.rencana_waktu).toLocaleDateString('id-ID')}</span>}
+          {cr.total_steps > 0 && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">{currentStep > 0 ? `Step ${currentStep}/${cr.total_steps}` : `${cr.total_steps} step`}</span>}
         </div>
 
-        {/* Giliranku badge */}
         {isMyTurn && (
           <div className="mb-3 flex items-center gap-2 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-2 rounded-xl">
             <Clock className="w-3.5 h-3.5" />
-            Giliran Anda untuk meninjau CR ini
+            {isSigner ? 'Giliran Anda untuk menandatangani dokumen CR ini' : 'Giliran Anda untuk meninjau CR ini'}
           </div>
         )}
 
-        {/* Toggle timeline */}
-        <button onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors mb-1">
+        {cr.status === 'approved' && cr.signed_document_url && (
+          <a href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/change-requests/${cr.id}/document`}
+            className="mb-3 flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-violet-100 transition-colors"
+            target="_blank">
+            <Pen className="w-3.5 h-3.5" /> Unduh Dokumen Ter-TTE
+          </a>
+        )}
+
+        <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors mb-1">
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           {expanded ? 'Sembunyikan progress' : 'Lihat progress'}
         </button>
@@ -421,49 +450,45 @@ function CRCard({ cr, onEdit, onReject, userId, usersMap }: { cr: any; onEdit: (
         </AnimatePresence>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 px-5 pb-4 flex-wrap">
         {cr.requester_id === userId && cr.status === 'draft' && (
           <>
-            <button onClick={() => onEdit(cr)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
-              Edit
-            </button>
+            <button onClick={() => onEdit(cr)} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">Edit</button>
             <button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#284074] text-white hover:bg-[#1e3260] transition-colors disabled:opacity-50">
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#284074] text-white hover:bg-[#1e3260] disabled:opacity-50">
               {submitMutation.isPending ? 'Mengajukan...' : 'Ajukan'}
             </button>
             <button onClick={() => { if (confirm('Hapus CR ini?')) deleteMutation.mutate(); }} disabled={deleteMutation.isPending}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
-              Hapus
-            </button>
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">Hapus</button>
           </>
         )}
-        {isMyTurn && (
+        {isMyTurn && !isSigner && (
           <>
             <button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50">
-              {approveMutation.isPending ? 'Memproses...' : myApproval?.role === 'signer' ? 'Tandatangani' : 'Setujui'}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50">
+              {approveMutation.isPending ? 'Memproses...' : 'Setujui'}
             </button>
-            <button onClick={() => onReject(cr.id)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
-              Tolak
-            </button>
+            <button onClick={() => onReject(cr.id)} className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">Tolak</button>
           </>
+        )}
+        {isMyTurn && isSigner && (
+          <button onClick={() => onSign(cr)} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center gap-1.5">
+            <Pen className="w-3 h-3" /> Tandatangani
+          </button>
         )}
       </div>
     </motion.div>
   );
 }
 
-// ── Main Page ────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ChangeManagementPage() {
   const { user } = useAuthStore();
-  const qc = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editData, setEditData]     = useState<any>(null);
-  const [rejectId, setRejectId]     = useState<string | null>(null);
+  const [createOpen, setCreateOpen]   = useState(false);
+  const [editData, setEditData]       = useState<any>(null);
+  const [rejectId, setRejectId]       = useState<string | null>(null);
+  const [signCr, setSignCr]           = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('');
 
   const { data: usersData } = useQuery({
@@ -485,8 +510,8 @@ export default function ChangeManagementPage() {
     <AppLayout>
       <CRModal open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
       <RejectModal open={!!rejectId} crId={rejectId || ''} onClose={() => setRejectId(null)} />
+      <SignModal open={!!signCr} cr={signCr} onClose={() => setSignCr(null)} />
 
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-gradient-to-br from-violet-500/10 to-violet-500/5 rounded-2xl flex items-center justify-center border border-violet-100">
@@ -499,24 +524,19 @@ export default function ChangeManagementPage() {
         </div>
         <button onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-colors shadow-sm">
-          <Plus className="w-4 h-4" />
-          Buat CR
+          <Plus className="w-4 h-4" /> Buat CR
         </button>
       </div>
 
-      {/* Filter */}
       <div className="flex gap-2 mb-5 flex-wrap">
-        {['', 'draft', 'submitted', 'approved', 'rejected'].map(s => (
+        {['', 'draft', 'submitted', 'approved', 'rejected', 'implemented'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
-            className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all ${
-              filterStatus === s ? 'bg-[#284074] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:border-[#284074]/30'
-            }`}>
-            {s === '' ? 'Semua' : s === 'draft' ? 'Draft' : s === 'submitted' ? 'Diajukan' : s === 'approved' ? 'Disetujui' : 'Ditolak'}
+            className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all ${filterStatus === s ? 'bg-[#284074] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:border-[#284074]/30'}`}>
+            {s === '' ? 'Semua' : s === 'draft' ? 'Draft' : s === 'submitted' ? 'Diajukan' : s === 'approved' ? 'Disetujui' : s === 'rejected' ? 'Ditolak' : 'Implemented'}
           </button>
         ))}
       </div>
 
-      {/* List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-[#284074]/20 border-t-[#284074] rounded-full animate-spin" />
@@ -526,7 +546,7 @@ export default function ChangeManagementPage() {
       ) : (
         <div className="grid gap-4">
           {crs.map((cr: any) => (
-            <CRCard key={cr.id} cr={cr} userId={user?.id || ''} onEdit={setEditData} onReject={setRejectId} usersMap={usersMap} />
+            <CRCard key={cr.id} cr={cr} userId={user?.id || ''} onEdit={setEditData} onReject={setRejectId} onSign={setSignCr} usersMap={usersMap} />
           ))}
         </div>
       )}
