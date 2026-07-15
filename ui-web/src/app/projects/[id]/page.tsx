@@ -172,10 +172,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
             </svg> Board
           </Link>
-          <button onClick={() => setAddBacklogOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs border-2 border-slate-200 text-slate-600 px-3.5 py-2 rounded-xl font-semibold hover:border-[#284074] hover:text-[#284074] transition-all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Tambah Backlog
-          </button>
+
         </div>
       )}
       <AddBacklogToSprintModal open={addBacklogOpen} onClose={() => setAddBacklogOpen(false)} sprintId={sprint.id} projectId={projectId} />

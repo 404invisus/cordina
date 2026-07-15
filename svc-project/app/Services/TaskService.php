@@ -31,7 +31,7 @@ class TaskService
 
         // Sync task_assignees
         $allAssignees = array_unique(array_filter(
-            array_merge($assigneeIds, $data['assignee_id'] ? [$data['assignee_id']] : [])
+            array_merge($assigneeIds, !empty($data['assignee_id']) ? [$data['assignee_id']] : [])
         ));
         foreach ($allAssignees as $userId) {
             \App\Models\TaskAssignee::firstOrCreate(['task_id' => $task->id, 'user_id' => $userId]);

@@ -182,10 +182,10 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
   );
 }
 
-function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
+function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds }: any) {
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
 
   const { data: epics } = useQuery({
     queryKey: ['epics', projectId],
@@ -209,21 +209,25 @@ function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
     enabled: open,
   });
 
-  const unassignedStories = (allStories || []).filter((s: any) => !s.sprint_id);
+  const unassignedStories = (allStories || []).filter((s: any) => !(existingStoryIds || []).includes(s.id));
   const stories = allStories;
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
       const story = stories?.find((s: any) => s.id === selected);
       console.log('[AddBacklog] selected:', selected, 'sprintId:', sprintId, 'story:', story);
-      // assign story ke sprint ini dulu
-      await storyService.update(selected!, { sprint_id: sprintId });
+      // assign story ke sprint ini (skip jika sudah)
+      if (story && story.sprint_id !== sprintId) {
+        await storyService.update(selected!, { sprint_id: sprintId });
+      }
       // buat task dari backlog ini
       return taskService.create({
         title: story?.title,
+        type: 'task',
         story_id: selected,
         sprint_id: sprintId,
-        assignee_id: assigneeId || undefined,
+        assignee_id: assigneeIds[0] || undefined,
+        assignee_ids: assigneeIds.length > 0 ? assigneeIds : undefined,
         priority: story?.priority || 'medium',
       });
     },
@@ -232,7 +236,7 @@ function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
       qc.invalidateQueries({ queryKey: ['all-backlog', projectId] });
       toast.success('Backlog ditambahkan ke board!');
       setSelected(null);
-      setAssigneeId('');
+      setAssigneeIds([]);
       onClose();
     },
     onError: (e: any) => { console.error('[AddBacklog] error:', e); toast.error(e?.response?.data?.message || 'Gagal'); },
@@ -240,13 +244,12 @@ function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
 
   const PRIORITY_COLOR: Record<string, string> = { critical: 'text-red-600 bg-red-50', high: 'text-orange-500 bg-orange-50', medium: 'text-amber-600 bg-amber-50', low: 'text-emerald-600 bg-emerald-50' };
   return (
-    <Modal open={open} onClose={onClose} title="Tambah Backlog ke Board" subtitle="Pilih backlog dari sprint ini">
+    <Modal open={open} onClose={onClose} title="Tambah Backlog ke Board" subtitle="Pilih backlog yang sudah ada di sprint">
       <div className="space-y-4">
         {isLoading && <div className="py-8 text-center text-sm text-slate-400">Memuat backlog...</div>}
         {!isLoading && unassignedStories.length === 0 && (
           <div className="py-8 text-center text-sm text-slate-400">Semua backlog sudah ada di board</div>
         )}
-        {console.log('[modal] unassigned:', unassignedStories?.length, 'isLoading:', isLoading)}
         {unassignedStories.length > 0 && (
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
             {unassignedStories.map((s: any) => (
@@ -270,15 +273,26 @@ function AddBacklogModal({ open, onClose, sprintId, projectId }: any) {
         {selected && (
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Assignee</label>
-            <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all">
-              <option value="">— Pilih Assignee (opsional) —</option>
-              {(members || []).map((m: any) => <option key={m.user_id} value={m.user_id}>{m.full_name || m.email}</option>)}
-            </select>
+            <div className="max-h-40 overflow-y-auto space-y-1 border border-slate-200 rounded-xl p-2">
+              {(members || []).length === 0 && <div className="text-xs text-slate-400 px-2 py-1">Tidak ada member</div>}
+              {(members || []).map((m: any) => {
+                const uid = m.user_id || m.id;
+                const checked = assigneeIds.includes(uid);
+                return (
+                  <div key={uid} onClick={() => setAssigneeIds(prev => checked ? prev.filter(id => id !== uid) : [...prev, uid])}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all text-sm ${checked ? 'bg-[#284074]/10 text-[#284074]' : 'hover:bg-slate-50 text-slate-700'}`}>
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? 'bg-[#284074] border-[#284074]' : 'border-slate-300'}`}>
+                      {checked && <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <span>{m.full_name || m.name || m.email}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
         <div className="flex gap-3 pt-1">
-          <button onClick={() => { setSelected(null); setAssigneeId(''); onClose(); }}
+          <button onClick={() => { setSelected(null); setAssigneeIds([]); onClose(); }}
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
             Batal
           </button>
@@ -432,7 +446,7 @@ export default function BoardPage() {
         ))}
       </div>
 
-      <AddBacklogModal open={createOpen} onClose={() => setCreateOpen(false)} sprintId={sprintId} projectId={id} />
+      <AddBacklogModal open={createOpen} onClose={() => setCreateOpen(false)} sprintId={sprintId} projectId={id} existingStoryIds={(board?.tasks || []).map((t: any) => t.story_id).filter(Boolean)} />
     </AppLayout>
   );
 }

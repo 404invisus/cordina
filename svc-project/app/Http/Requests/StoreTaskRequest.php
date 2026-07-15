@@ -15,7 +15,7 @@ class StoreTaskRequest extends FormRequest
             'parent_task_id'  => 'nullable|uuid|exists:tasks,id',
             'priority'        => 'nullable|in:low,medium,high,critical',
             'severity'        => 'nullable|in:low,medium,high,critical',
-            'assignee_id'     => 'nullable|uuid',
+            'assignee_id'     => 'required|uuid',
             'assignee_ids'    => 'nullable|array',
             'assignee_ids.*'  => 'uuid',
             'estimated_hours' => 'nullable|numeric|min:0',
