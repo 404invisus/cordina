@@ -2,65 +2,53 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChangeRequest;
+use App\Models\CrApproval;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class ChangeRequestController extends Controller
 {
-    private function notifyReviewers(ChangeRequest $cr, string $type): void
-    {
-        $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
-        $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
-
-        try {
-            // Ambil semua user dengan role kepala_seksi
-            $resp  = Http::timeout(5)->get("{$authUrl}/api/v1/internal/users-by-role/kepala_seksi");
-            $users = $resp->json('data') ?? [];
-
-            foreach ($users as $user) {
-                Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send", [
-                    'user_id' => $user['id'],
-                    'type'    => $type,
-                    'payload' => [
-                        'cr_id'       => $cr->id,
-                        'cr_title'    => $cr->title,
-                        'cr_priority' => $cr->priority,
-                        'cr_type'     => $cr->change_type,
-                    ],
-                ]);
-            }
-        } catch (\Throwable) {}
-    }
-
-    private function notifyRequester(ChangeRequest $cr, string $type): void
+    // ── Notify helper ──
+    private function notifyUser(string $userId, string $type, array $payload): void
     {
         $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
         try {
             Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send", [
-                'user_id' => $cr->requester_id,
+                'user_id' => $userId,
                 'type'    => $type,
-                'payload' => [
-                    'cr_id'          => $cr->id,
-                    'cr_title'       => $cr->title,
-                    'reviewer_note'  => $cr->reviewer_note,
-                ],
+                'payload' => $payload,
             ]);
         } catch (\Throwable) {}
     }
 
-    // GET /v1/change-requests
+    private function notifyPayload(ChangeRequest $cr): array
+    {
+        return [
+            'cr_id'       => $cr->id,
+            'cr_title'    => $cr->title,
+            'cr_priority' => $cr->priority,
+            'cr_type'     => $cr->change_type,
+            'reviewer_note' => $cr->reviewer_note,
+        ];
+    }
+
+    // ── GET /v1/change-requests ──
     public function index(Request $request): JsonResponse
     {
         $userId = $request->attributes->get('jwt_user_id');
         $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
-
         $canViewAll = !empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator']));
 
-        $query = ChangeRequest::query()->orderByDesc('created_at');
+        $query = ChangeRequest::with(['approvals'])->orderByDesc('created_at');
 
         if (!$canViewAll) {
-            $query->where('requester_id', $userId);
+            // user biasa: lihat CR milik sendiri ATAU yang dia jadi approver
+            $approverCrIds = CrApproval::where('approver_id', $userId)->pluck('cr_id');
+            $query->where(function ($q) use ($userId, $approverCrIds) {
+                $q->where('requester_id', $userId)->orWhereIn('id', $approverCrIds);
+            });
         }
 
         if ($request->status) {
@@ -70,40 +58,73 @@ class ChangeRequestController extends Controller
         return response()->json(['data' => $query->paginate(20)]);
     }
 
-    // POST /v1/change-requests
+    // ── POST /v1/change-requests ──
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string',
-            'reason'      => 'required|string',
-            'impact'      => 'nullable|string',
-            'priority'    => 'required|in:low,medium,high,critical',
-            'change_type' => 'required|in:normal,emergency,standard',
+            'title'        => 'required|string|max:255',
+            'description'  => 'required|string',
+            'reason'       => 'required|string',
+            'impact'       => 'nullable|string',
+            'priority'     => 'required|in:low,medium,high,critical',
+            'change_type'  => 'required|in:normal,emergency,standard',
+            'reviewer_ids' => 'required|array|min:1',
+            'reviewer_ids.*' => 'required|uuid',
+            'signer_id'    => 'required|uuid',
         ]);
+
+        $reviewerIds = $data['reviewer_ids'];
+        $signerId    = $data['signer_id'];
+        unset($data['reviewer_ids'], $data['signer_id']);
 
         $data['requester_id'] = $request->attributes->get('jwt_user_id');
         $data['status']       = 'draft';
+        $data['current_step'] = 0;
+        $data['total_steps']  = count($reviewerIds) + 1; // reviewers + signer
+        $data['signer_id']    = $signerId;
 
-        $cr = ChangeRequest::create($data);
-        return response()->json(['data' => $cr], 201);
+        DB::transaction(function () use (&$cr, $data, $reviewerIds, $signerId) {
+            $cr = ChangeRequest::create($data);
+
+            // Buat approval steps: reviewer 1,2,3... lalu signer terakhir
+            foreach ($reviewerIds as $idx => $uid) {
+                CrApproval::create([
+                    'cr_id'       => $cr->id,
+                    'approver_id' => $uid,
+                    'role'        => 'reviewer',
+                    'order'       => $idx + 1,
+                    'status'      => 'pending',
+                ]);
+            }
+            CrApproval::create([
+                'cr_id'       => $cr->id,
+                'approver_id' => $signerId,
+                'role'        => 'signer',
+                'order'       => count($reviewerIds) + 1,
+                'status'      => 'pending',
+            ]);
+        });
+
+        return response()->json(['data' => $cr->load('approvals')], 201);
     }
 
-    // GET /v1/change-requests/{id}
+    // ── GET /v1/change-requests/{id} ──
     public function show(string $id, Request $request): JsonResponse
     {
-        $cr     = ChangeRequest::findOrFail($id);
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
         $userId = $request->attributes->get('jwt_user_id');
         $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
 
-        $canView = $cr->requester_id === $userId
+        $isApprover  = $cr->approvals->contains('approver_id', $userId);
+        $canView     = $cr->requester_id === $userId
+            || $isApprover
             || !empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator']));
 
         abort_if(!$canView, 403, 'Forbidden');
         return response()->json(['data' => $cr]);
     }
 
-    // PUT /v1/change-requests/{id}
+    // ── PUT /v1/change-requests/{id} ──
     public function update(Request $request, string $id): JsonResponse
     {
         $cr     = ChangeRequest::findOrFail($id);
@@ -125,10 +146,10 @@ class ChangeRequestController extends Controller
         return response()->json(['data' => $cr]);
     }
 
-    // POST /v1/change-requests/{id}/submit
+    // ── POST /v1/change-requests/{id}/submit ──
     public function submit(string $id, Request $request): JsonResponse
     {
-        $cr     = ChangeRequest::findOrFail($id);
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
         $userId = $request->attributes->get('jwt_user_id');
 
         abort_if($cr->requester_id !== $userId, 403, 'Forbidden');
@@ -137,56 +158,109 @@ class ChangeRequestController extends Controller
         $cr->update([
             'status'       => 'submitted',
             'submitted_at' => now(),
+            'current_step' => 1,
             'reviewer_note'=> null,
         ]);
 
-        $this->notifyReviewers($cr, 'change_request.submitted');
-        return response()->json(['data' => $cr]);
+        // Notify approver pertama (reviewer 1)
+        $first = $cr->approvals->where('order', 1)->first();
+        if ($first) {
+            $this->notifyUser($first->approver_id, 'change_request.submitted', $this->notifyPayload($cr));
+        }
+
+        return response()->json(['data' => $cr->fresh('approvals')]);
     }
 
-    // POST /v1/change-requests/{id}/approve
+    // ── POST /v1/change-requests/{id}/approve ──
     public function approve(string $id, Request $request): JsonResponse
     {
-        $roles = (array) ($request->attributes->get('jwt_roles') ?? []);
-        $this->requirePermission('cr.approve');
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
 
-        $cr = ChangeRequest::findOrFail($id);
-        abort_if($cr->status !== 'submitted', 422, 'Hanya CR berstatus submitted yang bisa diapprove');
+        abort_if($cr->status !== 'submitted', 422, 'CR harus berstatus submitted');
 
-        $cr->update([
-            'status'      => 'approved',
-            'reviewer_id' => $request->attributes->get('jwt_user_id'),
-            'reviewed_at' => now(),
-            'reviewer_note' => $request->note ?? null,
-        ]);
+        // Cari approval step yang sekarang aktif milik user ini
+        $approval = $cr->approvals
+            ->where('order', $cr->current_step)
+            ->where('approver_id', $userId)
+            ->where('status', 'pending')
+            ->first();
 
-        $this->notifyRequester($cr, 'change_request.approved');
-        return response()->json(['data' => $cr]);
+        abort_if(!$approval, 403, 'Bukan giliran Anda atau Anda bukan approver CR ini');
+
+        $request->validate(['note' => 'nullable|string']);
+
+        DB::transaction(function () use ($cr, $approval, $request, $userId) {
+            // Tandai step ini approved
+            $approval->update([
+                'status'   => 'approved',
+                'note'     => $request->note,
+                'acted_at' => now(),
+            ]);
+
+            $nextStep = $cr->current_step + 1;
+
+            if ($nextStep > $cr->total_steps) {
+                // Semua step selesai
+                $cr->update([
+                    'status'      => 'approved',
+                    'reviewer_id' => $userId,
+                    'reviewed_at' => now(),
+                    'current_step'=> $cr->total_steps,
+                ]);
+                $this->notifyUser($cr->requester_id, 'change_request.approved', $this->notifyPayload($cr));
+            } else {
+                // Advance ke step berikutnya
+                $cr->update(['current_step' => $nextStep]);
+
+                $nextApproval = $cr->approvals->where('order', $nextStep)->first();
+                if ($nextApproval) {
+                    $this->notifyUser($nextApproval->approver_id, 'change_request.review_request', $this->notifyPayload($cr));
+                }
+            }
+        });
+
+        return response()->json(['data' => $cr->fresh('approvals')]);
     }
 
-    // POST /v1/change-requests/{id}/reject
+    // ── POST /v1/change-requests/{id}/reject ──
     public function reject(Request $request, string $id): JsonResponse
     {
-        $roles = (array) ($request->attributes->get('jwt_roles') ?? []);
-        $this->requirePermission('cr.approve');
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        abort_if($cr->status !== 'submitted', 422, 'CR harus berstatus submitted');
+
+        $approval = $cr->approvals
+            ->where('order', $cr->current_step)
+            ->where('approver_id', $userId)
+            ->where('status', 'pending')
+            ->first();
+
+        abort_if(!$approval, 403, 'Bukan giliran Anda atau Anda bukan approver CR ini');
 
         $request->validate(['note' => 'required|string']);
 
-        $cr = ChangeRequest::findOrFail($id);
-        abort_if($cr->status !== 'submitted', 422, 'Hanya CR berstatus submitted yang bisa direject');
+        DB::transaction(function () use ($cr, $approval, $request, $userId) {
+            $approval->update([
+                'status'   => 'rejected',
+                'note'     => $request->note,
+                'acted_at' => now(),
+            ]);
 
-        $cr->update([
-            'status'        => 'rejected',
-            'reviewer_id'   => $request->attributes->get('jwt_user_id'),
-            'reviewed_at'   => now(),
-            'reviewer_note' => $request->note,
-        ]);
+            $cr->update([
+                'status'        => 'rejected',
+                'reviewer_id'   => $userId,
+                'reviewed_at'   => now(),
+                'reviewer_note' => $request->note,
+            ]);
+        });
 
-        $this->notifyRequester($cr, 'change_request.rejected');
-        return response()->json(['data' => $cr]);
+        $this->notifyUser($cr->requester_id, 'change_request.rejected', $this->notifyPayload($cr));
+        return response()->json(['data' => $cr->fresh('approvals')]);
     }
 
-    // DELETE /v1/change-requests/{id}
+    // ── DELETE /v1/change-requests/{id} ──
     public function destroy(string $id, Request $request): JsonResponse
     {
         $cr     = ChangeRequest::findOrFail($id);

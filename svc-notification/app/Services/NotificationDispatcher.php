@@ -36,7 +36,7 @@ class NotificationDispatcher
                 'telegram' => $this->dispatchTelegram(
                     $notif->id, $userId, $chatId, $message,
                     groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
-                    privateOnly: in_array($type, ['calendar.event_assigned']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
+                    privateOnly: in_array($type, ['calendar.event_assigned', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
                 default    => Log::info("Channel {$channel} not implemented yet"),
@@ -139,8 +139,14 @@ class NotificationDispatcher
             ),
             'calendar.event_done' => $payload['message'] ?? sprintf("*[kegiatan selesai]* %s", $payload['event_title'] ?? 'N/A'),
             'change_request.submitted' => sprintf(
-                "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nSegera ditinjau di aplikasi ConnectOne.",
+                "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nAnda ditunjuk sebagai penilai pertama. Segera tinjau di aplikasi ConnectOne.",
                 $userName,
+                $payload['cr_title'] ?? 'N/A',
+                strtoupper($payload['cr_priority'] ?? 'medium'),
+                ucfirst($payload['cr_type'] ?? 'normal')
+            ),
+            'change_request.review_request' => sprintf(
+                "*[change request]* Giliran Anda meninjau CR: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nPenilai sebelumnya telah menyetujui. Segera tinjau di aplikasi ConnectOne.",
                 $payload['cr_title'] ?? 'N/A',
                 strtoupper($payload['cr_priority'] ?? 'medium'),
                 ucfirst($payload['cr_type'] ?? 'normal')

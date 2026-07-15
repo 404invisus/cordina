@@ -14,7 +14,7 @@ class UserController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        // Semua user login bisa lihat directory user (untuk keperluan assign, CR, dll)
         $users = $this->userService->list($request->all());
         return response()->json(['data' => UserResource::collection($users)]);
     }

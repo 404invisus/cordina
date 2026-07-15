@@ -224,6 +224,7 @@ export const changeRequestService = {
   submit: (id: string) => api.post(`/api/v1/change-requests/${id}/submit`),
   approve: (id: string, note?: string) => api.post(`/api/v1/change-requests/${id}/approve`, { note }),
   reject: (id: string, note: string) => api.post(`/api/v1/change-requests/${id}/reject`, { note }),
+  getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
 };
 
 export const dailyBriefService = {

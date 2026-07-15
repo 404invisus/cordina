@@ -2,31 +2,37 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class ChangeRequest extends Model
 {
-    use SoftDeletes;
-
-    protected $keyType = 'string';
-    public $incrementing = false;
+    use HasUuids, SoftDeletes;
 
     protected $fillable = [
         'title', 'description', 'reason', 'impact',
         'priority', 'change_type', 'status',
-        'requester_id', 'reviewer_id', 'reviewer_note',
-        'reviewed_at', 'submitted_at',
+        'requester_id', 'reviewer_id', 'signer_id',
+        'reviewer_note', 'reviewed_at', 'submitted_at',
+        'current_step', 'total_steps',
     ];
 
     protected $casts = [
         'reviewed_at'  => 'datetime',
         'submitted_at' => 'datetime',
+        'current_step' => 'integer',
+        'total_steps'  => 'integer',
     ];
 
-    protected static function boot(): void
+    public function approvals()
     {
-        parent::boot();
-        static::creating(fn($m) => $m->id = (string) Str::uuid());
+        return $this->hasMany(CrApproval::class, 'cr_id')->orderBy('order');
+    }
+
+    public function currentApproval()
+    {
+        return $this->hasOne(CrApproval::class, 'cr_id')
+            ->where('status', 'pending')
+            ->orderBy('order');
     }
 }
