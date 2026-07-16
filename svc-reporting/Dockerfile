@@ -1,7 +1,8 @@
 FROM php:8.3-fpm-alpine
 
-RUN apk add --no-cache nginx postgresql-dev libzip-dev zip unzip git curl supervisor
-RUN docker-php-ext-install pdo pdo_pgsql zip opcache pcntl
+RUN apk add --no-cache nginx postgresql-dev libzip-dev zip unzip git curl supervisor freetype-dev libjpeg-turbo-dev libpng-dev
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+RUN docker-php-ext-install pdo pdo_pgsql zip opcache pcntl gd
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

@@ -164,6 +164,13 @@ export const calendarService = {
   removeParticipant: (id: string, userId: string) => api.delete(`/api/v1/calendar/${id}/participants/${userId}`),
 };
 
+export const reportExportService = {
+  workload: (sprint_id?: string) => api.get('/api/v1/reports/export/workload', { params: sprint_id ? { sprint_id } : {}, responseType: 'blob' }),
+  sprint: (sprint_id: string) => api.get(`/api/v1/reports/export/sprint/${sprint_id}`, { responseType: 'blob' }),
+  velocity: (project_id: string) => api.get('/api/v1/reports/export/velocity', { params: { project_id }, responseType: 'blob' }),
+  timeTracking: (params: any) => api.get('/api/v1/reports/export/time-tracking', { params, responseType: 'blob' }),
+};
+
 export const reportService = {
   workload: (sprint_id: string) => api.get('/api/v1/reports/workload', { params: { sprint_id } }),
   division: (sprint_id: string) => api.get('/api/v1/reports/division', { params: { sprint_id } }),

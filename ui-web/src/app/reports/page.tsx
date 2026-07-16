@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import AppLayout from '@/components/layout/AppLayout';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
-import { reportService, projectService, sprintService } from '@/lib/api';
+import { reportService, reportExportService, projectService, sprintService } from '@/lib/api';
+import { FileDown } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const COLORS = ['#284074', '#3d5a9e', '#5677bc', '#8099cd', '#abbbd0'];
 
@@ -68,8 +70,15 @@ const customTooltipStyle = {
   boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
 };
 
+async function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ReportsPage() {
   const [tab, setTab] = useState('workload');
+  const [exportLoading, setExportLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSprint, setSelectedSprint] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -103,6 +112,29 @@ export default function ReportsPage() {
   });
 
   const isLoading = wLoading || sLoading || tLoading || vLoading;
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      let res;
+      const now = new Date().toISOString().slice(0,10);
+      if (tab === 'workload') {
+        res = await reportExportService.workload(selectedSprint);
+        await downloadBlob(new Blob([res.data], { type: 'application/pdf' }), `laporan_workload_${now}.pdf`);
+      } else if (tab === 'sprint' && selectedSprint) {
+        res = await reportExportService.sprint(selectedSprint);
+        await downloadBlob(new Blob([res.data], { type: 'application/pdf' }), `laporan_sprint_${now}.pdf`);
+      } else if (tab === 'velocity' && selectedProject) {
+        res = await reportExportService.velocity(selectedProject);
+        await downloadBlob(new Blob([res.data], { type: 'application/pdf' }), `laporan_velocity_${now}.pdf`);
+      } else if (tab === 'time') {
+        const params: any = { project_id: selectedProject, from: dateFrom, to: dateTo };
+        res = await reportExportService.timeTracking(params);
+        await downloadBlob(new Blob([res.data], { type: 'application/pdf' }), `laporan_timetracking_${now}.pdf`);
+      }
+    } catch { toast.error('Gagal mengekspor laporan'); }
+    setExportLoading(false);
+  };
+
   const needsSprint = tab === 'workload' || tab === 'sprint';
   const hasData = (tab === 'workload' && workloadReport) || (tab === 'sprint' && sprintReport) ||
     (tab === 'time' && timeReport) || (tab === 'velocity' && velocityReport);
@@ -191,6 +223,17 @@ export default function ReportsPage() {
             <EmptyReport />
           </motion.div>
         ) : (
+          <>
+
+            {(tab === 'workload' || tab === 'sprint' || tab === 'velocity' || tab === 'time') && (
+              <div className="flex justify-end mb-3">
+                <button onClick={handleExport} disabled={exportLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-50 transition-all">
+                  <FileDown className="w-4 h-4" />
+                  {exportLoading ? 'Mengekspor...' : 'Export PDF'}
+                </button>
+              </div>
+            )}
           <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
 
             {tab === 'workload' && workloadReport && (
@@ -322,6 +365,7 @@ export default function ReportsPage() {
             )}
 
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </AppLayout>
