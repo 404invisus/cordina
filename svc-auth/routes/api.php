@@ -57,6 +57,10 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('internal')->prefix('internal')->group(function () {
+        Route::get('/users/{id}', function (string $id) {
+            $user = \App\Models\User::findOrFail($id);
+            return response()->json(['data' => new \App\Http\Resources\UserResource($user)]);
+        });
         Route::post('/check-permission', function (\Illuminate\Http\Request $request) {
             $request->validate([
                 'user_id'    => 'required|string',
@@ -103,18 +107,7 @@ Route::prefix('v1')->group(function () {
             ]]);
         });
 
-        Route::get('/users/{id}', function (string $id) {
-            $user = User::findOrFail($id);
-            return response()->json(['data' => [
-                'id'               => $user->id,
-                'full_name'        => $user->full_name,
-                'email'            => $user->email,
-                'telegram_chat_id' => $user->telegram_chat_id,
-                'division'         => $user->division,
-                'is_active'        => $user->is_active,
-                'roles'            => $user->getRoleNames(),
-            ]]);
-        });
+
 
         Route::post('/users/batch', function (Request $request) {
             $request->validate(['ids' => 'required|array', 'ids.*' => 'uuid']);

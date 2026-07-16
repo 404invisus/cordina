@@ -21,9 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Throwable $e, $request) {
             if ($request->is('api/*') || $request->is('v1/*')) {
                 $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
-                $message = $status >= 500 ? 'Terjadi kesalahan pada server.' : $e->getMessage();
                 return response()->json([
-                    'message' => $message,
+                    'message' => $e->getMessage(),
                 ], $status);
             }
         });
