@@ -18,7 +18,7 @@ const AUTHENTICATED_ROUTES = [
 
 // Route khusus per role
 const ROLE_ROUTES: Record<string, string[]> = {
-  administrator: ['/admin'],
+  administrator: ['/admin', '/admin/tte'],
   kepala_balai: [
     '/dashboard/kepala-balai',
     '/reports',

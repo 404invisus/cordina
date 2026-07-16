@@ -41,6 +41,7 @@ const adminNavItems = [
   { label: 'Kelola Kalender', icon: CalendarRange, href: '/admin/calendar' },
   { label: 'Monitor Workload',icon: Activity,     href: '/admin/workload' },
   { label: 'Telegram Bot',    icon: MessageCircle, href: '/admin/telegram' },
+  { label: 'Konfigurasi TTE',  icon: Shield,        href: '/admin/tte' },
 ];
 
 function NavLink({

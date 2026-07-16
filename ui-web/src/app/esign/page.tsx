@@ -117,7 +117,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <Eye className="w-4 h-4" />
                 <div className="text-left">
                   <div>Visible</div>
-                  <div className="text-xs font-normal opacity-70">Spesimen TTD tampil</div>
+                  <div className="text-xs font-normal opacity-70">Tampilkan Spesimen</div>
                 </div>
               </button>
               <button onClick={() => setTampilan('INVISIBLE')}
@@ -126,7 +126,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <EyeOff className="w-4 h-4" />
                 <div className="text-left">
                   <div>Invisible</div>
-                  <div className="text-xs font-normal opacity-70">Digital saja</div>
+                  <div className="text-xs font-normal opacity-70">Sembunyikan Spesimen</div>
                 </div>
               </button>
             </div>

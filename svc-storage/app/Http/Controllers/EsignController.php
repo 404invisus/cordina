@@ -56,10 +56,10 @@ class EsignController extends Controller
         $pdfContent = file_get_contents($request->file('file')->getRealPath());
 
         // Call TTE API
-        $tteBase = config('services.tte.base_url', 'https://esign-dev.layanan.go.id');
-        $tteUser = config('services.tte.username', 'esign');
-        $ttePass = config('services.tte.password', '');
-        $tteKey  = config('services.tte.api_key', '');
+        $tteBase = \App\Services\TteConfigService::get('TTE_BASE_URL', config('services.tte.base_url', 'https://esign-dev.layanan.go.id'));
+        $tteUser = \App\Services\TteConfigService::get('TTE_USERNAME', config('services.tte.username', 'esign'));
+        $ttePass = \App\Services\TteConfigService::get('TTE_PASSWORD', config('services.tte.password', ''));
+        $tteKey  = \App\Services\TteConfigService::get('TTE_API_KEY', config('services.tte.api_key', ''));
 
         $multipart = Http::timeout(60)
             ->withBasicAuth($tteUser, $ttePass)

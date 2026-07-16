@@ -339,10 +339,10 @@ class ChangeRequestController extends Controller
 
         abort_if(!$nik, 422, 'NIK penandatangan belum diset di profil');
 
-        $tteBase  = config('services.tte.base_url', 'https://esign-dev.layanan.go.id');
-        $tteUser  = config('services.tte.username', 'esign');
-        $ttePass  = config('services.tte.password', '');
-        $tteKey   = config('services.tte.api_key', '');
+        $tteBase  = \App\Services\TteConfigService::get('TTE_BASE_URL', config('services.tte.base_url', 'https://esign-dev.layanan.go.id'));
+        $tteUser  = \App\Services\TteConfigService::get('TTE_USERNAME', config('services.tte.username', 'esign'));
+        $ttePass  = \App\Services\TteConfigService::get('TTE_PASSWORD', config('services.tte.password', ''));
+        $tteKey   = \App\Services\TteConfigService::get('TTE_API_KEY', config('services.tte.api_key', ''));
 
         $signProps = [[
             'tampilan' => 'VISIBLE',
