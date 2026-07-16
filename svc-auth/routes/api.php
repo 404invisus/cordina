@@ -31,7 +31,22 @@ Route::prefix('v1')->group(function () {
             return response()->json(['message' => 'Telegram chat ID updated']);
         });
 
-        Route::apiResource('users', UserController::class);
+    Route::prefix('v1')->middleware('internal')->group(function () {
+    Route::post('/internal/activity-log', function (\Illuminate\Http\Request $request) {
+        \App\Services\ActivityLogService::log(
+            $request->user_id,
+            $request->action,
+            $request->description ?? '',
+            $request->success ?? true,
+            $request->metadata ?? [],
+        );
+        return response()->json(['ok' => true]);
+    });
+});
+
+    Route::get('/admin/activity',                    [\App\Http\Controllers\Admin\AdminActivityController::class, 'index']);
+    Route::get('/admin/activity/users/{userId}/login', [\App\Http\Controllers\Admin\AdminActivityController::class, 'loginHistory']);
+    Route::apiResource('users', UserController::class);
         Route::post('/users/{id}/roles',    [UserController::class, 'assignRole']);
 
         Route::post('/users/{id}/telegram', function (Request $request, string $id) {

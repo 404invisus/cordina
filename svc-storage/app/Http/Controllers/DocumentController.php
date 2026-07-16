@@ -45,7 +45,9 @@ class DocumentController extends Controller
 
         $data['created_by'] = $request->attributes->get('jwt_user_id');
         unset($data['file']);
-        return response()->json(['data' => Document::create($data)], 201);
+        $doc = Document::create($data);
+        \App\Services\ActivityLogger::log($data['created_by'], 'document.uploaded', "Upload dokumen: {$doc->title}", true, ['doc_id' => $doc->id]);
+        return response()->json(['data' => $doc], 201);
     }
 
     public function show(string $id): JsonResponse

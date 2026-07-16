@@ -147,6 +147,7 @@ class EsignController extends Controller
             'updated_at'    => now(),
         ]);
 
+        \App\Services\ActivityLogger::log($userId, 'tte.signed', 'Menandatangani dokumen TTE: ' . ($request->title ?: $origName), true, ['doc_id' => $docId]);
         return response()->json([
             'data' => [
                 'id'            => $docId,

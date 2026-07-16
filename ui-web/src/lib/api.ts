@@ -60,6 +60,11 @@ export const adminUserService = {
   destroy:      (id: string)                => api.delete(`/api/v1/admin/users/${id}`),
 };
 
+export const adminActivityService = {
+  list:         (params?: any)   => api.get('/api/v1/admin/activity', { params }),
+  loginHistory: (userId: string) => api.get(`/api/v1/admin/activity/users/${userId}/login`),
+};
+
 export const adminProjectService = {
   list:    (params?: any)          => api.get('/api/v1/admin/projects', { params }),
   stats:   ()                      => api.get('/api/v1/admin/projects/stats'),

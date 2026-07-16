@@ -134,6 +134,7 @@ class ChangeRequestController extends Controller
         });
 
         $this->log($cr->id, $data['requester_id'], 'created', 'CR dibuat');
+        \App\Services\ActivityLogger::log($userId, 'cr.created', "Membuat CR: {$cr->title}", true, ['cr_id' => $cr->id]);
         return response()->json(['data' => $cr->load('approvals')], 201);
     }
 
@@ -206,6 +207,7 @@ class ChangeRequestController extends Controller
             $this->notifyUser($first->approver_id, 'change_request.submitted', $this->notifyPayload($cr));
         }
 
+        \App\Services\ActivityLogger::log($userId, 'cr.signed', "Menandatangani CR: {$cr->title}", true, ['cr_id' => $cr->id]);
         return response()->json(['data' => $cr->fresh('approvals')]);
     }
 

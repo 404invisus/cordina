@@ -31,7 +31,9 @@ class AssetController extends Controller
             'notes'               => 'nullable|string',
         ]);
         $data['created_by'] = $request->attributes->get('jwt_user_id');
-        return response()->json(['data' => Asset::create($data)], 201);
+        $asset = Asset::create($data);
+        \App\Services\ActivityLogger::log($data['created_by'], 'asset.created', "Tambah aset: {$asset->name}", true, ['asset_id' => $asset->id]);
+        return response()->json(['data' => $asset], 201);
     }
 
     public function show(string $id): JsonResponse

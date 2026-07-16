@@ -23,8 +23,21 @@ class AuthController extends Controller
     {
         $token = $this->authService->login($request->validated());
         if (!$token) {
+            // Log login gagal
+            $failUser = \App\Models\User::where('email', $request->email)->first();
+            \App\Services\ActivityLogService::log(
+                $failUser?->id, 'login_failed',
+                'Login gagal: email ' . $request->email,
+                false, ['email' => $request->email], $request
+            );
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
+        $user = auth()->user();
+        \App\Services\ActivityLogService::log(
+            $user->id, 'login',
+            'Login berhasil',
+            true, ['email' => $user->email], $request
+        );
         return response()->json([
             'data' => ['access_token' => $token, 'token_type' => 'bearer', 'expires_in' => config('jwt.ttl') * 60],
         ]);
@@ -50,7 +63,12 @@ class AuthController extends Controller
             }
         } catch (\Throwable) {}
 
+        $userId = auth()->id();
+        $email  = auth()->user()?->email;
         auth()->logout();
+        \App\Services\ActivityLogService::log(
+            $userId, 'logout', 'Logout berhasil', true, ['email' => $email], request()
+        );
         return response()->json(['message' => 'Successfully logged out']);
     }
 
