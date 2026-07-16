@@ -83,14 +83,20 @@ class EsignController extends Controller
 
         abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->status()));
 
-        $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
-        abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');
+        $rawBody = $tteResponse->body();
+        if (str_starts_with($rawBody, '%PDF')) {
+            $signedPdfBinary = $rawBody;
+        } else {
+            $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
+            abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');
+            $signedPdfBinary = base64_decode($signedPdfB64);
+        }
 
         // Simpan PDF ter-TTE
         $origName = $request->file('file')->getClientOriginalName();
         $filename = 'esign_' . Str::uuid() . '.pdf';
         $path     = "esign/{$userId}/{$filename}";
-        Storage::disk('local')->put($path, base64_decode($signedPdfB64));
+        Storage::disk('local')->put($path, $signedPdfBinary);
 
         $attachId = (string) Str::uuid();
         DB::table('attachments')->insert([
@@ -99,7 +105,7 @@ class EsignController extends Controller
             'file_name'   => 'signed_' . $origName,
             'file_path'   => $path,
             'mime_type'   => 'application/pdf',
-            'file_size'   => strlen(base64_decode($signedPdfB64)),
+            'file_size'   => strlen($signedPdfBinary),
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);
