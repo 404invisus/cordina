@@ -250,7 +250,39 @@ export const crAttachmentService = {
 
 export const esignService = {
   list: () => api.get('/api/v1/esign'),
-  sign: (formData: FormData) => api.post('/api/v1/esign/sign', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  sign: async (formData: FormData) => {
+    // 1. Sign via esign-api (nginx proxy, bypass PHP)
+    const signFd = new FormData();
+    const file = formData.get('file') as File;
+    signFd.append('file', file);
+    signFd.append('nik', formData.get('nik') as string);
+    signFd.append('passphrase', formData.get('passphrase') as string);
+    signFd.append('appearance', formData.get('tampilan') as string);
+    const sigImg = formData.get('signature_image');
+    if (sigImg) signFd.append('signature_image', sigImg);
+
+    // Kirim dummy request ke esign-api bersamaan dengan sign request
+    // BSrE butuh koneksi "pemanasan" — request pertama membuka slot, request kedua masuk
+    const dummyReq = fetch(BASE_URL + '/api/v1/esign/warmup', { method: 'POST' }).catch(() => {});
+
+    const signRes = await fetch(BASE_URL + '/api/v1/esign/sign', {
+      method: 'POST',
+      body: signFd,
+    });
+    if (!signRes.ok) {
+      const err = await signRes.json().catch(() => ({}));
+      throw { response: { data: { message: err?.error?.message_id || 'Gagal menandatangani' } } };
+    }
+    const signedBlob = await signRes.blob();
+
+    // 2. Save signed PDF ke svc-storage
+    const saveFd = new FormData();
+    saveFd.append('file', new File([signedBlob], file.name, { type: 'application/pdf' }));
+    saveFd.append('tampilan', formData.get('tampilan') as string);
+    const title = formData.get('title');
+    if (title) saveFd.append('title', title as string);
+    return api.post('/api/v1/esign/save-signed', saveFd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   download: (id: string) => api.get(`/api/v1/esign/${id}/download`, { responseType: 'blob' }),
   verify: (id: string) => api.post(`/api/v1/esign/${id}/verify`),
 };

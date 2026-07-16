@@ -219,6 +219,17 @@ services:
       - pm_network
     restart: unless-stopped
 
+  esign-api:
+    build:
+      context: ./esign-api
+      dockerfile: Dockerfile
+    container_name: pm_esign_api
+    env_file: ./esign-api/.env
+    mem_limit: 512m
+    networks:
+      - pm_network
+    restart: unless-stopped
+
 networks:
   pm_network:
     driver: bridge

@@ -31,66 +31,80 @@ class EsignController extends Controller
 
         abort_if(!$nik, 422, 'NIK belum diset di profil. Lengkapi data TTE terlebih dahulu.');
 
-        // Build signature properties
-        $signProps = [[
-            'tampilan' => $request->tampilan,
-            'page'     => 1,
-            'originX'  => 340.0,
-            'originY'  => 50.0,
-            'width'    => 120.0,
-            'height'   => 60.0,
-            'location' => 'Jakarta',
-            'reason'   => 'Tanda Tangan Elektronik',
-        ]];
-
-        // Tambah spesimen jika VISIBLE
+        // Ambil spesimen (binary) jika VISIBLE
+        $specimenBinary = null;
         if ($request->tampilan === 'VISIBLE' && $specimenId) {
             $attachment = DB::table('attachments')->where('id', $specimenId)->first();
             if ($attachment && Storage::disk('local')->exists($attachment->file_path)) {
-                $specimenB64 = base64_encode(file_get_contents(Storage::disk('local')->path($attachment->file_path)));
-                $signProps[0]['imageBase64'] = $specimenB64;
+                $specimenBinary = file_get_contents(Storage::disk('local')->path($attachment->file_path));
             }
         }
+        abort_if($request->tampilan === 'VISIBLE' && !$specimenBinary, 422, 'Mode VISIBLE butuh spesimen tanda tangan, tapi spesimen tidak ditemukan.');
 
-        // Convert PDF ke base64
         $pdfContent = file_get_contents($request->file('file')->getRealPath());
 
-        // Call TTE API
-        $tteBase = \App\Services\TteConfigService::get('TTE_BASE_URL', config('services.tte.base_url', 'https://esign-dev.layanan.go.id'));
-        $tteUser = \App\Services\TteConfigService::get('TTE_USERNAME', config('services.tte.username', 'esign'));
-        $ttePass = \App\Services\TteConfigService::get('TTE_PASSWORD', config('services.tte.password', ''));
-        $tteKey  = \App\Services\TteConfigService::get('TTE_API_KEY', config('services.tte.api_key', ''));
+        // Call esign-api (wrapper internal BSrE): multipart in, PDF biner out
+        $esignUrl = rtrim(env('ESIGN_API_URL', 'http://esign-api:8080'), '/');
+        $esignKey = env('ESIGN_API_KEY', '');
 
-        $multipart = Http::timeout(60)
-            ->withBasicAuth($tteUser, $ttePass)
-            ->withHeaders(['x-api-key' => $tteKey])
-            ->attach('file', $pdfContent, $request->file('file')->getClientOriginalName())
+        $req = Http::timeout(90)
+            ->withHeaders(['X-API-Key' => $esignKey])
+            ->attach('file', $pdfContent, 'document.pdf')
             ->attach('nik', $nik)
             ->attach('passphrase', $request->passphrase)
-            ->attach('tampilan', $request->tampilan);
+            ->attach('appearance', $request->tampilan);
 
-        if ($request->tampilan === 'VISIBLE') {
-            $multipart = $multipart
-                ->attach('tag_koordinat', '$')
-                ->attach('width', '120')
-                ->attach('height', '60');
-            if (!empty($signProps[0]['imageBase64'])) {
-                $multipart = $multipart->attach('image', base64_decode($signProps[0]['imageBase64']), 'specimen.png');
-            }
+        if ($specimenBinary) {
+            $req = $req->attach('signature_image', $specimenBinary, 'specimen.png');
         }
 
-        $tteResponse = $multipart->post("{$tteBase}/api/sign/pdf");
+        \Illuminate\Support\Facades\Log::info('ESIGN_SIGN_DEBUG', [
+            'tampilan'     => $request->tampilan,
+            'has_specimen' => (bool) $specimenBinary,
+            'pdf_size'     => strlen($pdfContent),
+            'nik_last4'    => substr($nik, -4),
+        ]);
 
-        abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->status()));
+        // Bypass Laravel HTTP client — pakai curl langsung
+        $tmpPdf = tempnam('/tmp', 'esign_') . '.pdf';
+        $tmpOut = tempnam('/tmp', 'esign_out_') . '.pdf';
+        file_put_contents($tmpPdf, $pdfContent);
 
-        $rawBody = $tteResponse->body();
-        if (str_starts_with($rawBody, '%PDF')) {
-            $signedPdfBinary = $rawBody;
+        $curlCmd = 'curl -s -m 90 -X POST'
+            . ' ' . escapeshellarg($esignUrl . '/v1/sign/pdf')
+            . ' -H ' . escapeshellarg('X-API-Key: ' . $esignKey)
+            . ' -F ' . escapeshellarg('nik=' . $nik)
+            . ' -F ' . escapeshellarg('passphrase=' . $request->passphrase)
+            . ' -F ' . escapeshellarg('file=@' . $tmpPdf)
+            . ' -o ' . escapeshellarg($tmpOut)
+            . ' -w ' . escapeshellarg('%{http_code}');
+
+        if ($specimenBinary) {
+            $tmpImg = tempnam('/tmp', 'esign_img_');
+            file_put_contents($tmpImg, $specimenBinary);
+            $curlCmd .= ' -F ' . escapeshellarg('signature_image=@' . $tmpImg);
+            $curlCmd .= ' -F ' . escapeshellarg('appearance=VISIBLE');
         } else {
-            $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
-            abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');
-            $signedPdfBinary = base64_decode($signedPdfB64);
+            $curlCmd .= ' -F ' . escapeshellarg('appearance=INVISIBLE');
         }
+
+        \Illuminate\Support\Facades\Log::info('ESIGN_CURL_CMD', ['cmd' => $curlCmd]);
+        $httpCode = trim(shell_exec($curlCmd));
+
+        \Illuminate\Support\Facades\Log::info('ESIGN_CURL_RESULT', [
+            'http_code' => $httpCode,
+            'out_size'  => file_exists($tmpOut) ? filesize($tmpOut) : 0,
+        ]);
+
+        if ($httpCode !== '200') {
+            $errBody = file_exists($tmpOut) ? json_decode(file_get_contents($tmpOut), true) : [];
+            @unlink($tmpPdf); @unlink($tmpOut);
+            abort(422, $errBody['error']['message_id'] ?? ('Gagal menandatangani via TTE: HTTP ' . $httpCode));
+        }
+
+        $signedPdfBinary = file_get_contents($tmpOut);
+        @unlink($tmpPdf); @unlink($tmpOut);
+        abort_if(!str_starts_with($signedPdfBinary, '%PDF'), 422, 'Hasil TTE bukan PDF yang valid');
 
         // Simpan PDF ter-TTE
         $origName = $request->file('file')->getClientOriginalName();
@@ -135,7 +149,59 @@ class EsignController extends Controller
         ], 201);
     }
 
-    // GET /v1/esign
+    // POST /v1/esign/save-signed (simpan PDF yang sudah di-sign dari esign-api)
+    public function saveSigned(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file'      => 'required|file|mimes:pdf|max:20480',
+            'tampilan'  => 'required|in:VISIBLE,INVISIBLE',
+            'title'     => 'nullable|string|max:255',
+        ]);
+
+        $userId   = $request->attributes->get('jwt_user_id');
+        $origName = $request->file('file')->getClientOriginalName();
+        $filename = 'esign_' . Str::uuid() . '.pdf';
+        $path     = "esign/{$userId}/{$filename}";
+
+        Storage::disk('local')->put($path, file_get_contents($request->file('file')->getRealPath()));
+
+        $attachId = (string) Str::uuid();
+        DB::table('attachments')->insert([
+            'id'         => $attachId,
+            'user_id'    => $userId,
+            'file_name'  => 'signed_' . $origName,
+            'file_path'  => $path,
+            'mime_type'   => 'application/pdf',
+            'file_size'   => $request->file('file')->getSize(),
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        $docId = (string) Str::uuid();
+        DB::table('esign_documents')->insert([
+            'id'            => $docId,
+            'user_id'       => $userId,
+            'title'         => $request->title ?: $origName,
+            'original_name' => $origName,
+            'attachment_id' => $attachId,
+            'tampilan'      => $request->tampilan,
+            'signed_at'     => now(),
+            'created_at'    => now(),
+            'updated_at'    => now(),
+        ]);
+
+        return response()->json([
+            'data' => [
+                'id'            => $docId,
+                'attachment_id' => $attachId,
+                'title'         => $request->title ?: $origName,
+                'signed_at'     => now()->toIso8601String(),
+            ],
+            'message' => 'Dokumen berhasil disimpan',
+        ], 201);
+    }
+
+        // GET /v1/esign
     public function index(Request $request): JsonResponse
     {
         $userId = $request->attributes->get('jwt_user_id');

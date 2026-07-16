@@ -38,6 +38,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       fd.append('file', file!);
       fd.append('passphrase', passphrase);
       fd.append('tampilan', tampilan);
+      fd.append('nik', (user as any)?.nik || '');
       if (title) fd.append('title', title);
       return esignService.sign(fd);
     },

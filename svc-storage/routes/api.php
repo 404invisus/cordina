@@ -30,6 +30,7 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     // e-Sign
     Route::get('/esign',                  [EsignController::class, 'index']);
     Route::post('/esign/sign',            [EsignController::class, 'sign']);
+    Route::post('/esign/save-signed',    [EsignController::class, 'saveSigned']);
     Route::get('/esign/{id}/download',    [EsignController::class, 'download']);
     Route::post('/esign/{id}/verify',     [EsignController::class, 'verify']);
 });
