@@ -5,6 +5,19 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EsignController;
 use Illuminate\Support\Facades\Route;
 
+Route::prefix('v1')->middleware('internal')->group(function () {
+    Route::get('/internal/attachments/{id}/binary', function (string $id) {
+        $attachment = \Illuminate\Support\Facades\DB::table('attachments')->where('id', $id)->first();
+        abort_if(!$attachment, 404, 'Attachment tidak ditemukan');
+        abort_if(!\Illuminate\Support\Facades\Storage::disk('local')->exists($attachment->file_path), 404, 'File tidak ditemukan');
+        return response(
+            file_get_contents(\Illuminate\Support\Facades\Storage::disk('local')->path($attachment->file_path)),
+            200,
+            ['Content-Type' => $attachment->mime_type ?? 'application/octet-stream']
+        );
+    });
+});
+
 Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     // File storage (existing)
     Route::get('/storage',               [StorageController::class, 'index']);

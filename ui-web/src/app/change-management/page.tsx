@@ -367,7 +367,10 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   const { user } = useAuthStore();
   const [passphrase, setPassphrase] = useState('');
   const mutation = useMutation({
-    mutationFn: () => api.post(`/api/v1/change-requests/${cr?.id}/sign`, { passphrase }),
+    mutationFn: async () => {
+      await fetch('http://localhost:8000/api/v1/esign/warmup').catch(() => {});
+      return api.post(`/api/v1/change-requests/${cr?.id}/sign`, { passphrase });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('Dokumen berhasil ditandatangani!'); onClose(); setPassphrase(''); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menandatangani'),
   });
@@ -606,12 +609,17 @@ function CRCard({ cr, onEdit, onReject, onSign, onImplement, userId, usersMap }:
           </div>
         )}
 
-        {cr.status === 'approved' && cr.signed_document_url && (
-          <a href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/change-requests/${cr.id}/document`}
-            className="mb-3 flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-violet-100 transition-colors"
-            target="_blank">
+        {cr.status === 'approved' && cr.signed_document_id && (
+          <button onClick={async () => {
+            try {
+              const res = await api.get(`/api/v1/change-requests/${cr.id}/document`, { responseType: 'blob' });
+              const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+              const a = document.createElement('a'); a.href = url;
+              a.download = `CR_${cr.id}_signed.pdf`; a.click(); URL.revokeObjectURL(url);
+            } catch { toast.error('Gagal mengunduh dokumen'); }
+          }} className="mb-3 flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-violet-100 transition-colors">
             <Pen className="w-3.5 h-3.5" /> Unduh Dokumen Ter-TTE
-          </a>
+          </button>
         )}
 
         <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors mb-1">
@@ -678,6 +686,8 @@ export default function ChangeManagementPage() {
   const [signCr, setSignCr]           = useState<any>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterFrom, setFilterFrom]     = useState('');
+  const [filterTo, setFilterTo]         = useState('');
 
   const { data: usersData } = useQuery({
     queryKey: ['all-users-directory'],
@@ -688,8 +698,12 @@ export default function ChangeManagementPage() {
   , [usersData]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['change-requests', filterStatus],
-    queryFn: () => changeRequestService.list(filterStatus ? { status: filterStatus } : undefined).then(r => r.data.data),
+    queryKey: ['change-requests', filterStatus, filterFrom, filterTo],
+    queryFn: () => changeRequestService.list({
+      ...(filterStatus ? { status: filterStatus } : {}),
+      ...(filterFrom ? { from: filterFrom } : {}),
+      ...(filterTo ? { to: filterTo } : {}),
+    }).then(r => r.data.data),
   });
 
   const crs = data?.data || [];
@@ -722,13 +736,27 @@ export default function ChangeManagementPage() {
         </button>
       </div>
 
-      <div className="flex gap-2 mb-5 flex-wrap">
+      <div className="flex gap-2 mb-3 flex-wrap">
         {['', 'draft', 'submitted', 'approved', 'rejected', 'implemented'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
             className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold transition-all ${filterStatus === s ? 'bg-[#284074] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:border-[#284074]/30'}`}>
             {s === '' ? 'Semua' : s === 'draft' ? 'Draft' : s === 'submitted' ? 'Diajukan' : s === 'approved' ? 'Disetujui' : s === 'rejected' ? 'Ditolak' : 'Implemented'}
           </button>
         ))}
+      </div>
+      <div className="flex gap-2 mb-5 items-center flex-wrap">
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Periode:</span>
+        <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
+          className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
+        <span className="text-xs text-slate-400">s/d</span>
+        <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
+          className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
+        {(filterFrom || filterTo) && (
+          <button onClick={() => { setFilterFrom(''); setFilterTo(''); }}
+            className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-500 hover:bg-slate-50">
+            Reset
+          </button>
+        )}
       </div>
 
       {isLoading ? (

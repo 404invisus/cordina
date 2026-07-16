@@ -67,6 +67,12 @@ class ChangeRequestController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
+        if ($request->from) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->to) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
 
         return response()->json(['data' => $query->paginate(20)]);
     }
@@ -356,69 +362,64 @@ class ChangeRequestController extends Controller
 
         abort_if(!$nik, 422, 'NIK penandatangan belum diset di profil');
 
-        $tteBase  = \App\Services\TteConfigService::get('TTE_BASE_URL', config('services.tte.base_url', 'https://esign-dev.layanan.go.id'));
-        $tteUser  = \App\Services\TteConfigService::get('TTE_USERNAME', config('services.tte.username', 'esign'));
-        $ttePass  = \App\Services\TteConfigService::get('TTE_PASSWORD', config('services.tte.password', ''));
-        $tteKey   = \App\Services\TteConfigService::get('TTE_API_KEY', config('services.tte.api_key', ''));
+        // Sign via esign-api (INVISIBLE) — spesimen sudah embed di PDF via CrPdfService
+        $esignUrl = rtrim(config('services.esign.url', 'http://esign-api:8080'), '/');
+        $esignKey = env('ESIGN_API_KEY', '');
 
-        $signProps = [[
-            'tampilan' => 'VISIBLE',
-            'page'     => 1,
-            'originX'  => 340.0,
-            'originY'  => 680.0,
-            'width'    => 120.0,
-            'height'   => 60.0,
-            'location' => 'Jakarta',
-            'reason'   => 'Menyetujui CR: ' . $cr->title,
-        ]];
+        // Warmup
+        try { Http::timeout(5)->get("{$esignUrl}/health"); } catch (\Throwable) {}
 
-        // Ambil spesimen jika ada
-        if ($specimenId) {
-            $storagePath = \Illuminate\Support\Facades\Storage::disk('local')->path('');
-            $attachment  = \Illuminate\Support\Facades\DB::table('attachments')->where('id', $specimenId)->first();
-            if ($attachment && \Illuminate\Support\Facades\Storage::disk('local')->exists($attachment->file_path)) {
-                $specimenB64 = base64_encode(file_get_contents(\Illuminate\Support\Facades\Storage::disk('local')->path($attachment->file_path)));
-                $signProps[0]['imageBase64'] = $specimenB64;
-            }
+        $tmpPdf = tempnam('/tmp', 'crsign_') . '.pdf';
+        file_put_contents($tmpPdf, $pdfContent);
+
+        $ch = curl_init($esignUrl . '/v1/sign/pdf');
+        curl_setopt_array($ch, [
+            CURLOPT_POST       => true,
+            CURLOPT_POSTFIELDS => [
+                'file'       => new \CURLFile($tmpPdf, 'application/pdf', 'cr_' . $cr->id . '.pdf'),
+                'nik'        => $nik,
+                'passphrase' => $request->passphrase,
+                'appearance' => 'INVISIBLE',
+            ],
+            CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $esignKey],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 90,
+        ]);
+        $signedBinary = curl_exec($ch);
+        $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError    = curl_error($ch);
+        curl_close($ch);
+        @unlink($tmpPdf);
+
+        if ($httpCode !== 200) {
+            $err = json_decode($signedBinary, true);
+            abort(422, $err['error']['message_id'] ?? ('Gagal menandatangani: HTTP ' . $httpCode . ' ' . $curlError));
         }
 
-        // Gunakan v1 multipart dengan tag_koordinat untuk anchor posisi spesimen
-        $multipart = Http::timeout(30)
-            ->withBasicAuth($tteUser, $ttePass)
-            ->withHeaders(['x-api-key' => $tteKey])
-            ->attach('file', $pdfContent, 'cr_' . $cr->id . '.pdf')
-            ->attach('nik', $nik)
-            ->attach('passphrase', $request->passphrase)
-            ->attach('tampilan', 'VISIBLE')
-            ->attach('tag_koordinat', '$')
-            ->attach('width', '794')
-            ->attach('height', '235');
-
-        if (!empty($signProps[0]['imageBase64'])) {
-            $specimenData = base64_decode($signProps[0]['imageBase64']);
-            $multipart = $multipart->attach('image', $specimenData, 'specimen.png');
-        }
-
-        $tteResponse = $multipart->post("{$tteBase}/api/sign/pdf");
+        $tteResponse = new class($signedBinary) {
+            private string $body;
+            public function __construct(string $body) { $this->body = $body; }
+            public function successful(): bool { return str_starts_with($this->body, '%PDF'); }
+            public function body(): string { return $this->body; }
+            public function json(?string $key = null) { return null; }
+        };
 
         abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->body()));
 
-        $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
-        abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');
-
-        // Simpan PDF ter-TTE ke storage
+        // Simpan PDF ter-TTE ke storage (binary langsung dari esign-api)
         $filename = 'cr_signed_' . $cr->id . '_' . time() . '.pdf';
         $path     = 'change_requests/' . $filename;
-        \Illuminate\Support\Facades\Storage::disk('local')->put($path, base64_decode($signedPdfB64));
+        \Illuminate\Support\Facades\Storage::disk('local')->put($path, $signedBinary);
 
         $attachId = (string) \Illuminate\Support\Str::uuid();
         \Illuminate\Support\Facades\DB::table('attachments')->insert([
             'id'         => $attachId,
+            'task_id'    => null,
             'user_id'    => $userId,
             'file_name'  => $filename,
             'file_path'  => $path,
             'mime_type'  => 'application/pdf',
-            'file_size'  => strlen(base64_decode($signedPdfB64)),
+            'file_size'  => strlen($signedBinary),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

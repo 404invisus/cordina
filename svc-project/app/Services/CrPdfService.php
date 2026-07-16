@@ -119,7 +119,7 @@ class CrPdfService
         $pdf->Cell($colW, 5, $signer['full_name'] ?? '-', 1, 1, 'C');
 
         // Row spesimen & spasi TTD
-        $ttdH = 30;
+        $ttdH = 35;
         $xStart = $pdf->GetX();
         $yStart = $pdf->GetY();
 
@@ -127,15 +127,11 @@ class CrPdfService
         $pdf->Cell($colW, $ttdH, '', 1, 0, 'C');
         // Kolom diperiksa - kosong
         $pdf->Cell($colW, $ttdH, '', 1, 0, 'C');
-        // Kolom disetujui - placeholder spesimen TTE
+        // Kolom disetujui - embed spesimen jika ada
         $pdf->Cell($colW, $ttdH, '', 1, 1, 'C');
 
-        // Tambah marker $ sebagai anchor posisi TTE
-        $pdf->SetFont('helvetica', 'B', 24);
-        $pdf->SetTextColor(255, 255, 255); // invisible (putih)
-        $pdf->SetXY($xStart + ($colW * 2) + ($colW / 2) - 5, $yStart + ($ttdH / 2) - 8);
-        $pdf->Cell(10, 10, '$', 0, 1, 'C');
-        $pdf->SetTextColor(0, 0, 0);
+
+
         $pdf->SetFont('helvetica', 'I', 7);
         $pdf->SetXY($xStart + ($colW * 2) + 2, $yStart + $ttdH - 5);
         $pdf->Cell($colW - 4, 5, '[Tanda Tangan Elektronik]', 0, 1, 'C');
