@@ -56,6 +56,7 @@ class DocumentController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $doc  = Document::findOrFail($id);
+        abort_if($doc->created_by !== $request->attributes->get('jwt_user_id'), 403, 'Hanya pembuat dokumen yang bisa mengedit');
         $data = $request->validate([
             'title'       => 'sometimes|string|max:255',
             'category'    => 'sometimes|string|max:100',
@@ -91,9 +92,10 @@ class DocumentController extends Controller
         return response()->download(Storage::disk('local')->path($doc->file_path), $doc->file_name);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id, \Illuminate\Http\Request $request): JsonResponse
     {
         $doc = Document::findOrFail($id);
+        abort_if($doc->created_by !== $request->attributes->get('jwt_user_id'), 403, 'Hanya pembuat dokumen yang bisa menghapus');
         if ($doc->file_path) Storage::disk('local')->delete($doc->file_path);
         $doc->delete();
         return response()->json(null, 204);

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Archive, Plus, X, Search, Filter } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import { useAuthStore } from '@/store/authStore';
 import { assetService, userService } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -125,6 +126,7 @@ function AssetModal({ open, onClose, editData }: { open: boolean; onClose: () =>
 export default function AssetsPage() {
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const { user } = useAuthStore();
   const [editData, setEditData] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filterCondition, setFilterCondition] = useState('');
@@ -193,9 +195,12 @@ export default function AssetsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
-                {['Nama Aset', 'Kategori', 'No. Seri', 'Kondisi', 'Lokasi', 'Nilai', 'Aksi'].map(h => (
+                {['Nama Aset', 'Kategori', 'No. Seri', 'Kondisi', 'Lokasi', 'Nilai'].map(h => (
                   <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
+                {assets?.data?.some((a: any) => (user as any)?.id === a.created_by) && (
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aksi</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -215,6 +220,7 @@ export default function AssetsPage() {
                     </td>
                     <td className="px-5 py-3.5 text-sm text-slate-600">{asset.location || '-'}</td>
                     <td className="px-5 py-3.5 text-sm text-slate-600">{formatRupiah(asset.value)}</td>
+                    {(user as any)?.id === asset.created_by && (
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2">
                         <button onClick={() => setEditData(asset)}
@@ -227,6 +233,7 @@ export default function AssetsPage() {
                         </button>
                       </div>
                     </td>
+                    )}
                   </motion.tr>
                 );
               })}

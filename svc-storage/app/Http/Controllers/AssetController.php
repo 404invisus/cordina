@@ -42,6 +42,7 @@ class AssetController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $asset = Asset::findOrFail($id);
+        abort_if($asset->created_by !== $request->attributes->get('jwt_user_id'), 403, 'Hanya pembuat aset yang bisa mengedit');
         $data  = $request->validate([
             'name'                => 'sometimes|string|max:255',
             'category'            => 'sometimes|string|max:100',
@@ -57,9 +58,11 @@ class AssetController extends Controller
         return response()->json(['data' => $asset->fresh()]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id, \Illuminate\Http\Request $request): JsonResponse
     {
-        Asset::findOrFail($id)->delete();
+        $asset = Asset::findOrFail($id);
+        abort_if($asset->created_by !== $request->attributes->get('jwt_user_id'), 403, 'Hanya pembuat aset yang bisa menghapus');
+        $asset->delete();
         return response()->json(null, 204);
     }
 }

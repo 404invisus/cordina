@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { FileText, Plus, X, Search, Download, AlertTriangle } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import { useAuthStore } from '@/store/authStore';
 import { documentService } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -120,6 +121,7 @@ function DocModal({ open, onClose, editData }: { open: boolean; onClose: () => v
 export default function DocumentsPage() {
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const { user } = useAuthStore();
   const [editData, setEditData] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [filterExpiring, setFilterExpiring] = useState(false);
@@ -229,6 +231,7 @@ export default function DocumentsPage() {
                         <Download className="w-3.5 h-3.5" /> Download
                       </button>
                     )}
+                    {(user as any)?.id === doc.created_by && (<>
                     <button onClick={() => setEditData(doc)}
                       className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
                       Edit
@@ -237,6 +240,7 @@ export default function DocumentsPage() {
                       className="p-1.5 rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors">
                       <X className="w-4 h-4" />
                     </button>
+                    </>)}
                   </div>
                 </div>
               </motion.div>
