@@ -365,17 +365,26 @@ class ChangeRequestController extends Controller
             }
         }
 
-        $tteResponse = Http::timeout(30)
+        // Gunakan v1 multipart dengan tag_koordinat untuk anchor posisi spesimen
+        $multipart = Http::timeout(30)
             ->withBasicAuth($tteUser, $ttePass)
-            ->withHeaders(['Authorization' => 'Basic ' . base64_encode("{$tteUser}:{$ttePass}"), 'x-api-key' => $tteKey])
-            ->post("{$tteBase}/api/v2/sign/pdf", [
-                'nik'                 => $nik,
-                'passphrase'          => $request->passphrase,
-                'signatureProperties' => $signProps,
-                'file'                => [base64_encode($pdfContent)],
-            ]);
+            ->withHeaders(['x-api-key' => $tteKey])
+            ->attach('file', $pdfContent, 'cr_' . $cr->id . '.pdf')
+            ->attach('nik', $nik)
+            ->attach('passphrase', $request->passphrase)
+            ->attach('tampilan', 'VISIBLE')
+            ->attach('tag_koordinat', '$')
+            ->attach('width', '794')
+            ->attach('height', '235');
 
-        abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->status()));
+        if (!empty($signProps[0]['imageBase64'])) {
+            $specimenData = base64_decode($signProps[0]['imageBase64']);
+            $multipart = $multipart->attach('image', $specimenData, 'specimen.png');
+        }
+
+        $tteResponse = $multipart->post("{$tteBase}/api/sign/pdf");
+
+        abort_if(!$tteResponse->successful(), 422, 'Gagal menandatangani via TTE: ' . ($tteResponse->json('message') ?? $tteResponse->body()));
 
         $signedPdfB64 = $tteResponse->json('signedFile.0') ?? $tteResponse->json('file.0') ?? null;
         abort_if(!$signedPdfB64, 422, 'Response TTE tidak mengandung file yang ditandatangani');

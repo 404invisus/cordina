@@ -13,6 +13,7 @@ const AUTHENTICATED_ROUTES = [
   '/tasks',
   '/projects',
   '/storage',
+  '/esign',
 ];
 
 // Route khusus per role

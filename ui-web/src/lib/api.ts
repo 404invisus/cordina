@@ -228,6 +228,13 @@ export const changeRequestService = {
   getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
 };
 
+export const esignService = {
+  list: () => api.get('/api/v1/esign'),
+  sign: (formData: FormData) => api.post('/api/v1/esign/sign', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  download: (id: string) => api.get(`/api/v1/esign/${id}/download`, { responseType: 'blob' }),
+  verify: (id: string) => api.post(`/api/v1/esign/${id}/verify`),
+};
+
 export const dailyBriefService = {
   get: () => api.get('/api/v1/reports/daily-brief'),
 };

@@ -2,6 +2,7 @@
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EsignController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('jwt.auth')->group(function () {
@@ -25,4 +26,10 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::put('/documents/{id}',         [DocumentController::class, 'update']);
     Route::get('/documents/{id}/download',[DocumentController::class, 'download']);
     Route::delete('/documents/{id}',      [DocumentController::class, 'destroy']);
+
+    // e-Sign
+    Route::get('/esign',                  [EsignController::class, 'index']);
+    Route::post('/esign/sign',            [EsignController::class, 'sign']);
+    Route::get('/esign/{id}/download',    [EsignController::class, 'download']);
+    Route::post('/esign/{id}/verify',     [EsignController::class, 'verify']);
 });
