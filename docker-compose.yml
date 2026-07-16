@@ -198,6 +198,27 @@ services:
       - pm_network
     restart: unless-stopped
 
+  svc-workload-scheduler:
+    volumes:
+     - ./svc-workload/.env:/var/www/html/.env
+     - ./svc-workload/config:/var/www/html/config
+     - ./svc-workload/database:/var/www/html/database
+     - ./svc-workload/app:/var/www/html/app
+    build:
+      context: ./svc-workload
+      dockerfile: Dockerfile
+    container_name: pm_workload_scheduler
+    env_file: ./svc-workload/.env
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pm_network
+    restart: unless-stopped
+
 networks:
   pm_network:
     driver: bridge

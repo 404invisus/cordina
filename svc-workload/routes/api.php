@@ -116,3 +116,26 @@ Route::prefix('v1')->middleware('internal')->group(function () {
     });
 });
 
+Route::middleware('jwt.auth')->group(function () {
+    Route::prefix('v1/admin/calendar')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'show']);
+        Route::put('/{id}', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'destroy']);
+        Route::get('/{id}/participants', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'participants']);
+        Route::post('/{id}/participants', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'addParticipants']);
+        Route::delete('/{id}/participants/{userId}', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'removeParticipant']);
+    });
+
+    Route::get('/v1/calendar', [\App\Http\Controllers\CalendarEventController::class, 'index']);
+    Route::post('/v1/calendar', [\App\Http\Controllers\CalendarEventController::class, 'store']);
+    Route::get('/v1/calendar/{id}', [\App\Http\Controllers\CalendarEventController::class, 'show']);
+    Route::put('/v1/calendar/{id}', [\App\Http\Controllers\CalendarEventController::class, 'update']);
+    Route::delete('/v1/calendar/{id}', [\App\Http\Controllers\CalendarEventController::class, 'destroy']);
+    Route::get('/v1/calendar/{id}/participants', [\App\Http\Controllers\CalendarEventController::class, 'participants']);
+    Route::post('/v1/calendar/{id}/participants', [\App\Http\Controllers\CalendarEventController::class, 'addParticipants']);
+    Route::delete('/v1/calendar/{id}/participants/{userId}', [\App\Http\Controllers\CalendarEventController::class, 'removeParticipant']);
+});
+
+

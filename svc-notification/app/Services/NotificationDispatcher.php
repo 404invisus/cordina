@@ -36,7 +36,7 @@ class NotificationDispatcher
                 'telegram' => $this->dispatchTelegram(
                     $notif->id, $userId, $chatId, $message,
                     groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
-                    privateOnly: in_array($type, ['calendar.event_assigned', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
+                    privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
                 default    => Log::info("Channel {$channel} not implemented yet"),
@@ -138,6 +138,23 @@ class NotificationDispatcher
                 $payload['comment']      ?? ''
             ),
             'calendar.event_done' => $payload['message'] ?? sprintf("*[kegiatan selesai]* %s", $payload['event_title'] ?? 'N/A'),
+            'calendar.deadline_reminder' => (function() use ($payload) {
+                $type = match($payload['event_type'] ?? '') {
+                    'internal' => 'Internal Kantor',
+                    'external' => 'External Kantor',
+                    'cuti'     => 'Cuti',
+                    default    => 'Lainnya',
+                };
+                try {
+                    $dt = new \DateTime($payload['start_date'] ?? 'now');
+                    $days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+                    $months = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    $dateStr = $days[(int)$dt->format('w')] . ', ' . $dt->format('j') . ' ' . $months[(int)$dt->format('n')] . ' ' . $dt->format('Y');
+                } catch (\Throwable) { $dateStr = $payload['start_date'] ?? '-'; }
+                $waktu = ($payload['all_day'] ?? false) ? 'Seharian' : (($payload['start_time'] ?? '') ? substr($payload['start_time'],0,5).' WIB s.d '.(($payload['end_time'] ?? '') ? substr($payload['end_time'],0,5).' WIB' : 'Selesai') : 'Seharian');
+                $label = ($payload['days_until'] ?? 1) === 0 ? 'HARI INI' : 'BESOK';
+                return "⏰ *PENGINGAT AGENDA - {$label}*\n".$dateStr."\n\n📋 Nama: *".($payload['event_title'] ?? 'N/A')."*\n📌 Jenis: ".$type."\n🕙 Waktu: ".$waktu."\n🏛 Tempat: ".($payload['location'] ?? '-');
+            })(),
             'change_request.submitted' => sprintf(
                 "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nAnda ditunjuk sebagai penilai pertama. Segera tinjau di aplikasi ConnectOne.",
                 $userName,
