@@ -236,18 +236,27 @@ class EsignController extends Controller
         $attachment = DB::table('attachments')->where('id', $doc->attachment_id)->first();
         abort_if(!$attachment || !Storage::disk('local')->exists($attachment->file_path), 404, 'File tidak ditemukan');
 
-        $pdfB64 = base64_encode(file_get_contents(Storage::disk('local')->path($attachment->file_path)));
+        $pdfBytes = file_get_contents(Storage::disk('local')->path($attachment->file_path));
 
-        $tteBase = config('services.tte.base_url', 'https://esign-dev.layanan.go.id');
-        $tteUser = config('services.tte.username', 'esign');
-        $ttePass = config('services.tte.password', '');
-        $tteKey  = config('services.tte.api_key', '');
+        $bsreBase = rtrim(\App\Services\TteConfigService::get('TTE_BASE_URL', 'http://10.31.10.90'), '/');
+        $bsreUser = \App\Services\TteConfigService::get('TTE_USERNAME', 'connectone');
+        $bsrePass = \App\Services\TteConfigService::get('TTE_PASSWORD', '');
 
-        $response = Http::timeout(30)
-            ->withBasicAuth($tteUser, $ttePass)
-            ->withHeaders(['x-api-key' => $tteKey])
-            ->post("{$tteBase}/api/v2/verify/pdf", ['file' => $pdfB64]);
+        $ch = curl_init($bsreBase . '/api/v2/verify/pdf');
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['file' => base64_encode($pdfBytes)]),
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Basic ' . base64_encode("{$bsreUser}:{$bsrePass}"),
+                'Content-Type: application/json',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+        ]);
+        $body = curl_exec($ch);
+        curl_close($ch);
 
-        return response()->json(['data' => $response->json()]);
+        $result = json_decode($body, true) ?? ['error' => 'Gagal memverifikasi'];
+        return response()->json(['data' => $result]);
     }
 }

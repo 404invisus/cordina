@@ -171,7 +171,18 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['esign-verify', doc?.id],
-    queryFn: () => esignService.verify(doc.id).then(r => r.data.data),
+    queryFn: () => esignService.verify(doc.id).then(r => {
+      const d = r.data.data;
+      // Normalize BSrE response ke format yang dipakai UI
+      return {
+        valid: d?.valid ?? (d?.conclusion === 'VALID'),
+        message: d?.message || d?.description || '',
+        signers: d?.signers || d?.signatureInformations?.map((s: any) => ({
+          name: s.signerName || s.commonName || s.name || 'Penandatangan',
+          signingTime: s.signatureDate ? new Date(s.signatureDate).toISOString() : null,
+        })) || [],
+      };
+    }),
     enabled: open && !!doc,
   });
 
