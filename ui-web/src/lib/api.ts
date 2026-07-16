@@ -226,6 +226,7 @@ export const changeRequestService = {
   approve: (id: string, note?: string) => api.post(`/api/v1/change-requests/${id}/approve`, { note }),
   reject: (id: string, note: string) => api.post(`/api/v1/change-requests/${id}/reject`, { note }),
   implement: (id: string, catatan?: string) => api.post(`/api/v1/change-requests/${id}/implement`, { catatan }),
+  logs: (id: string) => api.get(`/api/v1/change-requests/${id}/logs`),
   getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
 };
 

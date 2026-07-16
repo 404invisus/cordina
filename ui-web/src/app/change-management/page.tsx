@@ -149,14 +149,13 @@ const EMPTY_FORM = {
   langkah_penanganan_kegagalan: '',
 };
 
-function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
+function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { open: boolean; onClose: () => void; editData?: any; pendingFiles: File[]; setPendingFiles: React.Dispatch<React.SetStateAction<File[]>> }) {
   const qc = useQueryClient();
   const [form, setForm]             = useState<any>(EMPTY_FORM);
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [signerId, setSignerId]       = useState('');
   const [pelaksanaIds, setPelaksanaIds] = useState<string[]>([]);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const attachFileRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     if (open) {
@@ -168,7 +167,6 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
         setReviewerIds([]);
         setSignerId('');
         setPelaksanaIds([]);
-        setPendingFiles([]);
       }
     }
   }, [editData, open]);
@@ -290,16 +288,15 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
         {/* Lampiran */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lampiran Pendukung</div>
-            <input ref={attachFileRef} type="file" className="hidden" multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.zip,.rar,.txt,.csv"
-              onChange={e => {
-                if (e.target.files) setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                if (attachFileRef.current) attachFileRef.current.value = '';
-              }} />
-            <button onClick={() => attachFileRef.current?.click()}
-              className="flex items-center gap-2 text-sm text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-white transition-colors">
+            <label className="flex items-center gap-2 text-sm text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-white transition-colors cursor-pointer">
               <Paperclip className="w-4 h-4" /> Tambah Lampiran
-            </button>
+              <input type="file" className="hidden" multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.zip,.rar,.txt,.csv"
+                onChange={e => {
+                  if (e.target.files) setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                  (e.target as HTMLInputElement).value = '';
+                }} />
+            </label>
             {pendingFiles.length > 0 && (
               <div className="space-y-1.5">
                 {pendingFiles.map((file, i) => (
@@ -407,6 +404,55 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   );
 }
 
+
+
+// ── CR Audit Log ──────────────────────────────────────────────────────────────
+
+const ACTION_CONFIG: Record<string, { label: string; color: string }> = {
+  created:          { label: 'CR Dibuat',             color: 'text-slate-500' },
+  submitted:        { label: 'CR Diajukan',            color: 'text-blue-600' },
+  reviewed:         { label: 'Ditinjau',               color: 'text-emerald-600' },
+  approved:         { label: 'Disetujui',              color: 'text-emerald-600' },
+  rejected:         { label: 'Ditolak',                color: 'text-red-600' },
+  implemented:      { label: 'Diimplementasikan',      color: 'text-violet-600' },
+  signed:           { label: 'Ditandatangani (TTE)',   color: 'text-violet-600' },
+  attachment_added: { label: 'Lampiran Ditambahkan',   color: 'text-slate-500' },
+  attachment_deleted:{ label: 'Lampiran Dihapus',      color: 'text-red-400' },
+};
+
+function CRAuditLog({ crId, usersMap }: { crId: string; usersMap: Record<string, string> }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['cr-logs', crId],
+    queryFn: () => changeRequestService.logs(crId).then(r => r.data.data),
+  });
+
+  const logs: any[] = Array.isArray(data) ? data : [];
+
+  if (isLoading) return <div className="text-xs text-slate-400 py-2 mt-3 border-t border-slate-100 pt-3">Memuat log...</div>;
+  if (logs.length === 0) return null;
+
+  return (
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <div className="text-xs font-semibold text-slate-500 mb-2">Riwayat Aktivitas</div>
+      <div className="space-y-2">
+        {logs.map((log: any) => {
+          const cfg = ACTION_CONFIG[log.action] || { label: log.action, color: 'text-slate-500' };
+          return (
+            <div key={log.id} className="flex items-start gap-2 text-xs">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0 mt-1.5" />
+              <div className="flex-1 min-w-0">
+                <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
+                {log.actor_id && <span className="text-slate-400"> oleh {usersMap[log.actor_id] || 'sistem'}</span>}
+                {log.note && <span className="text-slate-400 italic">, {log.note}</span>}
+                <div className="text-slate-300 mt-0.5">{formatDate(log.created_at)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ── CR Attachments ────────────────────────────────────────────────────────────
 
@@ -577,6 +623,7 @@ function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <CRTimeline cr={cr} usersMap={usersMap} />
               <CRAttachments crId={cr.id} canUpload={isMyTurn || (cr.requester_id === userId && cr.status === 'draft')} />
+              <CRAuditLog crId={cr.id} usersMap={usersMap} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -628,6 +675,7 @@ export default function ChangeManagementPage() {
   const [editData, setEditData]       = useState<any>(null);
   const [rejectId, setRejectId]       = useState<string | null>(null);
   const [signCr, setSignCr]           = useState<any>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [filterStatus, setFilterStatus] = useState('');
 
   const { data: usersData } = useQuery({
@@ -647,7 +695,7 @@ export default function ChangeManagementPage() {
 
   return (
     <AppLayout>
-      <CRModal open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
+      <CRModal open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); setPendingFiles([]); }} editData={editData} pendingFiles={pendingFiles} setPendingFiles={setPendingFiles} />
       <RejectModal open={!!rejectId} crId={rejectId || ''} onClose={() => setRejectId(null)} />
       <SignModal open={!!signCr} cr={signCr} onClose={() => setSignCr(null)} />
 

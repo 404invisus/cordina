@@ -157,7 +157,7 @@ class NotificationDispatcher
                 !empty($payload['reviewer_note']) ? "\nCatatan: " . $payload['reviewer_note'] : ''
             ),
             'change_request.implemented' => sprintf(
-                "*[change request diimplementasikan]* CR *"%s"* telah diimplementasikan.",
+                "*[change request diimplementasikan]* CR *\"%s\"* telah diimplementasikan.",
                 $payload['cr_title'] ?? 'N/A'
             ),
             'change_request.rejected' => sprintf(

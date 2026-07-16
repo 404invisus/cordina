@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
         Route::post('change-requests/{id}/submit',   [ChangeRequestController::class, 'submit']);
         Route::post('change-requests/{id}/sign',      [ChangeRequestController::class, 'sign']);
         Route::post('change-requests/{id}/implement',  [ChangeRequestController::class, 'implement']);
+        Route::get('change-requests/{id}/logs',         [ChangeRequestController::class, 'logs']);
 
         // TTE Config (admin only)
         Route::get('tte-config',        [TteConfigController::class, 'index']);

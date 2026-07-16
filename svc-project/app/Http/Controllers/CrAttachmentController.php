@@ -52,6 +52,17 @@ class CrAttachmentController extends Controller
             'updated_at'  => now(),
         ]);
 
+        // Log aktivitas
+        DB::table('cr_activity_logs')->insert([
+            'id'       => (string) \Illuminate\Support\Str::uuid(),
+            'cr_id'    => $crId,
+            'actor_id' => $userId,
+            'action'   => 'attachment_added',
+            'note'     => 'Lampiran ditambahkan: ' . $file->getClientOriginalName(),
+            'meta'     => json_encode(['file_name' => $file->getClientOriginalName(), 'file_size' => $file->getSize()]),
+            'created_at' => now(),
+        ]);
+
         return response()->json(['data' => DB::table('cr_attachments')->where('id', $id)->first()], 201);
     }
 

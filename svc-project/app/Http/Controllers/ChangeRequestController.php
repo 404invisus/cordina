@@ -23,6 +23,19 @@ class ChangeRequestController extends Controller
         } catch (\Throwable) {}
     }
 
+    private function log(string $crId, string $actorId, string $action, ?string $note = null, array $meta = []): void
+    {
+        \Illuminate\Support\Facades\DB::table('cr_activity_logs')->insert([
+            'id'       => (string) \Illuminate\Support\Str::uuid(),
+            'cr_id'    => $crId,
+            'actor_id' => $actorId,
+            'action'   => $action,
+            'note'     => $note,
+            'meta'     => $meta ? json_encode($meta) : null,
+            'created_at' => now(),
+        ]);
+    }
+
     private function notifyPayload(ChangeRequest $cr): array
     {
         return [
@@ -114,6 +127,7 @@ class ChangeRequestController extends Controller
             ]);
         });
 
+        $this->log($cr->id, $data['requester_id'], 'created', 'CR dibuat');
         return response()->json(['data' => $cr->load('approvals')], 201);
     }
 
@@ -227,6 +241,7 @@ class ChangeRequestController extends Controller
                     'current_step'=> $cr->total_steps,
                 ]);
                 $this->notifyUser($cr->requester_id, 'change_request.approved', $this->notifyPayload($cr));
+                $this->log($cr->id, $userId, 'approved', $request->note);
             } else {
                 // Advance ke step berikutnya
                 $cr->update(['current_step' => $nextStep]);
@@ -235,6 +250,7 @@ class ChangeRequestController extends Controller
                 if ($nextApproval) {
                     $this->notifyUser($nextApproval->approver_id, 'change_request.review_request', $this->notifyPayload($cr));
                 }
+                $this->log($cr->id, $userId, 'reviewed', $request->note);
             }
         });
 
@@ -275,6 +291,7 @@ class ChangeRequestController extends Controller
         });
 
         $this->notifyUser($cr->requester_id, 'change_request.rejected', $this->notifyPayload($cr));
+        $this->log($cr->id, $userId, 'rejected', $request->note);
         return response()->json(['data' => $cr->fresh('approvals')]);
     }
 
@@ -456,8 +473,20 @@ class ChangeRequestController extends Controller
         ]);
 
         $this->notifyUser($cr->requester_id, 'change_request.implemented', $this->notifyPayload($cr));
+        $this->log($cr->id, $userId, 'implemented', $request->catatan);
 
         return response()->json(['data' => $cr->fresh('approvals')]);
+    }
+
+    // ── GET /v1/change-requests/{id}/logs ──
+    public function logs(string $id, Request $request): JsonResponse
+    {
+        ChangeRequest::findOrFail($id);
+        $logs = \Illuminate\Support\Facades\DB::table('cr_activity_logs')
+            ->where('cr_id', $id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+        return response()->json(['data' => $logs]);
     }
 
 }
