@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Search, MoreVertical, Trash2, X,
   CheckSquare, Clock, AlertTriangle, Users, Eye,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminProjectService } from '@/lib/api';
+import { adminProjectService, adminReportExportService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -150,6 +152,18 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 }
 export default function AdminProjectsPage() {
   const qc = useQueryClient();
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await adminReportExportService.projects();
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a'); a.href = url; a.download = 'laporan_project.pdf'; a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Laporan berhasil diunduh');
+    } catch { toast.error('Gagal mengunduh laporan'); }
+    finally { setExporting(false); }
+  };
   const [search, setSearch]           = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [openMenu, setOpenMenu]       = useState<string | null>(null);
@@ -191,6 +205,11 @@ export default function AdminProjectsPage() {
             <p className="text-sm text-slate-400 mt-0.5">{stats?.total_projects || 0} project terdaftar</p>
           </div>
         </div>
+        <button onClick={handleExport} disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          Ekspor PDF
+        </button>
       </div>
 
       {stats && (

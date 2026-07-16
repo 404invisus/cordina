@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Plus, MoreVertical, UserCheck, UserX, Shield,
   Pencil, Trash2, X, Users, TrendingUp, ChevronDown,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminUserService, permissionService } from '@/lib/api';
+import { adminUserService, adminReportExportService, permissionService } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const ROLES = ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff', 'administrator'];
@@ -396,6 +398,18 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [openMenu, setOpenMenu]     = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await adminReportExportService.users();
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a'); a.href = url; a.download = 'laporan_pengguna.pdf'; a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Laporan berhasil diunduh');
+    } catch { toast.error('Gagal mengunduh laporan'); }
+    finally { setExporting(false); }
+  };
   const [editUser, setEditUser]     = useState<any>(null);
   const [roleUser, setRoleUser]     = useState<any>(null);
   const [deleteUser, setDeleteUser] = useState<any>(null);
@@ -450,7 +464,12 @@ export default function AdminUsersPage() {
             <p className="text-sm text-slate-400 mt-0.5">{stats?.total_users || 0} pengguna terdaftar</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)}
+        <button onClick={handleExport} disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          Ekspor PDF
+        </button>
+                <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
           <Plus className="w-4 h-4" /> Tambah User
         </button>

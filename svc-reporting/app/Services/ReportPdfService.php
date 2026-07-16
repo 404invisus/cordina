@@ -218,4 +218,128 @@ HTML;
         $filename = strtolower(str_replace(' ', '_', $title)) . '_' . now()->format('Ymd_His') . '.pdf';
         return $pdf->download($filename);
     }
+
+    public function adminUsers(array $data): Response
+    {
+        $rows = '';
+        foreach ($data as $u) {
+            $active = ($u['is_active'] ?? true)
+                ? "<span class='badge badge-green'>Aktif</span>"
+                : "<span class='badge badge-red'>Nonaktif</span>";
+            $roles = implode(', ', (array)($u['roles'] ?? []));
+            $rows .= "<tr>
+                <td>{$u['full_name']}</td>
+                <td>{$u['email']}</td>
+                <td>" . ($u['division'] ?? '-') . "</td>
+                <td>" . ($u['position'] ?? '-') . "</td>
+                <td>{$roles}</td>
+                <td>{$active}</td>
+            </tr>";
+        }
+        $total = count($data);
+        $content = "
+        <div class='summary-grid'>
+            <div class='summary-card'><div class='num'>{$total}</div><div class='lbl'>Total Pengguna</div></div>
+        </div>
+        <h2>Daftar Pengguna</h2>
+        <table>
+            <tr><th>Nama</th><th>Email</th><th>Divisi</th><th>Jabatan</th><th>Role</th><th>Status</th></tr>
+            {$rows}
+        </table>";
+        return $this->generate('Laporan Data Pengguna', 'ConnectOne', $content);
+    }
+
+    public function adminProjects(array $data): Response
+    {
+        $rows = '';
+        $statusMap = ['active'=>'Aktif','inactive'=>'Nonaktif','completed'=>'Selesai','archived'=>'Arsip'];
+        foreach ($data as $p) {
+            $status = $statusMap[$p['status'] ?? ''] ?? ($p['status'] ?? '-');
+            $rows .= "<tr>
+                <td>{$p['name']}</td>
+                <td>" . ($p['description'] ?? '-') . "</td>
+                <td>{$status}</td>
+                <td>" . ($p['start_date'] ?? '-') . "</td>
+                <td>" . ($p['end_date'] ?? '-') . "</td>
+                <td style='text-align:center'>" . ($p['member_count'] ?? '-') . "</td>
+                <td style='text-align:center'>" . ($p['sprint_count'] ?? '-') . "</td>
+            </tr>";
+        }
+        $total = count($data);
+        $content = "
+        <div class='summary-grid'>
+            <div class='summary-card'><div class='num'>{$total}</div><div class='lbl'>Total Project</div></div>
+        </div>
+        <h2>Daftar Project</h2>
+        <table>
+            <tr><th>Nama</th><th>Deskripsi</th><th>Status</th><th>Mulai</th><th>Selesai</th><th>Anggota</th><th>Sprint</th></tr>
+            {$rows}
+        </table>";
+        return $this->generate('Laporan Data Project', 'ConnectOne', $content);
+    }
+
+    public function adminCalendar(array $data, string $period): Response
+    {
+        $rows = '';
+        $typeMap = ['internal'=>'Internal','external'=>'Eksternal','cuti'=>'Cuti','lainnya'=>'Lainnya'];
+        foreach ($data as $e) {
+            $type = $typeMap[$e['type'] ?? ''] ?? ($e['type'] ?? '-');
+            $rows .= "<tr>
+                <td>{$e['title']}</td>
+                <td>{$type}</td>
+                <td>" . ($e['start_date'] ?? '-') . ($e['start_time'] ? ' ' . $e['start_time'] : '') . "</td>
+                <td>" . ($e['end_date'] ?? '-') . ($e['end_time'] ? ' ' . $e['end_time'] : '') . "</td>
+                <td>" . ($e['location'] ?? '-') . "</td>
+                <td>" . ($e['created_by_name'] ?? '-') . "</td>
+                <td style='text-align:center'>" . ($e['participant_count'] ?? '-') . "</td>
+            </tr>";
+        }
+        $total = count($data);
+        $content = "
+        <div class='summary-grid'>
+            <div class='summary-card'><div class='num'>{$total}</div><div class='lbl'>Total Event</div></div>
+        </div>
+        <h2>Daftar Event Kalender</h2>
+        <table>
+            <tr><th>Judul</th><th>Tipe</th><th>Mulai</th><th>Selesai</th><th>Lokasi</th><th>Dibuat Oleh</th><th>Peserta</th></tr>
+            {$rows}
+        </table>";
+        return $this->generate('Laporan Kalender', $period, $content);
+    }
+
+    public function adminWorkload(array $data, string $label): Response
+    {
+        $rows = '';
+        foreach ($data as $item) {
+            $pct  = ($item['task_count'] ?? 0) > 0
+                ? round((($item['done_count'] ?? 0) / $item['task_count']) * 100) : 0;
+            $util = ($item['allocated_hours'] ?? 0) > 0
+                ? round((($item['actual_hours'] ?? 0) / $item['allocated_hours']) * 100) : 0;
+            $rows .= "<tr>
+                <td>" . ($item['full_name'] ?? '-') . "</td>
+                <td>" . ($item['division'] ?? '-') . "</td>
+                <td style='text-align:center'>" . ($item['task_count'] ?? 0) . "</td>
+                <td style='text-align:center'>" . ($item['done_count'] ?? 0) . "</td>
+                <td style='text-align:center'>{$pct}%</td>
+                <td style='text-align:center'>" . ($item['estimated_hours'] ?? 0) . " jam</td>
+                <td style='text-align:center'>" . ($item['actual_hours'] ?? 0) . " jam</td>
+                <td style='text-align:center'>{$util}%</td>
+            </tr>";
+        }
+        $totalUsers = count($data);
+        $totalTask  = array_sum(array_column($data, 'task_count'));
+        $totalDone  = array_sum(array_column($data, 'done_count'));
+        $content = "
+        <div class='summary-grid'>
+            <div class='summary-card'><div class='num'>{$totalUsers}</div><div class='lbl'>Total Anggota</div></div>
+            <div class='summary-card'><div class='num'>{$totalTask}</div><div class='lbl'>Total Task</div></div>
+            <div class='summary-card'><div class='num'>{$totalDone}</div><div class='lbl'>Task Selesai</div></div>
+        </div>
+        <h2>Workload per Anggota</h2>
+        <table>
+            <tr><th>Nama</th><th>Divisi</th><th>Total Task</th><th>Selesai</th><th>Progress</th><th>Est. Jam</th><th>Aktual Jam</th><th>Utilisasi</th></tr>
+            {$rows}
+        </table>";
+        return $this->generate('Laporan Workload', $label, $content);
+    }
 }

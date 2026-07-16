@@ -262,3 +262,17 @@ export const dailyBriefService = {
 export const adminNotifService = {
   telegramUsers: () => api.get('/api/v1/notifications/telegram/users'),
 };
+
+export const adminReportExportService = {
+  users:    () =>
+    api.get('/api/v1/admin/reports/export/users', { responseType: 'blob' }),
+  projects: () =>
+    api.get('/api/v1/admin/reports/export/projects', { responseType: 'blob' }),
+  calendar: (from: string, to: string) =>
+    api.get('/api/v1/admin/reports/export/calendar', { params: { from, to }, responseType: 'blob' }),
+  workload: (project_id: string, sprint_id?: string) =>
+    api.get('/api/v1/admin/reports/export/workload', {
+      params: { project_id, ...(sprint_id ? { sprint_id } : {}) },
+      responseType: 'blob',
+    }),
+};

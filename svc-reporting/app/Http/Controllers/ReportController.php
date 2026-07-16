@@ -94,4 +94,48 @@ class ReportController extends Controller
         $request->validate(['project_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->velocityReport($request->project_id)]);
     }
+
+    // ── Admin Export ────────────────────────────────────────────────────────────
+
+    public function adminExportUsers(Request $request): mixed
+    {
+        $this->requireRole(['administrator', 'kepala_balai']);
+        $data = $this->service->adminUsers();
+        $pdfService = new \App\Services\ReportPdfService();
+        return $pdfService->adminUsers($data);
+    }
+
+    public function adminExportProjects(Request $request): mixed
+    {
+        $this->requireRole(['administrator', 'kepala_balai']);
+        $data = $this->service->adminProjects();
+        $pdfService = new \App\Services\ReportPdfService();
+        return $pdfService->adminProjects($data);
+    }
+
+    public function adminExportCalendar(Request $request): mixed
+    {
+        $this->requireRole(['administrator', 'kepala_balai']);
+        $request->validate([
+            'from' => 'required|date',
+            'to'   => 'required|date|after_or_equal:from',
+        ]);
+        $data = $this->service->adminCalendar($request->from, $request->to);
+        $period = $request->from . ' s/d ' . $request->to;
+        $pdfService = new \App\Services\ReportPdfService();
+        return $pdfService->adminCalendar($data, $period);
+    }
+
+    public function adminExportWorkload(Request $request): mixed
+    {
+        $this->requireRole(['administrator', 'kepala_balai']);
+        $request->validate([
+            'project_id' => 'required|uuid',
+            'sprint_id'  => 'nullable|uuid',
+        ]);
+        $data = $this->service->adminWorkload($request->project_id, $request->sprint_id);
+        $label = $request->sprint_id ? 'Sprint Terpilih' : 'Semua Sprint';
+        $pdfService = new \App\Services\ReportPdfService();
+        return $pdfService->adminWorkload($data, $label);
+    }
 }

@@ -180,4 +180,56 @@ class ReportService
             'velocity'          => (int) ($s['completed_points'] ?? 0),
         ])->toArray();
     }
+
+    // ── Admin report data ───────────────────────────────────────────────────────
+
+    public function adminUsers(): array
+    {
+        try {
+            $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get("{$authUrl}/api/v1/internal/users/all");
+            return $response->successful() ? ($response->json('data') ?? []) : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    public function adminProjects(): array
+    {
+        try {
+            $projectUrl = rtrim(config('services.project.url', 'http://svc-project'), '/');
+            $response   = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get("{$projectUrl}/api/v1/internal/projects/all");
+            return $response->successful() ? ($response->json('data') ?? []) : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    public function adminCalendar(string $from, string $to): array
+    {
+        try {
+            $workloadUrl = rtrim(config('services.workload.url', 'http://svc-workload'), '/');
+            $response    = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get("{$workloadUrl}/api/v1/internal/calendar/all", compact('from', 'to'));
+            return $response->successful() ? ($response->json('data') ?? []) : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    public function adminWorkload(string $projectId, ?string $sprintId): array
+    {
+        try {
+            $projectUrl = rtrim(config('services.project.url', 'http://svc-project'), '/');
+            $params     = ['project_id' => $projectId];
+            if ($sprintId) $params['sprint_id'] = $sprintId;
+            $response   = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get("{$projectUrl}/api/v1/internal/workload/summary", $params);
+            return $response->successful() ? ($response->json('data') ?? []) : [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
 }

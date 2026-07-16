@@ -544,9 +544,10 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
 
 // ── CR Card ───────────────────────────────────────────────────────────────────
 
-function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
+function CRCard({ cr, onEdit, onReject, onSign, onImplement, userId, usersMap }: {
   cr: any; onEdit: (cr: any) => void; onReject: (id: string) => void;
-  onSign: (cr: any) => void; userId: string; usersMap: Record<string, string>;
+  onSign: (cr: any) => void;
+  onImplement: (id: string) => void; userId: string; usersMap: Record<string, string>;
 }) {
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
@@ -642,10 +643,10 @@ function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
           </>
         )}
         {cr.requester_id === userId && cr.status === 'approved' && (
-          <button onClick={() => implementMutation.mutate()} disabled={implementMutation.isPending}
+          <button onClick={() => onImplement(cr.id)}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            {implementMutation.isPending ? 'Memproses...' : 'Tandai Diimplementasikan'}
+            Tandai Diimplementasikan
           </button>
         )}
         {isMyTurn && !isSigner && (
@@ -692,6 +693,12 @@ export default function ChangeManagementPage() {
   });
 
   const crs = data?.data || [];
+  const qc = useQueryClient();
+  const implementCrMutation = useMutation({
+    mutationFn: (id: string) => changeRequestService.implement(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('CR ditandai sebagai diimplementasikan'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+  });
 
   return (
     <AppLayout>
@@ -733,7 +740,7 @@ export default function ChangeManagementPage() {
       ) : (
         <div className="grid gap-4">
           {crs.map((cr: any) => (
-            <CRCard key={cr.id} cr={cr} userId={user?.id || ''} onEdit={setEditData} onReject={setRejectId} onSign={setSignCr} usersMap={usersMap} />
+            <CRCard key={cr.id} cr={cr} userId={user?.id || ''} onEdit={setEditData} onReject={setRejectId} onSign={setSignCr} onImplement={(id) => implementCrMutation.mutate(id)} usersMap={usersMap} />
           ))}
         </div>
       )}

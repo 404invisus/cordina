@@ -5,9 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarRange, Plus, X, Trash2, Eye, Clock,
   Users, MapPin, Lock, Globe, ChevronLeft, ChevronRight, Check,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminCalendarService, adminUserService } from '@/lib/api';
+import { adminCalendarService, adminReportExportService, adminUserService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
@@ -346,6 +348,23 @@ export default function AdminCalendarPage() {
   const qc = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showCreate, setShowCreate]     = useState(false);
+  const [exporting, setExporting]       = useState(false);
+  const [showExportBar, setShowExportBar] = useState(false);
+  const [exportFrom, setExportFrom]     = useState('');
+  const [exportTo, setExportTo]         = useState('');
+  const handleExport = async () => {
+    const f = exportFrom || from;
+    const t = exportTo   || to;
+    setExporting(true);
+    try {
+      const res = await adminReportExportService.calendar(f, t);
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a'); a.href = url; a.download = 'laporan_kalender.pdf'; a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Laporan berhasil diunduh');
+    } catch { toast.error('Gagal mengunduh laporan'); }
+    finally { setExporting(false); }
+  };
   const [viewEvent, setViewEvent]       = useState<any>(null);
   const [deleteEvent, setDeleteEvent]   = useState<any>(null);
 
@@ -396,7 +415,11 @@ export default function AdminCalendarPage() {
             <p className="text-sm text-slate-400 mt-0.5">{(events as any[]).length} event bulan ini</p>
           </div>
         </div>
-        <button onClick={() => setShowCreate(true)}
+        <button onClick={() => setShowExportBar(v => !v)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+          <Download className="w-4 h-4" /> Ekspor PDF
+        </button>
+                <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
           <Plus className="w-4 h-4" /> Tambah Event
         </button>
@@ -491,7 +514,23 @@ export default function AdminCalendarPage() {
       )}
 
       <AnimatePresence>
-        {showCreate && <EventFormModal open={true} onClose={() => setShowCreate(false)} users={users} />}
+        {showExportBar && (
+        <div className="mb-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 flex-wrap">
+          <span className="text-sm text-slate-500 font-medium">Rentang laporan:</span>
+          <input type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
+          <span className="text-slate-400 text-sm">s/d</span>
+          <input type="date" value={exportTo} onChange={e => setExportTo(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
+          <p className="text-xs text-slate-400">Kosongkan untuk gunakan bulan ini</p>
+          <button onClick={handleExport} disabled={exporting}
+            className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-40">
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Unduh PDF
+          </button>
+        </div>
+      )}
+      {showCreate && <EventFormModal open={true} onClose={() => setShowCreate(false)} users={users} />}
         {viewEvent && (
           <EventDrawer event={viewEvent} onClose={() => setViewEvent(null)}
             onDelete={() => { setDeleteEvent(viewEvent); setViewEvent(null); }} />

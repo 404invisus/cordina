@@ -57,6 +57,11 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('internal')->prefix('internal')->group(function () {
+        Route::get('/users/all', function () {
+            $users = \App\Models\User::all();
+            return response()->json(['data' => \App\Http\Resources\UserResource::collection($users)]);
+        });
+
         Route::get('/users/{id}', function (string $id) {
             $user = \App\Models\User::findOrFail($id);
             return response()->json(['data' => new \App\Http\Resources\UserResource($user)]);

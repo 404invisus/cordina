@@ -13,4 +13,9 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/reports/export/sprint/{id}',     [ReportController::class, 'exportSprint']);
     Route::get('/reports/export/velocity',         [ReportController::class, 'exportVelocity']);
     Route::get('/reports/export/time-tracking',    [ReportController::class, 'exportTimeTracking']);
+
+    Route::get('/admin/reports/export/users',    [ReportController::class, 'adminExportUsers']);
+    Route::get('/admin/reports/export/projects', [ReportController::class, 'adminExportProjects']);
+    Route::get('/admin/reports/export/calendar', [ReportController::class, 'adminExportCalendar']);
+    Route::get('/admin/reports/export/workload', [ReportController::class, 'adminExportWorkload']);
 });

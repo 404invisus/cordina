@@ -165,6 +165,7 @@ services:
       - ./svc-reporting/database:/var/www/html/database
       - ./svc-reporting/app:/var/www/html/app
       - ./svc-reporting/routes:/var/www/html/routes
+      - ./svc-reporting/storage/app:/var/www/html/storage/app
     build:
       context: ./svc-reporting
       dockerfile: Dockerfile

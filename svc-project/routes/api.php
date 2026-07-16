@@ -131,6 +131,53 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('internal')->prefix('internal')->group(function () {
+        Route::get('/projects/all', function () {
+            $projects = \App\Models\Project::withCount(['members', 'sprints'])->get();
+            return response()->json(['data' => $projects->map(fn($p) => [
+                'id'           => $p->id,
+                'name'         => $p->name,
+                'description'  => $p->description,
+                'status'       => $p->status,
+                'start_date'   => $p->start_date,
+                'end_date'     => $p->end_date,
+                'member_count' => $p->members_count,
+                'sprint_count' => $p->sprints_count,
+            ])]);
+        });
+
+        Route::get('/workload/summary', function (\Illuminate\Http\Request $request) {
+            $projectId = $request->query('project_id');
+            $sprintId  = $request->query('sprint_id');
+            $q = \App\Models\Sprint::where('project_id', $projectId);
+            if ($sprintId) $q->where('id', $sprintId);
+            $sprintIds = $q->pluck('id');
+            $tasks = \App\Models\Task::whereIn('sprint_id', $sprintIds)
+                ->whereNotNull('assignee_id')->get();
+
+            $userIds = $tasks->pluck('assignee_id')->unique()->values()->toArray();
+            $users = [];
+            if (!empty($userIds)) {
+                try {
+                    $authUrl = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+                    $resp = \Illuminate\Support\Facades\Http::timeout(5)
+                        ->post("{$authUrl}/api/v1/internal/users/batch", ['ids' => $userIds]);
+                    $users = collect($resp->json('data') ?? [])->keyBy('id')->toArray();
+                } catch (\Throwable $e) {}
+            }
+
+            $grouped = $tasks->groupBy('assignee_id')->map(fn($ut, $uid) => [
+                'user_id'         => $uid,
+                'full_name'       => $users[$uid]['full_name'] ?? null,
+                'division'        => $users[$uid]['division']  ?? null,
+                'task_count'      => $ut->count(),
+                'done_count'      => $ut->where('status', 'done')->count(),
+                'estimated_hours' => round($ut->sum('estimated_hours'), 2),
+                'actual_hours'    => round($ut->sum('actual_hours'), 2),
+                'allocated_hours' => 0,
+            ])->values();
+            return response()->json(['data' => $grouped]);
+        });
+
 
         Route::get('/sprints/{sprintId}/task-summary', function (string $sprintId) {
             $data = DB::table('tasks')
