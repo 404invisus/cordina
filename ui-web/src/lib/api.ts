@@ -248,6 +248,15 @@ export const crAttachmentService = {
   delete: (crId: string, attachId: string) => api.delete(`/api/v1/change-requests/${crId}/attachments/${attachId}`),
 };
 
+export const tteSignService = {
+  list:       ()                        => api.get('/api/v1/tte-sign-requests'),
+  create:     (fd: FormData)            => api.post('/api/v1/tte-sign-requests', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  show:       (id: string)              => api.get(`/api/v1/tte-sign-requests/${id}`),
+  sign:       (id: string, passphrase: string) => api.post(`/api/v1/tte-sign-requests/${id}/sign`, { passphrase }),
+  distribute: (id: string, user_ids: string[]) => api.post(`/api/v1/tte-sign-requests/${id}/distribute`, { user_ids }),
+  download:   (id: string)              => api.get(`/api/v1/tte-sign-requests/${id}/download`, { responseType: 'blob' }),
+};
+
 export const esignService = {
   list: () => api.get('/api/v1/esign'),
   sign: async (formData: FormData) => {

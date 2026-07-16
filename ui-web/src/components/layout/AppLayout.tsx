@@ -8,7 +8,7 @@ import {
   LayoutDashboard, FolderKanban, CheckSquare, Users, BarChart3,
   Bell, Settings, LogOut, Menu, ChevronDown, Layers,
   Activity, HardDrive, Shield, ChevronRight, Calendar, GitMerge, Archive, FileText, MapPin,
-  UserCog, FolderOpen, CalendarRange, MessageCircle, FileSignature,
+  UserCog, FolderOpen, CalendarRange, MessageCircle, FileSignature, FilePen,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +32,7 @@ const navItems = [
   { label: 'Dokumen Resmi',  icon: FileText,        href: '/documents',           roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Change Mgmt',   icon: GitMerge,        href: '/change-management',   roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'e-Sign',         icon: FileSignature,   href: '/esign',               roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
+  { label: 'Distribusi Dok. TTE', icon: FilePen,     href: '/tte-sign',            roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
   { label: 'Daily Brief',   icon: Activity,        href: '/daily-brief',         roles: ['kepala_balai','kepala_seksi','project_manager','scrum_master','staff'] },
 ];
 

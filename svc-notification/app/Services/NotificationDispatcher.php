@@ -36,7 +36,7 @@ class NotificationDispatcher
                 'telegram' => $this->dispatchTelegram(
                     $notif->id, $userId, $chatId, $message,
                     groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
-                    privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
+                    privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'tte.sign_requested', 'tte.all_signed', 'tte.distributed', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
                 default    => Log::info("Channel {$channel} not implemented yet"),
@@ -155,6 +155,18 @@ class NotificationDispatcher
                 $label = ($payload['days_until'] ?? 1) === 0 ? 'HARI INI' : 'BESOK';
                 return "⏰ *PENGINGAT AGENDA - {$label}*\n".$dateStr."\n\n📋 Nama: *".($payload['event_title'] ?? 'N/A')."*\n📌 Jenis: ".$type."\n🕙 Waktu: ".$waktu."\n🏛 Tempat: ".($payload['location'] ?? '-');
             })(),
+            'tte.sign_requested' => sprintf(
+                "✍️ *PERMINTAAN TANDA TANGAN*\n\nAnda diminta menandatangani dokumen:\n📄 *%s*\n\nSilakan buka aplikasi ConnectOne untuk menandatangani.",
+                $payload['request_title'] ?? 'N/A'
+            ),
+            'tte.all_signed' => sprintf(
+                "✅ *DOKUMEN SELESAI DITANDATANGANI*\n\nSemua penandatangan telah menandatangani:\n📄 *%s*\n\nDokumen siap untuk didistribusikan.",
+                $payload['request_title'] ?? 'N/A'
+            ),
+            'tte.distributed' => sprintf(
+                "📬 *DOKUMEN DIDISTRIBUSIKAN*\n\nAnda menerima dokumen:\n📄 *%s*\n\nSilakan buka di ConnectOne untuk melihat dan mengunduh.",
+                $payload['request_title'] ?? 'N/A'
+            ),
             'change_request.submitted' => sprintf(
                 "*[change request]* %s mengajukan CR baru: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nAnda ditunjuk sebagai penilai pertama. Segera tinjau di aplikasi ConnectOne.",
                 $userName,

@@ -27,6 +27,15 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/documents/{id}/download',[DocumentController::class, 'download']);
     Route::delete('/documents/{id}',      [DocumentController::class, 'destroy']);
 
+    // TTE Sign Requests (distribusi multi-signer)
+    Route::get('/tte-sign-requests',                         [\App\Http\Controllers\TteSignRequestController::class, 'index']);
+    Route::post('/tte-sign-requests',                        [\App\Http\Controllers\TteSignRequestController::class, 'store']);
+    Route::get('/tte-sign-requests/{id}',                    [\App\Http\Controllers\TteSignRequestController::class, 'show']);
+    Route::post('/tte-sign-requests/{id}/sign',              [\App\Http\Controllers\TteSignRequestController::class, 'sign']);
+    Route::post('/tte-sign-requests/{id}/distribute',        [\App\Http\Controllers\TteSignRequestController::class, 'distribute']);
+    Route::get('/tte-sign-requests/{id}/download',           [\App\Http\Controllers\TteSignRequestController::class, 'download']);
+    Route::post('/tte-sign-requests/{id}/verify',            [\App\Http\Controllers\TteSignRequestController::class, 'verify']);
+
     // e-Sign
     Route::get('/esign',                  [EsignController::class, 'index']);
     Route::post('/esign/sign',            [EsignController::class, 'sign']);
