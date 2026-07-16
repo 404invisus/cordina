@@ -263,7 +263,7 @@ export const esignService = {
 
     // Kirim dummy request ke esign-api bersamaan dengan sign request
     // BSrE butuh koneksi "pemanasan" — request pertama membuka slot, request kedua masuk
-    const dummyReq = fetch(BASE_URL + '/api/v1/esign/warmup', { method: 'POST' }).catch(() => {});
+    const dummyReq = fetch(BASE_URL + '/api/v1/esign/warmup', { method: 'GET' }).catch(() => {});
 
     const signRes = await fetch(BASE_URL + '/api/v1/esign/sign', {
       method: 'POST',

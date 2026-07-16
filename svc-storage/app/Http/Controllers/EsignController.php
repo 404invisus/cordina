@@ -43,67 +43,76 @@ class EsignController extends Controller
 
         $pdfContent = file_get_contents($request->file('file')->getRealPath());
 
-        // Call esign-api (wrapper internal BSrE): multipart in, PDF biner out
-        $esignUrl = rtrim(env('ESIGN_API_URL', 'http://esign-api:8080'), '/');
-        $esignKey = env('ESIGN_API_KEY', '');
-
-        $req = Http::timeout(90)
-            ->withHeaders(['X-API-Key' => $esignKey])
-            ->attach('file', $pdfContent, 'document.pdf')
-            ->attach('nik', $nik)
-            ->attach('passphrase', $request->passphrase)
-            ->attach('appearance', $request->tampilan);
-
-        if ($specimenBinary) {
-            $req = $req->attach('signature_image', $specimenBinary, 'specimen.png');
-        }
-
-        \Illuminate\Support\Facades\Log::info('ESIGN_SIGN_DEBUG', [
-            'tampilan'     => $request->tampilan,
-            'has_specimen' => (bool) $specimenBinary,
-            'pdf_size'     => strlen($pdfContent),
-            'nik_last4'    => substr($nik, -4),
-        ]);
-
-        // Bypass Laravel HTTP client — pakai curl langsung
         $tmpPdf = tempnam('/tmp', 'esign_') . '.pdf';
-        $tmpOut = tempnam('/tmp', 'esign_out_') . '.pdf';
+        $tmpOut = tempnam('/tmp', 'esign_out_');
         file_put_contents($tmpPdf, $pdfContent);
 
-        $curlCmd = 'curl -s -m 90 -X POST'
-            . ' ' . escapeshellarg($esignUrl . '/v1/sign/pdf')
-            . ' -H ' . escapeshellarg('X-API-Key: ' . $esignKey)
-            . ' -F ' . escapeshellarg('nik=' . $nik)
-            . ' -F ' . escapeshellarg('passphrase=' . $request->passphrase)
-            . ' -F ' . escapeshellarg('file=@' . $tmpPdf)
-            . ' -o ' . escapeshellarg($tmpOut)
-            . ' -w ' . escapeshellarg('%{http_code}');
+        if ($request->tampilan === 'VISIBLE') {
+            // VISIBLE: BSrE v1 multipart langsung, pakai tag_koordinat=$ untuk posisi spesimen
+            $bsreBase = rtrim(\App\Services\TteConfigService::get('TTE_BASE_URL', 'http://10.31.10.90'), '/');
+            $bsreUser = \App\Services\TteConfigService::get('TTE_USERNAME', 'connectone');
+            $bsrePass = \App\Services\TteConfigService::get('TTE_PASSWORD', '');
 
-        if ($specimenBinary) {
-            $tmpImg = tempnam('/tmp', 'esign_img_');
+            $tmpImg = tempnam('/tmp', 'esign_img_') . '.png';
             file_put_contents($tmpImg, $specimenBinary);
-            $curlCmd .= ' -F ' . escapeshellarg('signature_image=@' . $tmpImg);
-            $curlCmd .= ' -F ' . escapeshellarg('appearance=VISIBLE');
+
+            $postFields = [
+                'file'          => new \CURLFile($tmpPdf, 'application/pdf', 'document.pdf'),
+                'nik'           => $nik,
+                'passphrase'    => $request->passphrase,
+                'tampilan'      => 'VISIBLE',
+                'tag_koordinat' => '$',
+                'image'         => new \CURLFile($tmpImg, 'image/png', 'specimen.png'),
+            ];
+
+            $ch = curl_init($bsreBase . '/api/sign/pdf');
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $postFields,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Basic ' . base64_encode("{$bsreUser}:{$bsrePass}"),
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 90,
+            ]);
+            $signedPdfBinary = curl_exec($ch);
+            $httpCode        = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError       = curl_error($ch);
+            curl_close($ch);
+            @unlink($tmpImg);
+
+            abort_if($httpCode !== 200, 422, 'Gagal sign VISIBLE via BSrE: HTTP ' . $httpCode . ' ' . $curlError);
+
         } else {
-            $curlCmd .= ' -F ' . escapeshellarg('appearance=INVISIBLE');
+            // INVISIBLE: lewat esign-api Go wrapper (lebih reliable)
+            $esignUrl = rtrim(env('ESIGN_API_URL', 'http://esign-api:8080'), '/');
+            $esignKey = env('ESIGN_API_KEY', '');
+
+            $ch = curl_init($esignUrl . '/v1/sign/pdf');
+            curl_setopt_array($ch, [
+                CURLOPT_POST       => true,
+                CURLOPT_POSTFIELDS => [
+                    'file'       => new \CURLFile($tmpPdf, 'application/pdf', 'document.pdf'),
+                    'nik'        => $nik,
+                    'passphrase' => $request->passphrase,
+                    'appearance' => 'INVISIBLE',
+                ],
+                CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $esignKey],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 90,
+            ]);
+            $signedPdfBinary = curl_exec($ch);
+            $httpCode        = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError       = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode !== 200) {
+                $err = json_decode($signedPdfBinary, true);
+                abort(422, $err['error']['message_id'] ?? ('Gagal menandatangani: HTTP ' . $httpCode . ' ' . $curlError));
+            }
         }
 
-        \Illuminate\Support\Facades\Log::info('ESIGN_CURL_CMD', ['cmd' => $curlCmd]);
-        $httpCode = trim(shell_exec($curlCmd));
-
-        \Illuminate\Support\Facades\Log::info('ESIGN_CURL_RESULT', [
-            'http_code' => $httpCode,
-            'out_size'  => file_exists($tmpOut) ? filesize($tmpOut) : 0,
-        ]);
-
-        if ($httpCode !== '200') {
-            $errBody = file_exists($tmpOut) ? json_decode(file_get_contents($tmpOut), true) : [];
-            @unlink($tmpPdf); @unlink($tmpOut);
-            abort(422, $errBody['error']['message_id'] ?? ('Gagal menandatangani via TTE: HTTP ' . $httpCode));
-        }
-
-        $signedPdfBinary = file_get_contents($tmpOut);
-        @unlink($tmpPdf); @unlink($tmpOut);
+        @unlink($tmpPdf);
         abort_if(!str_starts_with($signedPdfBinary, '%PDF'), 422, 'Hasil TTE bukan PDF yang valid');
 
         // Simpan PDF ter-TTE

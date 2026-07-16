@@ -30,12 +30,15 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [file, setFile]           = useState<File | null>(null);
   const [title, setTitle]         = useState('');
   const [passphrase, setPassphrase] = useState('');
-  const [tampilan, setTampilan]   = useState<'VISIBLE' | 'INVISIBLE'>('VISIBLE');
+  const [tampilan, setTampilan]   = useState<'VISIBLE' | 'INVISIBLE'>('INVISIBLE');
 
   const mutation = useMutation({
     mutationFn: () => {
       const fd = new FormData();
       fd.append('file', file!);
+      if (file && file.size > 500 * 1024) {
+        throw { response: { data: { message: 'Ukuran file terlalu besar. Maksimal 500 KB per dokumen untuk penandatanganan elektronik.' } } };
+      }
       fd.append('passphrase', passphrase);
       fd.append('tampilan', tampilan);
       fd.append('nik', (user as any)?.nik || '');
@@ -46,7 +49,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ['esign-docs'] });
       toast.success('Dokumen berhasil ditandatangani!');
       onClose();
-      setFile(null); setTitle(''); setPassphrase(''); setTampilan('VISIBLE');
+      setFile(null); setTitle(''); setPassphrase(''); setTampilan('INVISIBLE');
       if (fileRef.current) fileRef.current.value = '';
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menandatangani'),
@@ -94,7 +97,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <div>
                   <Upload className="w-6 h-6 text-slate-300 mx-auto mb-2" />
                   <div className="text-sm text-slate-400">Klik untuk upload PDF</div>
-                  <div className="text-xs text-slate-300 mt-0.5">Maks. 20 MB</div>
+
                 </div>
               )}
             </div>
@@ -108,36 +111,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               placeholder="Nama dokumen (opsional, default nama file)" />
           </div>
 
-          {/* Tampilan TTE */}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tampilan Tanda Tangan</label>
-            <div className="mt-1 grid grid-cols-2 gap-2">
-              <button onClick={() => setTampilan('VISIBLE')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                  ${tampilan === 'VISIBLE' ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-                <Eye className="w-4 h-4" />
-                <div className="text-left">
-                  <div>Visible</div>
-                  <div className="text-xs font-normal opacity-70">Tampilkan Spesimen</div>
-                </div>
-              </button>
-              <button onClick={() => setTampilan('INVISIBLE')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all
-                  ${tampilan === 'INVISIBLE' ? 'border-slate-500 bg-slate-50 text-slate-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-                <EyeOff className="w-4 h-4" />
-                <div className="text-left">
-                  <div>Invisible</div>
-                  <div className="text-xs font-normal opacity-70">Sembunyikan Spesimen</div>
-                </div>
-              </button>
-            </div>
-            {tampilan === 'VISIBLE' && !user?.tte_specimen_url && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                Spesimen TTD belum diupload di profil. Akan menggunakan tampilan default.
-              </div>
-            )}
-          </div>
+
 
           {/* Passphrase */}
           <div>
