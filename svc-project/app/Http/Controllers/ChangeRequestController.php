@@ -439,4 +439,25 @@ class ChangeRequestController extends Controller
         );
     }
 
+    // ── POST /v1/change-requests/{id}/implement ──
+    public function implement(string $id, Request $request): JsonResponse
+    {
+        $cr     = ChangeRequest::findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        abort_if($cr->requester_id !== $userId, 403, 'Hanya pembuat CR yang bisa menandai sebagai diimplementasikan');
+        abort_if($cr->status !== 'approved', 422, 'CR harus berstatus disetujui terlebih dahulu');
+
+        $request->validate(['catatan' => 'nullable|string|max:500']);
+
+        $cr->update([
+            'status'        => 'implemented',
+            'reviewer_note' => $request->catatan,
+        ]);
+
+        $this->notifyUser($cr->requester_id, 'change_request.implemented', $this->notifyPayload($cr));
+
+        return response()->json(['data' => $cr->fresh('approvals')]);
+    }
+
 }

@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('change-requests/{id}',      [ChangeRequestController::class, 'destroy']);
         Route::post('change-requests/{id}/submit',   [ChangeRequestController::class, 'submit']);
         Route::post('change-requests/{id}/sign',      [ChangeRequestController::class, 'sign']);
+        Route::post('change-requests/{id}/implement',  [ChangeRequestController::class, 'implement']);
 
         // TTE Config (admin only)
         Route::get('tte-config',        [TteConfigController::class, 'index']);

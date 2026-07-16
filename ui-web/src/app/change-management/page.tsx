@@ -425,6 +425,12 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal mengunggah'),
   });
 
+  const implementMutation = useMutation({
+    mutationFn: () => changeRequestService.implement(cr.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('CR ditandai sebagai diimplementasikan'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (attachId: string) => crAttachmentService.delete(crId, attachId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['cr-attachments', crId] }); toast.success('Lampiran dihapus'); },
@@ -587,6 +593,13 @@ function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
             <button onClick={() => { if (confirm('Hapus CR ini?')) deleteMutation.mutate(); }} disabled={deleteMutation.isPending}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">Hapus</button>
           </>
+        )}
+        {cr.requester_id === userId && cr.status === 'approved' && (
+          <button onClick={() => implementMutation.mutate()} disabled={implementMutation.isPending}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {implementMutation.isPending ? 'Memproses...' : 'Tandai Diimplementasikan'}
+          </button>
         )}
         {isMyTurn && !isSigner && (
           <>
