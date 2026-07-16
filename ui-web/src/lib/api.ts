@@ -228,6 +228,17 @@ export const changeRequestService = {
   getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
 };
 
+export const crAttachmentService = {
+  list: (crId: string) => api.get(`/api/v1/change-requests/${crId}/attachments`),
+  upload: (crId: string, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post(`/api/v1/change-requests/${crId}/attachments`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  download: (crId: string, attachId: string) => api.get(`/api/v1/change-requests/${crId}/attachments/${attachId}/download`, { responseType: 'blob' }),
+  delete: (crId: string, attachId: string) => api.delete(`/api/v1/change-requests/${crId}/attachments/${attachId}`),
+};
+
 export const esignService = {
   list: () => api.get('/api/v1/esign'),
   sign: (formData: FormData) => api.post('/api/v1/esign/sign', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),

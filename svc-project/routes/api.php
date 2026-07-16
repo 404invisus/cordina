@@ -3,6 +3,7 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ChangeRequestController;
 use App\Http\Controllers\TteConfigController;
+use App\Http\Controllers\CrAttachmentController;
 use App\Http\Controllers\EpicController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SprintController;
@@ -41,6 +42,10 @@ Route::prefix('v1')->group(function () {
         Route::put('tte-config',        [TteConfigController::class, 'update']);
         Route::post('tte-config/test',  [TteConfigController::class, 'test']);
         Route::get('change-requests/{id}/document',   [ChangeRequestController::class, 'downloadDocument']);
+        Route::get('change-requests/{id}/attachments',                      [CrAttachmentController::class, 'index']);
+        Route::post('change-requests/{id}/attachments',                     [CrAttachmentController::class, 'store']);
+        Route::get('change-requests/{id}/attachments/{attachId}/download',  [CrAttachmentController::class, 'download']);
+        Route::delete('change-requests/{id}/attachments/{attachId}',        [CrAttachmentController::class, 'destroy']);
         Route::post('change-requests/{id}/approve',[ChangeRequestController::class, 'approve']);
         Route::post('change-requests/{id}/reject', [ChangeRequestController::class, 'reject']);
 

@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitMerge, Plus, X, AlertTriangle, CheckCircle2, Clock,
-  FileEdit, ChevronDown, ChevronUp, Check, Pen,
+  FileEdit, ChevronDown, ChevronUp, Check, Pen, Paperclip, Download, Trash2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { changeRequestService } from '@/lib/api';
+import { changeRequestService, crAttachmentService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
@@ -155,6 +155,8 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [signerId, setSignerId]       = useState('');
   const [pelaksanaIds, setPelaksanaIds] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const attachFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -166,6 +168,7 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
         setReviewerIds([]);
         setSignerId('');
         setPelaksanaIds([]);
+        setPendingFiles([]);
       }
     }
   }, [editData, open]);
@@ -184,9 +187,17 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
     mutationFn: (data: any) => editData
       ? changeRequestService.update(editData.id, data)
       : changeRequestService.create(data),
-    onSuccess: () => {
+    onSuccess: async (res: any) => {
+      // Upload pending lampiran jika ada
+      const crId = res.data?.data?.id;
+      if (crId && pendingFiles.length > 0) {
+        for (const file of pendingFiles) {
+          try { await crAttachmentService.upload(crId, file); } catch {}
+        }
+      }
       qc.invalidateQueries({ queryKey: ['change-requests'] });
       toast.success(editData ? 'CR diperbarui' : 'CR berhasil dibuat');
+      setPendingFiles([]);
       onClose();
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menyimpan'),
@@ -276,7 +287,38 @@ function CRModal({ open, onClose, editData }: { open: boolean; onClose: () => vo
               </>
             )}
           </div>
+        {/* Lampiran */}
+          <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lampiran Pendukung</div>
+            <input ref={attachFileRef} type="file" className="hidden" multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.zip,.rar,.txt,.csv"
+              onChange={e => {
+                if (e.target.files) setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                if (attachFileRef.current) attachFileRef.current.value = '';
+              }} />
+            <button onClick={() => attachFileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-white transition-colors">
+              <Paperclip className="w-4 h-4" /> Tambah Lampiran
+            </button>
+            {pendingFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {pendingFiles.map((file, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100">
+                    <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="text-xs text-slate-700 flex-1 truncate">{file.name}</span>
+                    <span className="text-xs text-slate-400">{(file.size/1024).toFixed(1)} KB</span>
+                    <button onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="p-1 hover:bg-red-100 rounded text-slate-400 hover:text-red-500">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-slate-400">File akan diunggah setelah CR berhasil dibuat</p>
+          </div>
         </div>
+
 
         <div className="flex gap-3 p-6 pt-0 sticky bottom-0 bg-white border-t border-slate-100">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
@@ -365,6 +407,89 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   );
 }
 
+
+// ── CR Attachments ────────────────────────────────────────────────────────────
+
+function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }) {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['cr-attachments', crId],
+    queryFn: () => crAttachmentService.list(crId).then(r => r.data.data),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => crAttachmentService.upload(crId, file),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cr-attachments', crId] }); toast.success('Lampiran berhasil diunggah'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal mengunggah'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (attachId: string) => crAttachmentService.delete(crId, attachId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['cr-attachments', crId] }); toast.success('Lampiran dihapus'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menghapus'),
+  });
+
+  const handleDownload = async (attach: any) => {
+    try {
+      const res = await crAttachmentService.download(crId, attach.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a'); a.href = url; a.download = attach.file_name; a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error('Gagal mengunduh'); }
+  };
+
+  const formatSize = (bytes: number) => bytes < 1024 * 1024 ? (bytes / 1024).toFixed(1) + ' KB' : (bytes / 1024 / 1024).toFixed(1) + ' MB';
+
+  const attachments: any[] = Array.isArray(data) ? data : [];
+
+  return (
+    <div className="mt-3 border-t border-slate-100 pt-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+          <Paperclip className="w-3.5 h-3.5" /> Lampiran ({attachments.length})
+        </span>
+        {canUpload && (
+          <>
+            <input ref={fileRef} type="file" className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.zip,.rar,.txt,.csv"
+              onChange={e => { if (e.target.files?.[0]) uploadMutation.mutate(e.target.files[0]); if (fileRef.current) fileRef.current.value = ''; }} />
+            <button onClick={() => fileRef.current?.click()} disabled={uploadMutation.isPending}
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1 disabled:opacity-50">
+              <Plus className="w-3 h-3" /> {uploadMutation.isPending ? 'Mengunggah...' : 'Unggah'}
+            </button>
+          </>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="text-xs text-slate-400 py-2">Memuat lampiran...</div>
+      ) : attachments.length === 0 ? (
+        <div className="text-xs text-slate-400 py-1">Belum ada lampiran</div>
+      ) : (
+        <div className="space-y-1.5">
+          {attachments.map((a: any) => (
+            <div key={a.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+              <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span className="text-xs text-slate-700 flex-1 truncate">{a.file_name}</span>
+              <span className="text-xs text-slate-400">{formatSize(a.file_size)}</span>
+              <button onClick={() => handleDownload(a)} className="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-700">
+                <Download className="w-3.5 h-3.5" />
+              </button>
+              {canUpload && (
+                <button onClick={() => { if (confirm('Hapus lampiran ini?')) deleteMutation.mutate(a.id); }}
+                  className="p-1 hover:bg-red-100 rounded text-slate-400 hover:text-red-500">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── CR Card ───────────────────────────────────────────────────────────────────
 
 function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
@@ -445,6 +570,7 @@ function CRCard({ cr, onEdit, onReject, onSign, userId, usersMap }: {
           {expanded && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <CRTimeline cr={cr} usersMap={usersMap} />
+              <CRAttachments crId={cr.id} canUpload={isMyTurn || (cr.requester_id === userId && cr.status === 'draft')} />
             </motion.div>
           )}
         </AnimatePresence>
