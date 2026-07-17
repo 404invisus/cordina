@@ -31,7 +31,14 @@ const NOTIF_TYPES = [
   { key: 'sprint.started',         label: 'Sprint Dimulai',       desc: 'Saat sprint baru dimulai' },
   { key: 'sprint.completed',       label: 'Sprint Selesai',       desc: 'Saat sprint selesai' },
   { key: 'calendar.event_created', label: 'Agenda Baru',          desc: 'Saat ada agenda kegiatan baru' },
-  { key: 'calendar.event_assigned',label: 'Dijadwalkan di Agenda',desc: 'Saat kamu dijadwalkan dalam agenda' },
+  { key: 'calendar.event_assigned',   label: 'Dijadwalkan di Agenda',        desc: 'Saat kamu dijadwalkan dalam agenda' },
+  { key: 'calendar.deadline_reminder', label: 'Pengingat Agenda',              desc: 'Pengingat H-1 dan H-0 agenda' },
+  { key: 'tte.sign_requested',         label: 'Permintaan Tanda Tangan',       desc: 'Saat kamu diminta menandatangani dokumen TTE' },
+  { key: 'tte.all_signed',             label: 'Dokumen Selesai Ditandatangani',desc: 'Saat semua penandatangan selesai' },
+  { key: 'tte.distributed',            label: 'Dokumen Didistribusikan',       desc: 'Saat dokumen TTE dikirim ke kamu' },
+  { key: 'change_request.submitted',   label: 'CR Baru Diajukan',              desc: 'Saat ada CR baru yang perlu ditinjau' },
+  { key: 'change_request.approved',    label: 'CR Disetujui',                  desc: 'Saat CR kamu disetujui' },
+  { key: 'change_request.rejected',    label: 'CR Ditolak',                    desc: 'Saat CR kamu ditolak' },
 ];
 
 function NotifSettings() {
