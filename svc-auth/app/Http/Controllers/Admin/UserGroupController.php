@@ -55,7 +55,7 @@ class UserGroupController extends Controller
             'name'             => $request->name,
             'description'      => $request->description,
             'telegram_chat_id' => $request->telegram_chat_id,
-            'created_by'       => $request->attributes->get('jwt_user_id'),
+            'created_by'       => auth()->id(),
             'created_at'       => now(),
             'updated_at'       => now(),
         ]);
