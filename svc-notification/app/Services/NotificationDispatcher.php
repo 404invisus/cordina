@@ -43,10 +43,9 @@ class NotificationDispatcher
             };
         }
     }
-    public function dispatchToGroup(string $type, array $payload, string $groupName, string $groupTelegramChatId): void
+    public function dispatchToGroup(string $type, array $payload, string $groupName): void
     {
         $message = $this->buildGroupMessage($type, $payload, $groupName);
-        // Simpan notif tanpa user_id
         $notif = Notification::create([
             'user_id' => null,
             'type'    => $type,
@@ -54,7 +53,7 @@ class NotificationDispatcher
             'channel' => 'telegram',
             'status'  => 'pending',
         ]);
-        SendTelegramNotification::dispatch($notif->id, null, $groupTelegramChatId, $message);
+        SendTelegramNotification::dispatch($notif->id, null, $this->groupChatId, $message);
     }
 
     private function buildGroupMessage(string $type, array $payload, string $groupName): string

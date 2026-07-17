@@ -437,7 +437,6 @@ class TteSignRequestController extends Controller
                 if (!$groupResp->successful()) continue;
                 $group     = $groupResp->json('data');
                 $groupName = $group['name'] ?? 'Group';
-                $chatId    = $group['telegram_chat_id'] ?? null;
 
                 DB::table('tte_sign_request_distributions')->insertOrIgnore([
                     'id'              => (string) Str::uuid(),
@@ -448,14 +447,11 @@ class TteSignRequestController extends Controller
                     'distributed_at'  => now(),
                 ]);
 
-                if ($chatId) {
-                    Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
-                        'group_name' => $groupName,
-                        'chat_id'    => $chatId,
-                        'type'       => 'tte.distributed',
-                        'payload'    => ['request_id' => $id, 'request_title' => $req->title],
-                    ]);
-                }
+                Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
+                    'group_name' => $groupName,
+                    'type'       => 'tte.distributed',
+                    'payload'    => ['request_id' => $id, 'request_title' => $req->title],
+                ]);
                 $totalPenerima++;
             } catch (\Throwable) {}
         }

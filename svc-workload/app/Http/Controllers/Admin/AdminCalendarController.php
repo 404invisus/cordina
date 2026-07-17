@@ -271,7 +271,6 @@ class AdminCalendarController extends Controller
                 if (!$groupResp->successful()) continue;
                 $group     = $groupResp->json('data');
                 $groupName = $group['name'] ?? 'Group';
-                $chatId    = $group['telegram_chat_id'] ?? null;
 
                 \Illuminate\Support\Facades\DB::table('calendar_event_participants')->insertOrIgnore([
                     'id'         => (string) \Illuminate\Support\Str::uuid(),
@@ -284,23 +283,20 @@ class AdminCalendarController extends Controller
                     'updated_at' => now(),
                 ]);
 
-                if ($chatId) {
-                    \Illuminate\Support\Facades\Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
-                        'group_name' => $groupName,
-                        'chat_id'    => $chatId,
-                        'type'       => 'calendar.event_created',
-                        'payload'    => [
-                            'event_title' => $event->title,
-                            'event_type'  => $event->type,
-                            'start_date'  => $event->start_date?->toDateString(),
-                            'start_time'  => $event->start_time,
-                            'end_time'    => $event->end_time,
-                            'all_day'     => $event->all_day,
-                            'location'    => $event->location,
-                            'participants' => $groupName,
-                        ],
-                    ]);
-                }
+                \Illuminate\Support\Facades\Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
+                    'group_name' => $groupName,
+                    'type'       => 'calendar.event_created',
+                    'payload'    => [
+                        'event_title' => $event->title,
+                        'event_type'  => $event->type,
+                        'start_date'  => $event->start_date?->toDateString(),
+                        'start_time'  => $event->start_time,
+                        'end_time'    => $event->end_time,
+                        'all_day'     => $event->all_day,
+                        'location'    => $event->location,
+                        'participants' => $groupName,
+                    ],
+                ]);
             } catch (\Throwable) {}
         }
 

@@ -61,13 +61,7 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-200"
               placeholder="Deskripsi group (opsional)" />
           </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Telegram Group Chat ID</label>
-            <input value={chatId} onChange={e => setChatId(e.target.value)}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-violet-200"
-              placeholder="-1001234567890" />
-            <p className="text-xs text-slate-400 mt-1">ID grup Telegram untuk notifikasi ke grup</p>
-          </div>
+
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Anggota <span className="text-violet-600 font-bold">{memberIds.length} dipilih</span></label>
             <div className="mt-1 border border-slate-200 rounded-xl overflow-hidden">

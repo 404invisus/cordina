@@ -13,15 +13,13 @@ class NotificationController extends Controller
     {
         $request->validate([
             'group_name' => 'required|string',
-            'chat_id'    => 'required|string',
             'type'       => 'required|string',
             'payload'    => 'nullable|array',
         ]);
         $this->dispatcher->dispatchToGroup(
             $request->type,
             $request->payload ?? [],
-            $request->group_name,
-            $request->chat_id
+            $request->group_name
         );
         return response()->json(['message' => 'Group notification dispatched']);
     }
