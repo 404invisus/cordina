@@ -7,7 +7,7 @@ import {
   ChevronRight, X, Upload, Eye, Lock, Share2, FileCheck, AlertTriangle, History
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { tteSignService } from '@/lib/api';
+import { tteSignService, userGroupService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
@@ -36,6 +36,12 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['all-users-tte'],
     queryFn: () => import('@/lib/api').then(m => m.default.get('/api/v1/users?per_page=100')).then(r => r.data?.data?.data || r.data?.data || []),
+    staleTime: 60000,
+  });
+
+  const { data: allGroups = [] } = useQuery({
+    queryKey: ['user-groups-tte'],
+    queryFn: () => userGroupService.list().then(r => r.data.data || []),
     staleTime: 60000,
   });
   const mutation = useMutation({
@@ -182,6 +188,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [verifyData, setVerifyData] = useState<any>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [distIds, setDistIds]       = useState<string[]>([]);
+  const [distGroupIds, setDistGroupIds] = useState<string[]>([]);
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['all-users-tte'],
@@ -212,12 +219,12 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   });
 
   const distMutation = useMutation({
-    mutationFn: () => tteSignService.distribute(id, distIds),
+    mutationFn: () => tteSignService.distribute(id, distIds, distGroupIds),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-detail', id] });
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
       toast.success('Dokumen berhasil didistribusikan!');
-      setShowDist(false); setDistIds([]);
+      setShowDist(false); setDistIds([]); setDistGroupIds([]);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal mendistribusikan'),
   });
@@ -441,16 +448,54 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             {showDist && (
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-3">
                 <p className="text-sm font-semibold text-emerald-800">Pilih penerima distribusi</p>
+                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-2">Individu</p>
                  <UserMultiSelect
                    users={allUsers}
                    selected={distIds}
                    onChange={setDistIds}
                    showOrder={false}
                  />
+                 {allGroups.length > 0 && (
+                   <>
+                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-3">Group</p>
+                     <div className="border border-slate-200 rounded-xl overflow-hidden">
+                       <div className="max-h-32 overflow-y-auto divide-y divide-slate-50">
+                         {allGroups.map((g: any) => {
+                           const checked = distGroupIds.includes(g.id);
+                           return (
+                             <div key={g.id} onClick={() => setDistGroupIds(prev => checked ? prev.filter(x => x !== g.id) : [...prev, g.id])}
+                               className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}>
+                               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300'}`}>
+                                 {checked && <span className="text-[10px] font-bold">✓</span>}
+                               </div>
+                               <div>
+                                 <div className="text-sm font-medium text-slate-800">{g.name}</div>
+                                 <div className="text-xs text-slate-400">{g.member_count || 0} anggota</div>
+                               </div>
+                             </div>
+                           );
+                         })}
+                       </div>
+                     </div>
+                     {distGroupIds.length > 0 && (
+                       <div className="flex gap-1.5 flex-wrap mt-1.5">
+                         {distGroupIds.map(gid => {
+                           const g = allGroups.find((x: any) => x.id === gid);
+                           return (
+                             <span key={gid} className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                               {g?.name || gid}
+                               <button onClick={e => { e.stopPropagation(); setDistGroupIds(prev => prev.filter(x => x !== gid)); }}><X className="w-3 h-3" /></button>
+                             </span>
+                           );
+                         })}
+                       </div>
+                     )}
+                   </>
+                 )}
                 <div className="flex gap-2">
                   <button onClick={() => distMutation.mutate()} disabled={distMutation.isPending || distIds.length === 0}
                     className="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50">
-                    {distMutation.isPending ? 'Mendistribusikan...' : `Distribusikan ke ${distIds.length} orang`}
+                    {distMutation.isPending ? 'Mendistribusikan...' : `Distribusikan ke ${distIds.length + distGroupIds.length} penerima`}
                   </button>
                   <button onClick={() => { setShowDist(false); setDistIds([]); }}
                     className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Batal</button>

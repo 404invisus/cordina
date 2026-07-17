@@ -43,7 +43,8 @@ const adminNavItems = [
   { label: 'Monitor Workload',icon: Activity,     href: '/admin/workload' },
   { label: 'Telegram Bot',    icon: MessageCircle, href: '/admin/telegram' },
   { label: 'Konfigurasi TTE',  icon: Shield,        href: '/admin/tte' },
-  { label: 'Log Aktivitas',    icon: Activity,      href: '/admin/activity', roles: ['administrator'] },
+  { label: 'Log Aktivitas',    icon: Activity,      href: '/admin/activity',     roles: ['administrator'] },
+  { label: 'Group Pengguna',   icon: Users,         href: '/admin/user-groups',  roles: ['administrator'] },
 ];
 
 function NavLink({

@@ -13,8 +13,6 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; icon: any }> = {
   draft:       { label: 'Draft',      bg: 'bg-slate-100',  text: 'text-slate-600',   icon: FileEdit },
   submitted:   { label: 'Diajukan',   bg: 'bg-blue-50',    text: 'text-blue-600',    icon: Clock },
@@ -34,8 +32,6 @@ function formatDate(d: string) {
   if (!d) return '-';
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
-
-// ── Multi-select user picker ──────────────────────────────────────────────────
 
 function UserMultiSelect({ label, users, selected, onChange, exclude = [] }: {
   label: string; users: any[]; selected: string[]; onChange: (ids: string[]) => void; exclude?: string[];
@@ -82,8 +78,6 @@ function UserMultiSelect({ label, users, selected, onChange, exclude = [] }: {
     </div>
   );
 }
-
-// ── Timeline Progress ─────────────────────────────────────────────────────────
 
 function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string> }) {
   const approvals: any[] = cr.approvals || [];
@@ -139,8 +133,6 @@ function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string
   );
 }
 
-// ── CR Form Modal ─────────────────────────────────────────────────────────────
-
 const EMPTY_FORM = {
   title: '', description: '', reason: '', impact: '',
   priority: 'medium', change_type: 'normal',
@@ -186,7 +178,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
       ? changeRequestService.update(editData.id, data)
       : changeRequestService.create(data),
     onSuccess: async (res: any) => {
-      // Upload pending lampiran jika ada
       const crId = res.data?.data?.id;
       if (crId && pendingFiles.length > 0) {
         for (const file of pendingFiles) {
@@ -228,7 +219,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Informasi Dasar */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Dasar</div>
             <div>{lbl('Judul', true)}<input value={form.title} onChange={f('title')} className={inputCls} placeholder="Judul perubahan" /></div>
@@ -244,7 +234,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
             <div>{lbl('Rencana Waktu Perubahan')}<input type="date" value={form.rencana_waktu} onChange={f('rencana_waktu')} className={inputCls} /></div>
           </div>
 
-          {/* Informasi Perubahan */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informasi Perubahan</div>
             <div>{lbl('Perubahan yang Diajukan', true)}<textarea value={form.description} onChange={ta('description')} rows={3} className={taCls} placeholder="Apa yang akan diubah?" /></div>
@@ -254,7 +243,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
             <div>{lbl('SI yang Terdampak')}<textarea value={form.si_terdampak} onChange={ta('si_terdampak')} rows={2} className={taCls} placeholder="Sistem informasi yang terdampak" /></div>
           </div>
 
-          {/* Analisis Risiko */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Analisis Risiko</div>
             <div>{lbl('Analisis/Kajian Risiko Perubahan')}<textarea value={form.impact} onChange={ta('impact')} rows={2} className={taCls} placeholder="Risiko yang mungkin terjadi" /></div>
@@ -263,7 +251,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
             <div>{lbl('Langkah Penanganan Kegagalan')}<textarea value={form.langkah_penanganan_kegagalan} onChange={ta('langkah_penanganan_kegagalan')} rows={2} className={taCls} placeholder="Rollback plan jika terjadi kegagalan" /></div>
           </div>
 
-          {/* Personil */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Personil</div>
             <UserMultiSelect label="Pelaksana" users={users} selected={pelaksanaIds} onChange={setPelaksanaIds} />
@@ -285,7 +272,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
               </>
             )}
           </div>
-        {/* Lampiran */}
           <div className="bg-slate-50 rounded-xl p-4 space-y-3">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Lampiran Pendukung</div>
             <label className="flex items-center gap-2 text-sm text-slate-600 border border-slate-200 px-3 py-2 rounded-xl hover:bg-white transition-colors cursor-pointer">
@@ -329,8 +315,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
   );
 }
 
-// ── Reject Modal ──────────────────────────────────────────────────────────────
-
 function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
@@ -359,8 +343,6 @@ function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onC
     </div>
   );
 }
-
-// ── Sign Modal ────────────────────────────────────────────────────────────────
 
 function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () => void }) {
   const qc = useQueryClient();
@@ -407,10 +389,6 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   );
 }
 
-
-
-// ── CR Audit Log ──────────────────────────────────────────────────────────────
-
 const ACTION_CONFIG: Record<string, { label: string; color: string }> = {
   created:          { label: 'CR Dibuat',             color: 'text-slate-500' },
   submitted:        { label: 'CR Diajukan',            color: 'text-blue-600' },
@@ -456,8 +434,6 @@ function CRAuditLog({ crId, usersMap }: { crId: string; usersMap: Record<string,
     </div>
   );
 }
-
-// ── CR Attachments ────────────────────────────────────────────────────────────
 
 function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }) {
   const qc = useQueryClient();
@@ -544,8 +520,6 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
     </div>
   );
 }
-
-// ── CR Card ───────────────────────────────────────────────────────────────────
 
 function CRCard({ cr, onEdit, onReject, onSign, onImplement, userId, usersMap }: {
   cr: any; onEdit: (cr: any) => void; onReject: (id: string) => void;
@@ -675,8 +649,6 @@ function CRCard({ cr, onEdit, onReject, onSign, onImplement, userId, usersMap }:
     </motion.div>
   );
 }
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ChangeManagementPage() {
   const { user } = useAuthStore();

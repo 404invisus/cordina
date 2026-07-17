@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     Route::middleware('internal')->post('/notifications/send', [NotificationController::class, 'send']);
+    Route::middleware('internal')->post('/notifications/send-group', [NotificationController::class, 'sendGroup']);
 
     Route::middleware('jwt.auth')->group(function () {
         Route::get('/notifications/settings',    [NotificationSettingController::class, 'index']);

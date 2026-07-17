@@ -43,6 +43,57 @@ class NotificationDispatcher
             };
         }
     }
+    public function dispatchToGroup(string $type, array $payload, string $groupName, string $groupTelegramChatId): void
+    {
+        $message = $this->buildGroupMessage($type, $payload, $groupName);
+        // Simpan notif tanpa user_id
+        $notif = Notification::create([
+            'user_id' => null,
+            'type'    => $type,
+            'payload' => array_merge($payload, ['group_name' => $groupName, 'message' => $message]),
+            'channel' => 'telegram',
+            'status'  => 'pending',
+        ]);
+        SendTelegramNotification::dispatch($notif->id, null, $groupTelegramChatId, $message);
+    }
+
+    private function buildGroupMessage(string $type, array $payload, string $groupName): string
+    {
+        return match ($type) {
+            'tte.distributed' => sprintf(
+                "📬 *DOKUMEN DIDISTRIBUSIKAN KE %s*
+
+Dokumen:
+📄 *%s*
+
+Silakan buka di ConnectOne untuk melihat dan mengunduh.",
+                strtoupper($groupName),
+                $payload['request_title'] ?? 'N/A'
+            ),
+            'calendar.event_created' => (function() use ($payload, $groupName) {
+                $typeLabel = match($payload['event_type'] ?? '') {
+                    'internal' => 'Internal Kantor', 'external' => 'External Kantor',
+                    'cuti' => 'Cuti', default => 'Lainnya',
+                };
+                try {
+                    $dt = new \DateTime($payload['start_date'] ?? 'now');
+                    $days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+                    $months = ['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                    $dateStr = $days[(int)$dt->format('w')] . ', ' . $dt->format('j') . ' ' . $months[(int)$dt->format('n')] . ' ' . $dt->format('Y');
+                } catch (\Throwable) { $dateStr = $payload['start_date'] ?? '-'; }
+                $waktu = ($payload['all_day'] ?? false) ? 'Seharian' : (($payload['start_time'] ?? '') ? substr($payload['start_time'],0,5).' WIB s.d '.(($payload['end_time'] ?? '') ? substr($payload['end_time'],0,5).' WIB' : 'Selesai') : 'Seharian');
+                return "*AGENDA KEGIATAN - {$groupName}*
+{$dateStr}
+
+📋 Nama: *".($payload['event_title'] ?? 'N/A')."*
+📌 Jenis: {$typeLabel}
+🕙 Waktu: {$waktu}
+🏛 Tempat: ".($payload['location'] ?? '-');
+            })(),
+            default => sprintf("*[%s]* %s", $groupName, $payload['message'] ?? $type),
+        };
+    }
+
     private function dispatchTelegram(string $notifId, string $userId, ?string $chatId, string $message, bool $groupOnly = false, bool $privateOnly = false): void
     {
         if ($privateOnly) {

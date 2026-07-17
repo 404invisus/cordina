@@ -9,7 +9,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminCalendarService, adminReportExportService, adminUserService } from '@/lib/api';
+import { adminCalendarService, userGroupService, adminReportExportService, adminUserService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
@@ -35,6 +35,58 @@ function formatEventDate(e: any) {
     const t = e.start_time ? ' · ' + e.start_time.slice(0, 5) : '';
     return d + t;
   } catch { return ''; }
+}
+
+function GroupPicker({ selected, onChange }: { selected: string[]; onChange: (ids: string[]) => void }) {
+  const { data: groups = [] } = useQuery({
+    queryKey: ['user-groups-calendar'],
+    queryFn: () => userGroupService.list().then(r => r.data.data || []),
+    staleTime: 60000,
+  });
+  if (groups.length === 0) return null;
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id]);
+  return (
+    <div className="mt-3">
+      <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
+        Group Peserta
+        {selected.length > 0 && (
+          <span className="ml-2 bg-violet-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{selected.length} dipilih</span>
+        )}
+      </label>
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selected.map(id => {
+            const g = groups.find((g: any) => g.id === id);
+            return (
+              <span key={id} className="inline-flex items-center gap-1 text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-medium">
+                {g?.name || id}
+                <button onClick={() => onChange(selected.filter(x => x !== id))} className="hover:text-red-500">×</button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+      <div className="border border-slate-200 rounded-xl overflow-hidden">
+        <div className="max-h-32 overflow-y-auto divide-y divide-slate-50">
+          {groups.map((g: any) => {
+            const checked = selected.includes(g.id);
+            return (
+              <div key={g.id} onClick={() => toggle(g.id)}
+                className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-violet-50' : 'hover:bg-slate-50'}`}>
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${checked ? 'bg-violet-600 border-violet-600 text-white text-[10px] font-bold' : 'border-slate-300'}`}>
+                  {checked ? '✓' : ''}
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-slate-800">{g.name}</div>
+                  <div className="text-xs text-slate-400">{g.member_count || 0} anggota</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ParticipantPicker({ users, selected, onChange }: {
@@ -115,13 +167,16 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
     all_day:     editEvent?.all_day     ?? false,
   });
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [participantGroupIds, setParticipantGroupIds] = useState<string[]>([]);
   const set = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      const payload = participantIds.length > 0
-        ? { ...data, participant_ids: participantIds }
-        : data;
+      const payload = {
+        ...data,
+        ...(participantIds.length > 0 ? { participant_ids: participantIds } : {}),
+        ...(participantGroupIds.length > 0 ? { group_ids: participantGroupIds } : {}),
+      };
       const res = isEdit
         ? await adminCalendarService.update(editEvent.id, payload)
         : await adminCalendarService.create(payload);
@@ -223,6 +278,7 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
               placeholder="Online / Ruang Meeting A" />
           </div>
           <ParticipantPicker users={users || []} selected={participantIds} onChange={setParticipantIds} />
+          <GroupPicker selected={participantGroupIds} onChange={setParticipantGroupIds} />
           <div>
             <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Deskripsi</label>
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2}

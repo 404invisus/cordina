@@ -249,29 +249,75 @@ class AdminCalendarController extends Controller
     public function addParticipants(Request $request, string $id): JsonResponse
     {
         $this->requireRole(['kepala_balai', 'administrator']);
-
         $request->validate([
-            'user_ids'   => 'required|array|min:1',
+            'user_ids'   => 'nullable|array',
             'user_ids.*' => 'uuid',
+            'group_ids'  => 'nullable|array',
+            'group_ids.*'=> 'uuid',
         ]);
-
         $event = CalendarEvent::findOrFail($id);
-        $this->syncParticipants($event, $request->user_ids);
-        $this->notifyParticipants($event, $request->user_ids);
 
-        $users = $this->resolveUserNames($request->user_ids);
+        if (!empty($request->user_ids)) {
+            $this->syncParticipants($event, $request->user_ids);
+            $this->notifyParticipants($event, $request->user_ids);
+        }
 
+        $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+        $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
+
+        foreach ($request->group_ids ?? [] as $groupId) {
+            try {
+                $groupResp = \Illuminate\Support\Facades\Http::timeout(5)->get("{$authUrl}/api/v1/internal/user-groups/{$groupId}");
+                if (!$groupResp->successful()) continue;
+                $group     = $groupResp->json('data');
+                $groupName = $group['name'] ?? 'Group';
+                $chatId    = $group['telegram_chat_id'] ?? null;
+
+                \Illuminate\Support\Facades\DB::table('calendar_event_participants')->insertOrIgnore([
+                    'id'         => (string) \Illuminate\Support\Str::uuid(),
+                    'event_id'   => $event->id,
+                    'user_id'    => null,
+                    'group_id'   => $groupId,
+                    'group_name' => $groupName,
+                    'status'     => 'invited',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                if ($chatId) {
+                    \Illuminate\Support\Facades\Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
+                        'group_name' => $groupName,
+                        'chat_id'    => $chatId,
+                        'type'       => 'calendar.event_created',
+                        'payload'    => [
+                            'event_title' => $event->title,
+                            'event_type'  => $event->type,
+                            'start_date'  => $event->start_date?->toDateString(),
+                            'start_time'  => $event->start_time,
+                            'end_time'    => $event->end_time,
+                            'all_day'     => $event->all_day,
+                            'location'    => $event->location,
+                            'participants' => $groupName,
+                        ],
+                    ]);
+                }
+            } catch (\Throwable) {}
+        }
+
+        $users = $this->resolveUserNames($request->user_ids ?? []);
         $participants = $event->participants()->get()->map(function ($p) use ($users) {
             return [
-                'id'        => $p->id,
-                'user_id'   => $p->user_id,
-                'full_name' => $users[$p->user_id]['full_name'] ?? null,
-                'status'    => $p->status,
+                'id'         => $p->id,
+                'user_id'    => $p->user_id,
+                'group_id'   => $p->group_id ?? null,
+                'group_name' => $p->group_name ?? null,
+                'full_name'  => $p->group_name ?? ($users[$p->user_id]['full_name'] ?? null),
+                'status'     => $p->status,
             ];
         });
 
         return response()->json([
-            'message'      => count($request->user_ids) . ' peserta ditambahkan',
+            'message'      => 'Peserta berhasil ditambahkan',
             'participants' => $participants,
         ]);
     }

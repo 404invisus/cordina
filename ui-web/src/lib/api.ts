@@ -60,6 +60,14 @@ export const adminUserService = {
   destroy:      (id: string)                => api.delete(`/api/v1/admin/users/${id}`),
 };
 
+export const userGroupService = {
+  list:    ()                           => api.get('/api/v1/admin/user-groups'),
+  show:    (id: string)                 => api.get(`/api/v1/admin/user-groups/${id}`),
+  create:  (data: any)                  => api.post('/api/v1/admin/user-groups', data),
+  update:  (id: string, data: any)      => api.put(`/api/v1/admin/user-groups/${id}`, data),
+  destroy: (id: string)                 => api.delete(`/api/v1/admin/user-groups/${id}`),
+};
+
 export const adminActivityService = {
   list:         (params?: any)   => api.get('/api/v1/admin/activity', { params }),
   loginHistory: (userId: string) => api.get(`/api/v1/admin/activity/users/${userId}/login`),
@@ -258,7 +266,7 @@ export const tteSignService = {
   create:     (fd: FormData)            => api.post('/api/v1/tte-sign-requests', fd, { headers: { 'Content-Type': 'multipart/form-data' } }),
   show:       (id: string)              => api.get(`/api/v1/tte-sign-requests/${id}`),
   sign:       (id: string, passphrase: string) => api.post(`/api/v1/tte-sign-requests/${id}/sign`, { passphrase }),
-  distribute: (id: string, user_ids: string[]) => api.post(`/api/v1/tte-sign-requests/${id}/distribute`, { user_ids }),
+  distribute: (id: string, user_ids: string[], group_ids: string[] = []) => api.post(`/api/v1/tte-sign-requests/${id}/distribute`, { user_ids, group_ids }),
   download:   (id: string)              => api.get(`/api/v1/tte-sign-requests/${id}/download`, { responseType: 'blob' }),
 };
 

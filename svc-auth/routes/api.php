@@ -32,6 +32,16 @@ Route::prefix('v1')->group(function () {
         });
 
     Route::prefix('v1')->middleware('internal')->group(function () {
+    Route::get('/internal/user-groups/{id}', function (string $id) {
+        $group = \Illuminate\Support\Facades\DB::table('user_groups')->where('id', $id)->first();
+        abort_if(!$group, 404, 'Group tidak ditemukan');
+        $members = \Illuminate\Support\Facades\DB::table('user_group_members as m')
+            ->join('users as u', 'm.user_id', '=', 'u.id')
+            ->where('m.group_id', $id)
+            ->select('u.id', 'u.full_name', 'u.email', 'u.telegram_chat_id')
+            ->get();
+        return response()->json(['data' => array_merge((array) $group, ['members' => $members])]);
+    });
     Route::post('/internal/activity-log', function (\Illuminate\Http\Request $request) {
         \App\Services\ActivityLogService::log(
             $request->user_id,
@@ -44,6 +54,11 @@ Route::prefix('v1')->group(function () {
     });
 });
 
+    Route::get('/admin/user-groups',         [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
+    Route::post('/admin/user-groups',        [\App\Http\Controllers\Admin\UserGroupController::class, 'store']);
+    Route::get('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'show']);
+    Route::put('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'update']);
+    Route::delete('/admin/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'destroy']);
     Route::get('/admin/activity',                    [\App\Http\Controllers\Admin\AdminActivityController::class, 'index']);
     Route::get('/admin/activity/users/{userId}/login', [\App\Http\Controllers\Admin\AdminActivityController::class, 'loginHistory']);
     Route::apiResource('users', UserController::class);

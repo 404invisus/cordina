@@ -398,40 +398,77 @@ class TteSignRequestController extends Controller
     public function distribute(string $id, Request $request): JsonResponse
     {
         $request->validate([
-            'user_ids'   => 'required|array|min:1',
+            'user_ids'   => 'nullable|array',
             'user_ids.*' => 'uuid',
+            'group_ids'  => 'nullable|array',
+            'group_ids.*'=> 'uuid',
         ]);
-        $userId = $request->attributes->get('jwt_user_id');
+        abort_if(empty($request->user_ids) && empty($request->group_ids), 422, 'Pilih minimal 1 penerima atau group');
 
-        $req = DB::table('tte_sign_requests')->where('id', $id)->first();
+        $userId = $request->attributes->get('jwt_user_id');
+        $req    = DB::table('tte_sign_requests')->where('id', $id)->first();
         abort_if(!$req, 404, 'Dokumen tidak ditemukan');
         abort_if($req->creator_id !== $userId, 403, 'Hanya pembuat dokumen yang bisa mendistribusikan');
         abort_if($req->status !== 'signed', 422, 'Dokumen belum selesai ditandatangani');
 
-        foreach ($request->user_ids as $recipientId) {
+        $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+        $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
+        $totalPenerima = 0;
+
+        foreach ($request->user_ids ?? [] as $recipientId) {
             DB::table('tte_sign_request_distributions')->insertOrIgnore([
                 'id'              => (string) Str::uuid(),
                 'sign_request_id' => $id,
                 'user_id'         => $recipientId,
+                'group_id'        => null,
+                'group_name'      => null,
                 'distributed_at'  => now(),
             ]);
             $this->sendNotif($recipientId, 'tte.distributed', [
                 'request_id'    => $id,
                 'request_title' => $req->title,
             ]);
+            $totalPenerima++;
+        }
+
+        foreach ($request->group_ids ?? [] as $groupId) {
+            try {
+                $groupResp = Http::timeout(5)->get("{$authUrl}/api/v1/internal/user-groups/{$groupId}");
+                if (!$groupResp->successful()) continue;
+                $group     = $groupResp->json('data');
+                $groupName = $group['name'] ?? 'Group';
+                $chatId    = $group['telegram_chat_id'] ?? null;
+
+                DB::table('tte_sign_request_distributions')->insertOrIgnore([
+                    'id'              => (string) Str::uuid(),
+                    'sign_request_id' => $id,
+                    'user_id'         => null,
+                    'group_id'        => $groupId,
+                    'group_name'      => $groupName,
+                    'distributed_at'  => now(),
+                ]);
+
+                if ($chatId) {
+                    Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
+                        'group_name' => $groupName,
+                        'chat_id'    => $chatId,
+                        'type'       => 'tte.distributed',
+                        'payload'    => ['request_id' => $id, 'request_title' => $req->title],
+                    ]);
+                }
+                $totalPenerima++;
+            } catch (\Throwable) {}
         }
 
         DB::table('tte_sign_requests')->where('id', $id)->update([
             'status'     => 'distributed',
             'updated_at' => now(),
         ]);
-
-        $this->addLog($id, $userId, 'distributed', 'Didistribusikan ke ' . count($request->user_ids) . ' penerima');
-
+        $this->addLog($id, $userId, 'distributed', "Didistribusikan ke {$totalPenerima} penerima");
         return response()->json(['message' => 'Dokumen berhasil didistribusikan']);
     }
 
-    // POST /v1/tte-sign-requests/{id}/verify — verifikasi TTE
+        // POST /v1/tte-sign-requests/{id}/verify — verifikasi TTE
     public function verify(string $id, Request $request): JsonResponse
     {
         $userId = $request->attributes->get('jwt_user_id');
