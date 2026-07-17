@@ -375,11 +375,12 @@ function EventDrawer({ event, onClose, onDelete }: any) {
               <div className="space-y-2">
                 {participants.map((p: any) => (
                   <div key={p.id || p.user_id} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-lg">
-                    <div className="w-8 h-8 rounded-lg bg-[#284074] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {getInitials(p.full_name || p.name || '')}
+                    <div className={`w-8 h-8 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0 ${p.is_group ? 'bg-violet-500' : 'bg-[#284074]'}`}>
+                      {p.is_group ? '👥' : getInitials(p.full_name || p.name || '')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-slate-800 truncate">{p.full_name || p.name}</div>
+                      <div className="text-sm font-semibold text-slate-800 truncate">{p.group_name || p.full_name || p.name}</div>
+                      {p.is_group && <div className="text-xs text-slate-400">Group</div>}
                     </div>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                       p.status === 'accepted' ? 'bg-emerald-50 text-emerald-600' :

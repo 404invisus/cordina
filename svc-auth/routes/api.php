@@ -31,28 +31,6 @@ Route::prefix('v1')->group(function () {
             return response()->json(['message' => 'Telegram chat ID updated']);
         });
 
-    Route::prefix('v1')->middleware('internal')->group(function () {
-    Route::get('/internal/user-groups/{id}', function (string $id) {
-        $group = \Illuminate\Support\Facades\DB::table('user_groups')->where('id', $id)->first();
-        abort_if(!$group, 404, 'Group tidak ditemukan');
-        $members = \Illuminate\Support\Facades\DB::table('user_group_members as m')
-            ->join('users as u', 'm.user_id', '=', 'u.id')
-            ->where('m.group_id', $id)
-            ->select('u.id', 'u.full_name', 'u.email', 'u.telegram_chat_id')
-            ->get();
-        return response()->json(['data' => array_merge((array) $group, ['members' => $members])]);
-    });
-    Route::post('/internal/activity-log', function (\Illuminate\Http\Request $request) {
-        \App\Services\ActivityLogService::log(
-            $request->user_id,
-            $request->action,
-            $request->description ?? '',
-            $request->success ?? true,
-            $request->metadata ?? [],
-        );
-        return response()->json(['ok' => true]);
-    });
-});
 
     Route::get('/admin/user-groups',         [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
     Route::post('/admin/user-groups',        [\App\Http\Controllers\Admin\UserGroupController::class, 'store']);
@@ -149,6 +127,27 @@ Route::prefix('v1')->group(function () {
             $users = User::whereIn('id', $request->ids)
                 ->get(['id', 'full_name', 'email', 'telegram_chat_id', 'division', 'is_active']);
             return response()->json(['data' => $users]);
+        });
+
+        Route::get('/user-groups/{id}', function (string $id) {
+            $group = \Illuminate\Support\Facades\DB::table('user_groups')->where('id', $id)->first();
+            abort_if(!$group, 404, 'Group tidak ditemukan');
+            $members = \Illuminate\Support\Facades\DB::table('user_group_members as m')
+                ->join('users as u', 'm.user_id', '=', 'u.id')
+                ->where('m.group_id', $id)
+                ->select('u.id', 'u.full_name', 'u.email', 'u.telegram_chat_id')
+                ->get();
+            return response()->json(['data' => array_merge((array) $group, ['members' => $members])]);
+        });
+        Route::post('/activity-log', function (\Illuminate\Http\Request $request) {
+            \App\Services\ActivityLogService::log(
+                $request->user_id,
+                $request->action,
+                $request->description ?? '',
+                $request->success ?? true,
+                $request->metadata ?? [],
+            );
+            return response()->json(['ok' => true]);
         });
 
         Route::middleware('jwt.auth')->get('/auth/validate', function () {

@@ -75,6 +75,9 @@ class AdminCalendarController extends Controller
             $arr['creator_name']     = $users[$event->user_id]['full_name'] ?? null;
             $arr['creator_division'] = $users[$event->user_id]['division']  ?? null;
             $arr['participants']     = $event->participants->map(function ($p) use ($users) {
+                if ($p->group_id) {
+                    return ['id' => $p->id, 'group_id' => $p->group_id, 'group_name' => $p->group_name, 'full_name' => $p->group_name, 'is_group' => true, 'status' => $p->status];
+                }
                 return [
                     'id'        => $p->id,
                     'user_id'   => $p->user_id,
@@ -133,6 +136,54 @@ class AdminCalendarController extends Controller
         if (!empty($validated['participant_ids'])) {
             $this->syncParticipants($event, $validated['participant_ids']);
             $this->notifyParticipants($event, $validated['participant_ids']);
+        }
+
+        \Illuminate\Support\Facades\Log::info('CALENDAR_DEBUG', ['group_ids_validated' => $request->input('group_ids') ?? 'TIDAK ADA', 'group_ids_raw' => $request->input('group_ids') ?? 'TIDAK ADA', 'all_input' => array_keys($request->all())]);
+        // Group participants
+        $groupIds = $request->input('group_ids', []);
+        \Illuminate\Support\Facades\Log::info('GROUP_IDS_CHECK', ['groupIds' => $groupIds, 'count' => count($groupIds)]);
+        if (!empty($groupIds)) {
+            $authUrl  = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+            $notifUrl = rtrim(config('services.notification.url', 'http://svc-notification'), '/');
+            foreach ($groupIds as $groupId) {
+                try {
+                    $groupResp = Http::timeout(5)->get("{$authUrl}/api/v1/internal/user-groups/{$groupId}");
+                    \Illuminate\Support\Facades\Log::info('GROUP_RESP', ['status' => $groupResp->status(), 'ok' => $groupResp->successful(), 'data_keys' => array_keys($groupResp->json('data') ?? [])]);
+                    if (!$groupResp->successful()) continue;
+                    \Illuminate\Support\Facades\Log::info('GROUP_AFTER_CONTINUE', ['groupId' => $groupId]);
+                    $group     = $groupResp->json('data');
+                    $groupName = $group['name'] ?? 'Group';
+                    \Illuminate\Support\Facades\Log::info('GROUP_DATA', ['group' => $group, 'groupName' => $groupName, 'event_id' => $event->id]);
+                    \Illuminate\Support\Facades\DB::table('calendar_event_participants')->insertOrIgnore([
+                        'id'          => (string) \Illuminate\Support\Str::uuid(),
+                        'event_id'    => $event->id,
+                        'user_id'     => null,
+                        'group_id'    => $groupId,
+                        'group_name'  => $groupName,
+                        'assigned_by' => $this->authId(),
+                        'status'      => 'invited',
+                        'created_at'  => now(),
+                        'updated_at'  => now(),
+                    ]);
+                    \Illuminate\Support\Facades\Log::info('GROUP_INSERT', ['event_id' => $event->id, 'group_id' => $groupId, 'group_name' => $groupName]);
+                    Http::timeout(5)->post("{$notifUrl}/api/v1/notifications/send-group", [
+                        'group_name' => $groupName,
+                        'type'       => 'calendar.event_created',
+                        'payload'    => [
+                            'event_title' => $event->title,
+                            'event_type'  => $event->type,
+                            'start_date'  => $event->start_date?->toDateString(),
+                            'start_time'  => $event->start_time,
+                            'end_time'    => $event->end_time,
+                            'all_day'     => $event->all_day,
+                            'location'    => $event->location,
+                            'participants' => $groupName,
+                        ],
+                    ]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('GROUP_ERROR', ['msg' => $e->getMessage(), 'line' => $e->getLine()]);
+                }
+            }
         }
 
         // Target user otomatis jadi peserta (bukan admin pembuatnya)
@@ -346,16 +397,28 @@ class AdminCalendarController extends Controller
         $this->requireRole(['kepala_balai', 'administrator']);
 
         $event        = CalendarEvent::with('participants')->findOrFail($id);
-        $participantIds = $event->participants->pluck('user_id')->toArray();
+        $participantIds = $event->participants->pluck('user_id')->filter()->values()->toArray();
         $users          = $this->resolveUserNames($participantIds);
 
         $result = $event->participants->map(function ($p) use ($users) {
+            if ($p->group_id) {
+                return [
+                    'id'         => $p->id,
+                    'group_id'   => $p->group_id,
+                    'group_name' => $p->group_name,
+                    'full_name'  => $p->group_name,
+                    'is_group'   => true,
+                    'status'     => $p->status,
+                    'created_at' => $p->created_at,
+                ];
+            }
             return [
-                'id'        => $p->id,
-                'user_id'   => $p->user_id,
-                'full_name' => $users[$p->user_id]['full_name'] ?? null,
-                'division'  => $users[$p->user_id]['division']  ?? null,
-                'status'    => $p->status,
+                'id'          => $p->id,
+                'user_id'     => $p->user_id,
+                'full_name'   => $users[$p->user_id]['full_name'] ?? null,
+                'division'    => $users[$p->user_id]['division']  ?? null,
+                'is_group'    => false,
+                'status'      => $p->status,
                 'assigned_by' => $p->assigned_by,
                 'created_at'  => $p->created_at,
             ];
