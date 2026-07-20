@@ -8,3 +8,4 @@ svc-workload/.env
 svc-notification/.env
 svc-reporting/.env
 svc-storage/.env
+*:Zone.Identifier
