@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import CRSummaryCard from '@/components/dashboard/CRSummaryCard';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { projectService } from '@/lib/api';
@@ -65,6 +66,8 @@ export default function ScrumMasterDashboard() {
         ))}
       </div>
 
+      <CRSummaryCard />
+
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
         className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -82,6 +85,7 @@ export default function ScrumMasterDashboard() {
         </div>
 
         <div className="p-4 grid sm:grid-cols-2 gap-3">
+
           {projects?.map((p: any, i: number) => (
             <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.36 + i * 0.05 }}>
               <Link href={`/projects/${p.id}`}

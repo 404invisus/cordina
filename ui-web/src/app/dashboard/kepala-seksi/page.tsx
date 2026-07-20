@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import CRSummaryCard from '@/components/dashboard/CRSummaryCard';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { projectService } from '@/lib/api';
@@ -78,6 +79,8 @@ export default function KepalaUnitDashboard() {
           </motion.div>
         ))}
       </div>
+
+      <CRSummaryCard />
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
         className="bg-white rounded-2xl border border-slate-100 overflow-hidden">

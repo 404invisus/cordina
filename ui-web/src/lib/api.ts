@@ -237,6 +237,7 @@ export const documentService = {
 };
 
 export const changeRequestService = {
+  summary: () => api.get('/api/v1/change-requests/summary'),
   list: (params?: any) => api.get('/api/v1/change-requests', { params }),
   create: (data: any) => api.post('/api/v1/change-requests', data),
   show: (id: string) => api.get(`/api/v1/change-requests/${id}`),

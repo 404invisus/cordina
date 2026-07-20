@@ -47,6 +47,43 @@ class ChangeRequestController extends Controller
         ];
     }
 
+    // ── GET /v1/change-requests/summary ──
+    public function summary(Request $request): JsonResponse
+    {
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        $canViewAll = !empty(array_intersect($roles, ['kepala_balai', 'administrator']));
+
+        $query = ChangeRequest::query();
+
+        if (!$canViewAll) {
+            $approverCrIds = CrApproval::where('approver_id', $userId)->pluck('cr_id');
+            $query->where(function ($q) use ($userId, $approverCrIds) {
+                $q->where('requester_id', $userId)
+                  ->orWhereIn('id', $approverCrIds)
+                  ->orWhereJsonContains('pelaksana_ids', $userId);
+            });
+        }
+
+        $total = (clone $query)->count();
+        $byStatus = (clone $query)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $statuses = ['draft', 'submitted', 'approved', 'rejected', 'implemented'];
+        $statusCounts = [];
+        foreach ($statuses as $s) {
+            $statusCounts[$s] = $byStatus[$s] ?? 0;
+        }
+
+        return response()->json(['data' => [
+            'total'  => $total,
+            'by_status' => $statusCounts,
+        ]]);
+    }
+
     // ── GET /v1/change-requests ──
     public function index(Request $request): JsonResponse
     {

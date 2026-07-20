@@ -1,5 +1,6 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
+import CRSummaryCard from '@/components/dashboard/CRSummaryCard';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { taskService } from '@/lib/api';
@@ -64,6 +65,8 @@ export default function StaffDashboard() {
           Semua Task
         </Link>
       </div>
+
+      <CRSummaryCard />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s, i) => (
