@@ -23,7 +23,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   distributed:       { label: 'Didistribusikan',    color: 'bg-violet-100 text-violet-700' },
 };
 
-// ── Modal Buat Request Baru ────────────────────────────────────────────────────
 function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
@@ -79,7 +78,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Judul */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Judul Dokumen *</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
@@ -87,7 +85,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               placeholder="Masukkan judul dokumen" style={{color:"#94a3b8"}} />
           </div>
 
-          {/* Deskripsi */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
@@ -95,7 +92,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               placeholder="Deskripsi singkat (opsional)" />
           </div>
 
-          {/* Upload PDF */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">File PDF * <span className="text-slate-400 font-normal">(maks. 500 KB)</span></label>
             <div onClick={() => fileRef.current?.click()}
@@ -108,7 +104,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             </div>
           </div>
 
-          {/* Penandatangan */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Penandatangan Tambahan</label>
             <p className="text-xs text-slate-400 mt-0.5">Anda otomatis menjadi penandatangan pertama (urutan 1)</p>
@@ -131,8 +126,6 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
-// ── User Search Input ──────────────────────────────────────────────────────────
-// ── User Multi Select ──────────────────────────────────────────────────────────
 function UserMultiSelect({ selected, onChange, users, showOrder = true }: {
   selected: string[]; onChange: (ids: string[]) => void; users: any[]; showOrder?: boolean;
 }) {
@@ -177,7 +170,6 @@ function UserMultiSelect({ selected, onChange, users, showOrder = true }: {
   );
 }
 
-// ── Modal Detail & Tanda Tangan ────────────────────────────────────────────────
 function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
@@ -205,7 +197,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
   const signMutation = useMutation({
     mutationFn: async () => {
-      // Warmup dulu
       await fetch('http://localhost:8000/api/v1/esign/warmup').catch(() => {});
       return tteSignService.sign(id, passphrase);
     },
@@ -286,7 +277,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
         ) : (
           <div className="p-6 space-y-4">
-            {/* Tabs */}
             <div className="flex gap-2 border-b border-slate-100">
               {[{ key: 'info', label: 'Info & Penandatangan', icon: Users },
                 { key: 'log',  label: 'Audit Trail',          icon: History }].map(t => (
@@ -302,7 +292,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               <>
                 {detail?.description && <p className="text-sm text-slate-500">{detail.description}</p>}
 
-                {/* Penandatangan */}
                 <div>
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Urutan Penandatangan</h3>
                   <div className="space-y-2">
@@ -323,7 +312,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                   </div>
                 </div>
 
-                {/* Distribusi */}
                 {detail?.distributions?.length > 0 && (
                   <div>
                     <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Penerima Distribusi</h3>
@@ -359,7 +347,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-2 pt-2 border-t border-slate-100">
               <button onClick={handleDownload}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
@@ -388,7 +375,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               )}
             </div>
 
-            {/* Panel Verifikasi */}
             {showVerify && (
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 {!verifyData && (
@@ -426,7 +412,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
             )}
 
-            {/* Form tanda tangan */}
             {showSign && (
               <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 space-y-3">
                 <p className="text-sm font-semibold text-violet-800">Masukkan passphrase TTE Anda</p>
@@ -444,7 +429,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               </div>
             )}
 
-            {/* Form distribusi */}
             {showDist && (
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-3">
                 <p className="text-sm font-semibold text-emerald-800">Pilih penerima distribusi</p>
@@ -509,7 +493,6 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function TteSignPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId]     = useState<string | null>(null);

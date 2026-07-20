@@ -222,7 +222,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* TTE Section */}
                 <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
                   <div>
                     <h3 className="font-bold text-slate-800 mb-1">Tanda Tangan Elektronik (TTE)</h3>

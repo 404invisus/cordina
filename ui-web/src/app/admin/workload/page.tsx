@@ -102,7 +102,6 @@ export default function AdminWorkloadPage() {
         </button>
       </div>
 
-      {/* Filter */}
       <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-5 flex flex-wrap gap-3 items-center">
         <div className="relative">
           <select value={selectedProject}
@@ -133,7 +132,6 @@ export default function AdminWorkloadPage() {
       {selectedProject && (
         <>
           <div className="grid lg:grid-cols-2 gap-5 mb-5">
-            {/* Burndown */}
             <div className="bg-white rounded-2xl border border-slate-100 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-[#284074]" />
@@ -163,7 +161,6 @@ export default function AdminWorkloadPage() {
               )}
             </div>
 
-            {/* Velocity */}
             <div className="bg-white rounded-2xl border border-slate-100 p-5">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className="w-4 h-4 text-violet-600" />
@@ -188,7 +185,6 @@ export default function AdminWorkloadPage() {
             </div>
           </div>
 
-          {/* Workload per user */}
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
               <Users className="w-4 h-4 text-slate-400" />

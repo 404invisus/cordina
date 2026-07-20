@@ -302,7 +302,6 @@ function CRModal({ open, onClose, editData, pendingFiles, setPendingFiles }: { o
           </div>
         </div>
 
-
         <div className="flex gap-3 p-6 pt-0 sticky bottom-0 bg-white border-t border-slate-100">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
           <button onClick={handleSubmit} disabled={mutation.isPending || !form.title || !form.description || !form.reason}

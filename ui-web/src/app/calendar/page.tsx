@@ -146,7 +146,6 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           </div>
         )}
 
-        {/* Status */}
         <div className="flex items-center justify-between">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text}`}>
             {sc.label}
@@ -159,7 +158,6 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           )}
         </div>
 
-        {/* Laporan section */}
         {editMode ? (
           <div className="space-y-3 bg-slate-50 rounded-2xl p-4">
             <div>

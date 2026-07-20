@@ -67,7 +67,6 @@ export default function LoginPage() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@400;500;600&display=swap');
       `}</style>
 
-      {/* Kiri — branding */}
       <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 bg-[#083858] px-12 py-10">
 <div />
 
@@ -80,9 +79,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Kanan — form */}
       <div className="flex-1 flex flex-col bg-[#f4f2ee]">
-        {/* Mobile nav */}
         <div className="lg:hidden px-6 py-5 flex items-center gap-2 border-b border-[#083858]/8">
           <img src="/logo-only-black.png" alt="ConnectOne" width={20} height={20} className="object-contain" />
           <span className="font-semibold text-[#083858] text-sm">ConnectOne</span>
@@ -104,7 +101,6 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-[#083858]/60 uppercase tracking-wider mb-2">
                   Email
@@ -128,7 +124,6 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-xs font-semibold text-[#083858]/60 uppercase tracking-wider mb-2">
                   Kata sandi
@@ -159,7 +154,6 @@ export default function LoginPage() {
                 )}
               </div>
 
-              {/* Submit */}
               <div className="pt-2">
                 <button
                   type="submit"

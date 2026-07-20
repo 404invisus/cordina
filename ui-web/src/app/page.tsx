@@ -46,13 +46,11 @@ export default function LandingPage() {
       className="min-h-screen bg-[#f4f2ee] text-[#0d1f2d]"
       style={{ fontFamily: '"Source Sans 3", "Source Sans Pro", system-ui, sans-serif' }}
     >
-      {/* Google Fonts */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@400;500;600&display=swap');
         .font-display { font-family: 'Playfair Display', Georgia, serif; }
       `}</style>
 
-      {/* Nav */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-colors duration-200 ${
         scrolled ? 'bg-[#f4f2ee]/95 backdrop-blur-sm border-b border-[#083858]/10' : ''
       }`}>
@@ -76,7 +74,6 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="bg-[#083858] pt-28 pb-20 px-6 relative overflow-hidden">
         <div className="max-w-5xl mx-auto lg:pl-10">
           <motion.p
@@ -107,7 +104,7 @@ export default function LandingPage() {
           >
             ConnectOne menghubungkan penjadwalan kegiatan, manajemen proyek,
             proses persetujuan perubahan, dan pengelolaan aset dalam satu
-            platform 
+            platform
           </motion.p>
 
           <motion.div
@@ -125,10 +122,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Garis aksen gold tipis di bawah hero */}
       <div className="h-0.5 bg-[#d4a31d]" />
 
-      {/* Modul */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-baseline justify-between pb-4 border-b border-[#083858]/12 mb-2">
@@ -152,7 +147,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="bg-[#083858] py-16 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
@@ -168,7 +162,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-[#06293f] py-7 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">

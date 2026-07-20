@@ -216,11 +216,9 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
     mutationFn: async () => {
       const story = stories?.find((s: any) => s.id === selected);
       console.log('[AddBacklog] selected:', selected, 'sprintId:', sprintId, 'story:', story);
-      // assign story ke sprint ini (skip jika sudah)
       if (story && story.sprint_id !== sprintId) {
         await storyService.update(selected!, { sprint_id: sprintId });
       }
-      // buat task dari backlog ini
       return taskService.create({
         title: story?.title,
         type: 'task',

@@ -63,7 +63,6 @@ export default function AdminActivityPage() {
         </div>
       </div>
 
-      {/* Filter */}
       <div className="bg-white rounded-2xl border border-slate-100 p-4 mb-5 space-y-3">
         <div className="flex gap-3 flex-wrap">
           <div className="flex items-center gap-2 flex-1 min-w-48 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50">
@@ -103,7 +102,6 @@ export default function AdminActivityPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
           { label: 'Total Aktivitas', value: data?.total || 0, color: 'text-slate-700' },
@@ -118,7 +116,6 @@ export default function AdminActivityPage() {
         ))}
       </div>
 
-      {/* Log List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />

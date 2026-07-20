@@ -21,8 +21,6 @@ function formatSize(bytes: number) {
   return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
 
-// ── Sign Modal ────────────────────────────────────────────────────────────────
-
 function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const { user } = useAuthStore();
@@ -71,7 +69,6 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Upload PDF */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dokumen PDF *</label>
             <div
@@ -103,7 +100,6 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             </div>
           </div>
 
-          {/* Judul */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Judul Dokumen</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
@@ -111,9 +107,6 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               placeholder="Nama dokumen (opsional, default nama file)" />
           </div>
 
-
-
-          {/* Passphrase */}
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Passphrase TTE *</label>
             <input type="password" value={passphrase} onChange={e => setPassphrase(e.target.value)}
@@ -139,8 +132,6 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     </div>
   );
 }
-
-// ── Verify Modal ──────────────────────────────────────────────────────────────
 
 function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose: () => void }) {
   const { data, isLoading } = useQuery({
@@ -203,8 +194,6 @@ function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose:
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-
 export default function EsignPage() {
   const { user } = useAuthStore();
   const [signOpen, setSignOpen]   = useState(false);
@@ -233,7 +222,6 @@ export default function EsignPage() {
       <SignModal open={signOpen} onClose={() => setSignOpen(false)} />
       <VerifyModal open={!!verifyDoc} doc={verifyDoc} onClose={() => setVerifyDoc(null)} />
 
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-gradient-to-br from-violet-500/10 to-violet-500/5 rounded-2xl flex items-center justify-center border border-violet-100">
@@ -250,7 +238,6 @@ export default function EsignPage() {
         </button>
       </div>
 
-      {/* Warning jika NIK belum diset */}
       {!hasNik && (
         <div className="mb-5 flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-sm text-amber-700">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
@@ -258,7 +245,6 @@ export default function EsignPage() {
         </div>
       )}
 
-      {/* List dokumen */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-8 h-8 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />

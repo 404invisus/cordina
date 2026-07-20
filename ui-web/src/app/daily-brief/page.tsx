@@ -60,7 +60,6 @@ export default function DailyBriefPage() {
 
   return (
     <AppLayout>
-      {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-gradient-to-br from-[#284074]/10 to-[#284074]/5 rounded-2xl flex items-center justify-center border border-[#284074]/10">
@@ -93,7 +92,6 @@ export default function DailyBriefPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Stat cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard index={0} title="Total User"     value={data.users?.total   ?? 0} icon={Users}        color="blue"   />
             <StatCard index={1} title="User Aktif"     value={data.users?.active  ?? 0} icon={Users}        color="green"  />
@@ -102,7 +100,6 @@ export default function DailyBriefPage() {
             <StatCard index={4} title="Task Overdue"   value={data.tasks?.overdue ?? 0} icon={AlertTriangle} color="red"    />
           </div>
 
-          {/* Summary row */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,7 +170,6 @@ export default function DailyBriefPage() {
             </div>
           </motion.div>
 
-          {/* Overdue warning */}
           {(data.tasks?.overdue ?? 0) > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
