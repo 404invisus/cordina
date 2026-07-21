@@ -7,6 +7,7 @@ use App\Http\Resources\UserResource;
 use App\Services\Admin\AdminUserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
@@ -64,12 +65,14 @@ class AdminUserController extends Controller
 
         $data = $request->validate([
             'full_name' => 'required|string|max:255',
-            'email'     => 'required|email|unique:users,email',
+            'email'     => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'password'  => 'required|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
             'role'      => 'required|string|in:kepala_balai,kepala_seksi,project_manager,scrum_master,staff,administrator',
             'division'  => 'sometimes|nullable|string|max:100',
             'position'  => 'sometimes|nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
+        ], [
+            'password.regex' => 'Password harus mengandung minimal 1 huruf dan 1 angka.',
         ]);
 
         $user = $this->adminUserService->createUser($data);
@@ -86,13 +89,15 @@ class AdminUserController extends Controller
 
         $data = $request->validate([
             'full_name'        => 'sometimes|string|max:255',
-            'email'            => 'sometimes|email|unique:users,email,' . $id,
+            'email'            => ['sometimes', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')->ignore($id)],
             'password'         => 'sometimes|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
             'division'         => 'sometimes|nullable|string|max:100',
             'position'         => 'sometimes|nullable|string|max:100',
             'telegram_chat_id' => 'sometimes|nullable|string|max:50',
             'avatar'           => 'sometimes|nullable|string|url',
             'is_active'        => 'sometimes|boolean',
+        ], [
+            'password.regex' => 'Password harus mengandung minimal 1 huruf dan 1 angka.',
         ]);
 
         $user = $this->adminUserService->findOrFail($id);

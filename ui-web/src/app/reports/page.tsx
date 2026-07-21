@@ -83,6 +83,7 @@ export default function ReportsPage() {
   const [selectedSprint, setSelectedSprint] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedMember, setSelectedMember] = useState<string | null>(null);
 
   const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: () => projectService.list().then(r => r.data.data) });
   const { data: sprints } = useQuery({
@@ -238,17 +239,38 @@ export default function ReportsPage() {
 
             {tab === 'workload' && workloadReport && (
               <>
+                {selectedMember && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-xs text-slate-400">Filter:</span>
+                    <button onClick={() => setSelectedMember(null)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#284074] bg-[#284074]/8 px-2.5 py-1 rounded-full hover:bg-[#284074]/15 transition-colors">
+                      {(workloadReport || []).find((u: any) => u.user_id === selectedMember)?.full_name || selectedMember}
+                      <span className="text-slate-400">✕</span>
+                    </button>
+                  </div>
+                )}
                 <div className="grid lg:grid-cols-2 gap-5">
                   <div className="bg-white rounded-2xl border border-slate-100 p-5">
-                    <h3 className="font-bold text-slate-800 mb-4">Distribusi Task per Anggota</h3>
+                    <h3 className="font-bold text-slate-800 mb-1">Distribusi Task per Anggota</h3>
+                    <p className="text-xs text-slate-400 mb-4">Klik bar untuk filter per anggota</p>
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={workloadReport || []} barGap={4}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis dataKey="full_name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                         <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: '#f8fafc' }} />
-                        <Bar dataKey="total_tasks" fill="#284074" radius={[6, 6, 0, 0]} name="Total Task" />
-                        <Bar dataKey="completed" fill="#22c55e" radius={[6, 6, 0, 0]} name="Selesai" />
+                        <Bar dataKey="total_tasks" radius={[6, 6, 0, 0]} name="Total Task" cursor="pointer"
+                          onClick={(d: any) => setSelectedMember(prev => prev === d.user_id ? null : d.user_id)}>
+                          {(workloadReport || []).map((u: any, i: number) => (
+                            <Cell key={`t-${i}`} fill="#284074" fillOpacity={!selectedMember || selectedMember === u.user_id ? 1 : 0.25} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="completed" radius={[6, 6, 0, 0]} name="Selesai" cursor="pointer"
+                          onClick={(d: any) => setSelectedMember(prev => prev === d.user_id ? null : d.user_id)}>
+                          {(workloadReport || []).map((u: any, i: number) => (
+                            <Cell key={`c-${i}`} fill="#22c55e" fillOpacity={!selectedMember || selectedMember === u.user_id ? 1 : 0.25} />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -256,7 +278,7 @@ export default function ReportsPage() {
                   <div className="bg-white rounded-2xl border border-slate-100 p-5">
                     <h3 className="font-bold text-slate-800 mb-4">Progress per Anggota</h3>
                     <div className="space-y-3.5">
-                      {(workloadReport || []).map((u: any, i: number) => {
+                      {(workloadReport || []).filter((u: any) => !selectedMember || u.user_id === selectedMember).map((u: any, i: number) => {
                         const pct = u.total_tasks > 0 ? Math.round((u.completed / u.total_tasks) * 100) : 0;
                         return (
                           <div key={u.user_id} className="flex items-center gap-3">

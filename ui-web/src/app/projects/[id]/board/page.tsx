@@ -62,7 +62,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      className="group relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all duration-200"
+      className={`group relative bg-white rounded-2xl border border-slate-100 shadow-sm transition-all duration-200 ${menuOpen ? '' : 'hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-0.5'}`}
     >
       <div className={`absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent`} />
 
@@ -81,7 +81,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
           <div className="relative">
             <button
               onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-              className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 opacity-0 group-hover:opacity-100 transition-all"
+              className={`w-6 h-6 rounded-lg flex items-center justify-center text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-all ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
                 <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
@@ -209,7 +209,9 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
     enabled: open,
   });
 
-  const unassignedStories = (allStories || []).filter((s: any) => !(existingStoryIds || []).includes(s.id));
+  const unassignedStories = (allStories || [])
+    .filter((s: any) => !s.sprint_id || s.sprint_id === sprintId)
+    .filter((s: any) => !(existingStoryIds || []).includes(s.id));
   const stories = allStories;
 
   const { mutate, isPending } = useMutation({

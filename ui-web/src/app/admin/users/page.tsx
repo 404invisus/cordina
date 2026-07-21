@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Plus, MoreVertical, UserCheck, UserX, Shield,
   Pencil, Trash2, X, Users, TrendingUp, ChevronDown,
-  Download,
+  Download, Check,
   Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
@@ -125,6 +125,22 @@ function UserFormModal({
               <input type="password" value={form.password} onChange={e => set('password', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
                 placeholder={isEdit ? '••••••••' : 'Minimal 8 karakter'} />
+              {form.password && (
+                <div className="mt-2 space-y-1">
+                  {[
+                    { ok: form.password.length >= 8, label: 'Minimal 8 karakter' },
+                    { ok: /[a-zA-Z]/.test(form.password), label: 'Mengandung huruf' },
+                    { ok: /[0-9]/.test(form.password), label: 'Mengandung angka' },
+                  ].map((r, i) => (
+                    <div key={i} className={`flex items-center gap-1.5 text-xs ${r.ok ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${r.ok ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                        {r.ok ? <Check className="w-2.5 h-2.5" /> : <span className="w-1 h-1 rounded-full bg-slate-400" />}
+                      </span>
+                      {r.label}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Role *</label>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarRange, Plus, X, Trash2, Eye, Clock,
+  CalendarRange, Plus, X, Trash2, Eye, Clock, Pencil,
   Users, MapPin, Lock, Globe, ChevronLeft, ChevronRight, Check,
   Download,
   Loader2,
@@ -305,7 +305,7 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
     </div>
   );
 }
-function EventDrawer({ event, onClose, onDelete }: any) {
+function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
   const conf = EVENT_TYPE_CONFIG[event.type] || EVENT_TYPE_CONFIG.lainnya;
   const { data: participants } = useQuery({
     queryKey: ['admin-calendar-participants', event.id],
@@ -330,6 +330,9 @@ function EventDrawer({ event, onClose, onDelete }: any) {
             <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} /> {conf.label}
           </span>
           <div className="flex items-center gap-1">
+            <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-[#284074]">
+              <Pencil className="w-4 h-4" />
+            </button>
             <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-red-400 hover:text-red-600">
               <Trash2 className="w-4 h-4" />
             </button>
@@ -424,6 +427,7 @@ export default function AdminCalendarPage() {
   };
   const [viewEvent, setViewEvent]       = useState<any>(null);
   const [deleteEvent, setDeleteEvent]   = useState<any>(null);
+  const [editEvent, setEditEvent]       = useState<any>(null);
 
   const from = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
   const to   = format(endOfMonth(currentMonth),   'yyyy-MM-dd');
@@ -588,8 +592,10 @@ export default function AdminCalendarPage() {
         </div>
       )}
       {showCreate && <EventFormModal open={true} onClose={() => setShowCreate(false)} users={users} />}
+      {editEvent && <EventFormModal open={true} editEvent={editEvent} onClose={() => setEditEvent(null)} users={users} />}
         {viewEvent && (
           <EventDrawer event={viewEvent} onClose={() => setViewEvent(null)}
+            onEdit={() => { setEditEvent(viewEvent); setViewEvent(null); }}
             onDelete={() => { setDeleteEvent(viewEvent); setViewEvent(null); }} />
         )}
       </AnimatePresence>

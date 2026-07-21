@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Search, MoreVertical, Trash2, X,
   CheckSquare, Clock, AlertTriangle, Users, Eye,
-  Download,
+  Download, Pencil,
   Loader2,
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
@@ -150,6 +150,105 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
     </div>
   );
 }
+function EditProjectModal({ project, onClose }: { project: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    name:        project?.name        || '',
+    description: project?.description || '',
+    status:      project?.status      || 'active',
+    start_date:  project?.start_date  ? String(project.start_date).slice(0, 10) : '',
+    end_date:    project?.end_date    ? String(project.end_date).slice(0, 10)   : '',
+  });
+
+  const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => adminProjectService.update(project.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-projects'] });
+      qc.invalidateQueries({ queryKey: ['admin-project-stats'] });
+      toast.success('Project diperbarui!');
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+  });
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) {
+      toast.error('Nama project wajib diisi');
+      return;
+    }
+    mutation.mutate(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="font-bold text-slate-900">Edit Project</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Ubah informasi project</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Nama Project *</label>
+            <input value={form.name} onChange={e => set('name', e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
+              placeholder="Nama project" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Deskripsi</label>
+            <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={3}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all resize-none"
+              placeholder="Deskripsi project" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Status</label>
+            <div className="relative">
+              <select value={form.status} onChange={e => set('status', e.target.value)}
+                className="w-full appearance-none px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all pr-8">
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+                <option value="completed">Selesai</option>
+                <option value="archived">Arsip</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Tanggal Mulai</label>
+              <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Tanggal Selesai</label>
+              <input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all" />
+            </div>
+          </div>
+        </div>
+        <div className="px-6 pb-5 flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            Batal
+          </button>
+          <button onClick={handleSubmit} disabled={mutation.isPending}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors disabled:opacity-50">
+            {mutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminProjectsPage() {
   const qc = useQueryClient();
   const [exporting, setExporting] = useState(false);
@@ -169,6 +268,7 @@ export default function AdminProjectsPage() {
   const [openMenu, setOpenMenu]       = useState<string | null>(null);
   const [viewProject, setViewProject] = useState<string | null>(null);
   const [deleteProject, setDeleteProject] = useState<any>(null);
+  const [editProject, setEditProject]   = useState<any>(null);
 
   const { data: stats } = useQuery({
     queryKey: ['admin-project-stats'],
@@ -325,6 +425,10 @@ export default function AdminProjectsPage() {
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
                                     <Eye className="w-3.5 h-3.5" /> Lihat Detail
                                   </button>
+                                  <button onClick={() => { setEditProject(p); setOpenMenu(null); }}
+                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
+                                    <Pencil className="w-3.5 h-3.5" /> Edit
+                                  </button>
                                   <div className="h-px bg-slate-100 mx-2" />
                                   <button onClick={() => { setDeleteProject(p); setOpenMenu(null); }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
@@ -347,6 +451,10 @@ export default function AdminProjectsPage() {
 
       <AnimatePresence>
         {viewProject && <ProjectDrawer projectId={viewProject} onClose={() => setViewProject(null)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editProject && <EditProjectModal project={editProject} onClose={() => setEditProject(null)} />}
       </AnimatePresence>
 
       <AnimatePresence>

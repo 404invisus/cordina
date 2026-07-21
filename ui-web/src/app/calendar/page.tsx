@@ -129,10 +129,10 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
               {event.participants.map((p: any) => (
                 <div key={p.id} className="flex items-center gap-2.5 px-3 py-2 bg-slate-50 rounded-xl">
                   <div className="w-7 h-7 rounded-lg bg-[#284074] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-                    {p.full_name.trim().split(' ').slice(0,2).map((w:string)=>w[0]).join('').toUpperCase()}
+                    {p.is_group ? '👥' : (p.full_name || '').trim().split(' ').filter(Boolean).slice(0,2).map((w:string)=>w[0]).join('').toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-slate-700 truncate">{p.full_name}</div>
+                    <div className="text-sm font-semibold text-slate-700 truncate">{p.group_name || p.full_name || '—'}</div>
                     {p.division && <div className="text-xs text-slate-400">{p.division}</div>}
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${

@@ -66,12 +66,12 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('internal')->prefix('internal')->group(function () {
         Route::get('/users/all', function () {
-            $users = \App\Models\User::all();
+            $users = \App\Models\User::withTrashed()->get();
             return response()->json(['data' => \App\Http\Resources\UserResource::collection($users)]);
         });
 
         Route::get('/users/{id}', function (string $id) {
-            $user = \App\Models\User::findOrFail($id);
+            $user = \App\Models\User::withTrashed()->findOrFail($id);
             return response()->json(['data' => new \App\Http\Resources\UserResource($user)]);
         });
         Route::post('/check-permission', function (\Illuminate\Http\Request $request) {
@@ -124,7 +124,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/users/batch', function (Request $request) {
             $request->validate(['ids' => 'required|array', 'ids.*' => 'uuid']);
-            $users = User::whereIn('id', $request->ids)
+            $users = User::withTrashed()->whereIn('id', $request->ids)
                 ->get(['id', 'full_name', 'email', 'telegram_chat_id', 'division', 'is_active']);
             return response()->json(['data' => $users]);
         });

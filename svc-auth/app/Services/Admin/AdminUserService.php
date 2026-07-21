@@ -44,7 +44,7 @@ class AdminUserService
         $data['is_active'] = $data['is_active'] ?? true;
 
         $user = User::create($data);
-        $user->assignRole($role);
+        $user->assignRole(\Spatie\Permission\Models\Role::findByName($role, 'api'));
 
         return $user->fresh('roles');
     }
@@ -61,7 +61,7 @@ class AdminUserService
 
     public function assignRole(User $user, string $role): void
     {
-        $user->syncRoles([$role]);
+        $user->syncRoles([\Spatie\Permission\Models\Role::findByName($role, 'api')]);
     }
 
     public function deleteUser(string $id): void

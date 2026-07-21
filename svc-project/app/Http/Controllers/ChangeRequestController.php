@@ -171,7 +171,7 @@ class ChangeRequestController extends Controller
         });
 
         $this->log($cr->id, $data['requester_id'], 'created', 'CR dibuat');
-        \App\Services\ActivityLogger::log($userId, 'cr.created', "Membuat CR: {$cr->title}", true, ['cr_id' => $cr->id]);
+        \App\Services\ActivityLogger::log($data['requester_id'], 'cr.created', "Membuat CR: {$cr->title}", true, ['cr_id' => $cr->id]);
         return response()->json(['data' => $cr->load('approvals')], 201);
     }
 

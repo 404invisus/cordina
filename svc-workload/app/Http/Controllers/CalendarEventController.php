@@ -202,13 +202,7 @@ class CalendarEventController extends Controller
         $participantIds = $event->participants->pluck('user_id')->toArray();
         $users          = $this->resolveUserNames($participantIds);
 
-        $result = $event->participants->map(fn($p) => [
-            'id'        => $p->id,
-            'user_id'   => $p->user_id,
-            'full_name' => $users[$p->user_id]['full_name'] ?? null,
-            'division'  => $users[$p->user_id]['division']  ?? null,
-            'status'    => $p->status,
-        ]);
+        $result = $event->participants->map(fn($p) => $this->formatParticipant($p, $users));
 
         return response()->json(['data' => $result]);
     }
@@ -237,12 +231,7 @@ class CalendarEventController extends Controller
         $this->notifyParticipants($event, $request->user_ids);
 
         $users  = $this->resolveUserNames($request->user_ids);
-        $result = $event->participants()->get()->map(fn($p) => [
-            'id'        => $p->id,
-            'user_id'   => $p->user_id,
-            'full_name' => $users[$p->user_id]['full_name'] ?? null,
-            'status'    => $p->status,
-        ]);
+        $result = $event->participants()->get()->map(fn($p) => $this->formatParticipant($p, $users));
 
         return response()->json([
             'message'      => count($request->user_ids) . ' peserta ditambahkan',
@@ -311,18 +300,34 @@ class CalendarEventController extends Controller
         }
     }
 
-    private function formatEvent(CalendarEvent $event, array $users): array
+    private function formatParticipant($p, array $users): array
     {
-        $arr                   = $event->toArray();
-        $arr['creator_name']   = $users[$event->user_id]['full_name'] ?? null;
-        $arr['creator_division'] = $users[$event->user_id]['division'] ?? null;
-        $arr['participants']   = $event->participants->map(fn($p) => [
+        if ($p->group_id) {
+            return [
+                'id'        => $p->id,
+                'user_id'   => null,
+                'group_id'  => $p->group_id,
+                'full_name' => $p->group_name,
+                'is_group'  => true,
+                'division'  => null,
+                'status'    => $p->status,
+            ];
+        }
+        return [
             'id'        => $p->id,
             'user_id'   => $p->user_id,
             'full_name' => $users[$p->user_id]['full_name'] ?? null,
             'division'  => $users[$p->user_id]['division']  ?? null,
             'status'    => $p->status,
-        ]);
+            'is_group'  => false,
+        ];
+    }
+    private function formatEvent(CalendarEvent $event, array $users): array
+    {
+        $arr                   = $event->toArray();
+        $arr['creator_name']   = $users[$event->user_id]['full_name'] ?? null;
+        $arr['creator_division'] = $users[$event->user_id]['division'] ?? null;
+        $arr['participants']   = $event->participants->map(fn($p) => $this->formatParticipant($p, $users));
         return $arr;
     }
 

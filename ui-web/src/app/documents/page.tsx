@@ -16,7 +16,8 @@ function formatSize(bytes: any) {
 
 function isExpiringSoon(date: string) {
   if (!date) return false;
-  return new Date(date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const d = new Date(date);
+  return d >= new Date() && d <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 }
 
 function isExpired(date: string) {

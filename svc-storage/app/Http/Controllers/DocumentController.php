@@ -14,6 +14,7 @@ class DocumentController extends Controller
             ->when($request->category, fn($q, $v) => $q->where('category', $v))
             ->when($request->search,   fn($q, $v) => $q->where('title', 'ilike', "%{$v}%"))
             ->when($request->expiring, fn($q) => $q->whereNotNull('expires_at')
+                ->where('expires_at', '>=', now())
                 ->where('expires_at', '<=', now()->addDays(30)))
             ->orderByDesc('created_at')
             ->paginate(20);

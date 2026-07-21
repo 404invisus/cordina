@@ -37,6 +37,7 @@ class NotificationDispatcher
                     $notif->id, $userId, $chatId, $message,
                     groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
                     privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'tte.sign_requested', 'tte.all_signed', 'tte.distributed', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
+                    type: $type,
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
                 default    => Log::info("Channel {$channel} not implemented yet"),
@@ -93,8 +94,11 @@ Silakan buka di ConnectOne untuk melihat dan mengunduh.",
         };
     }
 
-    private function dispatchTelegram(string $notifId, string $userId, ?string $chatId, string $message, bool $groupOnly = false, bool $privateOnly = false): void
+    private function dispatchTelegram(string $notifId, string $userId, ?string $chatId, string $message, bool $groupOnly = false, bool $privateOnly = false, string $type = ''): void
     {
+        $groupMessage = $type === 'task.mentioned'
+            ? str_replace('menyebut Anda', 'menandai', $message)
+            : $message;
         if ($privateOnly) {
             if ($chatId) {
                 SendTelegramNotification::dispatch($notifId, $userId, $chatId, $message);
@@ -102,13 +106,13 @@ Silakan buka di ConnectOne untuk melihat dan mengunduh.",
             return;
         }
         if ($groupOnly) {
-            SendTelegramNotification::dispatch($notifId, $userId, $this->groupChatId, $message);
+            SendTelegramNotification::dispatch($notifId, $userId, $this->groupChatId, $groupMessage);
             return;
         }
         if ($chatId) {
             SendTelegramNotification::dispatch($notifId, $userId, $chatId, $message);
         }
-        SendTelegramNotification::dispatch($notifId, $userId, $this->groupChatId, $message);
+        SendTelegramNotification::dispatch($notifId, $userId, $this->groupChatId, $groupMessage);
     }
     private function dispatchInApp(string $notifId): void
     {
