@@ -76,12 +76,16 @@ Route::prefix('v1')->group(function () {
         Route::get('projects/{project}/roadmap', [\App\Http\Controllers\RoadmapController::class, 'show']);
 
         Route::get('projects/{project}/members', function (string $projectId) {
-            $roles = [];
-            try { $roles = (array) auth()->payload()->get('roles'); } catch (\Throwable) {}
+            $roles = (array) (request()->attributes->get('jwt_roles') ?? []);
+            if (empty($roles)) {
+                try { $roles = (array) auth()->payload()->get('roles'); } catch (\Throwable) {}
+            }
             if (empty(array_intersect($roles, ['administrator', 'kepala_balai', 'kepala_seksi']))) {
+                $uid = request()->attributes->get('jwt_user_id') ?? auth()->id();
+                abort_if(!$uid, 401, 'Unauthenticated');
                 abort_if(
                     !DB::table('project_members')->where('project_id', $projectId)
-                        ->where('user_id', auth()->id())->exists(),
+                        ->where('user_id', $uid)->exists(),
                     403, 'Forbidden: bukan anggota project ini'
                 );
             }
