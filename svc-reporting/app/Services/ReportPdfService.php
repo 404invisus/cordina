@@ -5,6 +5,11 @@ use Illuminate\Http\Response;
 
 class ReportPdfService
 {
+    private function esc($v): string
+    {
+        return htmlspecialchars((string) ($v ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     private function renderHtml(string $title, string $subtitle, string $content): string
     {
         $date = now()->format('d F Y, H:i');
@@ -63,13 +68,13 @@ HTML;
         $rows = '';
         foreach ($data as $item) {
             $pct  = $item['total_tasks'] > 0 ? round(($item['completed'] / $item['total_tasks']) * 100) : 0;
-            $name = $item['full_name'] ?? $item['user_name'] ?? '-';
+            $name = $this->esc($item['full_name'] ?? $item['user_name'] ?? '-');
             $rows .= "<tr>
                 <td>{$name}</td>
-                <td>{$item['division']}</td>
-                <td style='text-align:center'>{$item['total_tasks']}</td>
-                <td style='text-align:center'>{$item['completed']}</td>
-                <td style='text-align:center'>{$item['pending']}</td>
+                <td>{$this->esc($item['division'])}</td>
+                <td style='text-align:center'>{$this->esc($item['total_tasks'])}</td>
+                <td style='text-align:center'>{$this->esc($item['completed'])}</td>
+                <td style='text-align:center'>{$this->esc($item['pending'])}</td>
                 <td style='text-align:center'>{$pct}%</td>
             </tr>";
         }
@@ -104,12 +109,12 @@ HTML;
 
         $byStatusRows = '';
         foreach ($data['by_status'] ?? [] as $status => $count) {
-            $byStatusRows .= "<tr><td>{$status}</td><td style='text-align:center'>{$count}</td></tr>";
+            $byStatusRows .= "<tr><td>{$this->esc($status)}</td><td style='text-align:center'>{$count}</td></tr>";
         }
 
         $byTypeRows = '';
         foreach ($data['by_type'] ?? [] as $type => $info) {
-            $byTypeRows .= "<tr><td>{$type}</td><td style='text-align:center'>{$info['total']}</td><td style='text-align:center'>{$info['done']}</td></tr>";
+            $byTypeRows .= "<tr><td>{$type}</td><td style='text-align:center'>{$this->esc($info['total'])}</td><td style='text-align:center'>{$this->esc($info['done'])}</td></tr>";
         }
 
         $content = "
@@ -147,12 +152,12 @@ HTML;
                 : 0;
             $statusClass = $sprint['status'] === 'completed' ? 'badge-green' : ($sprint['status'] === 'active' ? 'badge-blue' : 'badge-gray');
             $rows .= "<tr>
-                <td>{$sprint['sprint_name']}</td>
-                <td><span class='badge {$statusClass}'>{$sprint['status']}</span></td>
-                <td style='text-align:center'>{$sprint['total_points']}</td>
-                <td style='text-align:center'>{$sprint['completed_points']}</td>
+                <td>{$this->esc($sprint['sprint_name'])}</td>
+                <td><span class='badge {$statusClass}'>{$this->esc($sprint['status'])}</span></td>
+                <td style='text-align:center'>{$this->esc($sprint['total_points'])}</td>
+                <td style='text-align:center'>{$this->esc($sprint['completed_points'])}</td>
                 <td style='text-align:center'>{$pct}%</td>
-                <td style='text-align:center'>{$sprint['velocity']}</td>
+                <td style='text-align:center'>{$this->esc($sprint['velocity'])}</td>
             </tr>";
         }
 
@@ -180,10 +185,10 @@ HTML;
         $rows = '';
         foreach ($data as $item) {
             $rows .= "<tr>
-                <td>{$item['full_name']}</td>
-                <td>{$item['division']}</td>
-                <td style='text-align:center'>{$item['task_count']}</td>
-                <td style='text-align:center'>{$item['total_logged']} jam</td>
+                <td>{$this->esc($item['full_name'])}</td>
+                <td>{$this->esc($item['division'])}</td>
+                <td style='text-align:center'>{$this->esc($item['task_count'])}</td>
+                <td style='text-align:center'>{$this->esc($item['total_logged'])} jam</td>
             </tr>";
         }
 
@@ -228,8 +233,8 @@ HTML;
                 : "<span class='badge badge-red'>Nonaktif</span>";
             $roles = implode(', ', (array)($u['roles'] ?? []));
             $rows .= "<tr>
-                <td>{$u['full_name']}</td>
-                <td>{$u['email']}</td>
+                <td>{$this->esc($u['full_name'])}</td>
+                <td>{$this->esc($u['email'])}</td>
                 <td>" . ($u['division'] ?? '-') . "</td>
                 <td>" . ($u['position'] ?? '-') . "</td>
                 <td>{$roles}</td>
@@ -256,7 +261,7 @@ HTML;
         foreach ($data as $p) {
             $status = $statusMap[$p['status'] ?? ''] ?? ($p['status'] ?? '-');
             $rows .= "<tr>
-                <td>{$p['name']}</td>
+                <td>{$this->esc($p['name'])}</td>
                 <td>" . ($p['description'] ?? '-') . "</td>
                 <td>{$status}</td>
                 <td>" . ($p['start_date'] ?? '-') . "</td>
@@ -285,7 +290,7 @@ HTML;
         foreach ($data as $e) {
             $type = $typeMap[$e['type'] ?? ''] ?? ($e['type'] ?? '-');
             $rows .= "<tr>
-                <td>{$e['title']}</td>
+                <td>{$this->esc($e['title'])}</td>
                 <td>{$type}</td>
                 <td>" . ($e['start_date'] ?? '-') . ($e['start_time'] ? ' ' . $e['start_time'] : '') . "</td>
                 <td>" . ($e['end_date'] ?? '-') . ($e['end_time'] ? ' ' . $e['end_time'] : '') . "</td>

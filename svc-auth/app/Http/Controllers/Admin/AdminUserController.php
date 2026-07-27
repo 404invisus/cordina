@@ -64,12 +64,12 @@ class AdminUserController extends Controller
         $this->requireRole(['kepala_balai', 'administrator']);
 
         $data = $request->validate([
-            'full_name' => 'required|string|max:255',
+            'full_name' => 'required|string|max:255|not_regex:/[<>]/',
             'email'     => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
             'password'  => ['required', 'string', \App\Rules\StrongPassword::get()],
             'role'      => 'required|string|in:kepala_balai,kepala_seksi,project_manager,scrum_master,staff,administrator',
-            'division'  => 'sometimes|nullable|string|max:100',
-            'position'  => 'sometimes|nullable|string|max:100',
+            'division'  => 'sometimes|nullable|string|max:100|not_regex:/[<>]/',
+            'position'  => 'sometimes|nullable|string|max:100|not_regex:/[<>]/',
             'is_active' => 'sometimes|boolean',
         ], \App\Rules\StrongPassword::messages());
 
@@ -86,11 +86,11 @@ class AdminUserController extends Controller
         $this->requireRole(['kepala_balai', 'administrator']);
 
         $data = $request->validate([
-            'full_name'        => 'sometimes|string|max:255',
+            'full_name'        => 'sometimes|string|max:255|not_regex:/[<>]/',
             'email'            => ['sometimes', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')->ignore($id)],
             'password'         => ['sometimes', 'string', \App\Rules\StrongPassword::get()],
-            'division'         => 'sometimes|nullable|string|max:100',
-            'position'         => 'sometimes|nullable|string|max:100',
+            'division'         => 'sometimes|nullable|string|max:100|not_regex:/[<>]/',
+            'position'         => 'sometimes|nullable|string|max:100|not_regex:/[<>]/',
             'telegram_chat_id' => 'sometimes|nullable|string|max:50',
             'avatar'           => 'sometimes|nullable|string|url',
             'is_active'        => 'sometimes|boolean',
