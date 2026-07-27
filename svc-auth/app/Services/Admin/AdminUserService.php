@@ -71,7 +71,14 @@ class AdminUserService
 
     public function deleteUser(string $id): void
     {
-        User::findOrFail($id)->delete();
+        $user = User::findOrFail($id);
+
+        // lepas role agar tidak jadi baris yatim di model_has_roles
+        $user->syncRoles([]);
+        \Illuminate\Support\Facades\DB::table('model_has_permissions')
+            ->where('model_id', (string) $user->id)->delete();
+
+        $user->delete();
     }
 
     public function getStats(): array
@@ -80,7 +87,11 @@ class AdminUserService
         $active  = User::where('is_active', true)->count();
         $byRole = \Illuminate\Support\Facades\DB::table('roles')
             ->leftJoin('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->selectRaw('roles.name, count(model_has_roles.model_id) as total')
+            ->leftJoin('users', function ($join) {
+                $join->on(\Illuminate\Support\Facades\DB::raw('users.id::text'), '=', 'model_has_roles.model_id')
+                     ->whereNull('users.deleted_at');
+            })
+            ->selectRaw('roles.name, count(users.id) as total')
             ->groupBy('roles.name')
             ->pluck('total', 'name');
         $byDivision = User::selectRaw('division, count(*) as total')
