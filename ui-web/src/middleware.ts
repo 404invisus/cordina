@@ -75,6 +75,25 @@ function canAccess(pathname: string, roles: string[]): boolean {
   return false;
 }
 
+function decodeRolesFromJwt(token: string): string[] | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+
+    const payload = JSON.parse(atob(b64));
+
+    // tolak token kedaluwarsa
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
+
+    return Array.isArray(payload.roles) ? payload.roles : [];
+  } catch {
+    return null;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -95,17 +114,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Ambil user dari cookie (kita simpan roles di cookie juga)
-  const userRaw = request.cookies.get('user_roles')?.value;
-  if (!userRaw) {
-    // Tidak ada info role, redirect ke login
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  let roles: string[] = [];
-  try {
-    roles = JSON.parse(decodeURIComponent(userRaw));
-  } catch {
+  // Role diambil dari payload JWT (ditandatangani server), BUKAN dari cookie
+  // user_roles yang dapat diubah bebas oleh pengguna.
+  const roles = decodeRolesFromJwt(token);
+  if (roles === null) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
