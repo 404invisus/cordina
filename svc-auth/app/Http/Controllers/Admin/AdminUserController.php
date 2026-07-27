@@ -23,7 +23,7 @@ class AdminUserController extends Controller
 
         $request->validate([
             'search'   => 'sometimes|string|max:100',
-            'role'     => 'sometimes|string',
+            'role'     => 'sometimes|string|in:administrator,kepala_balai,kepala_seksi,project_manager,scrum_master,staff',
             'division' => 'sometimes|string|max:100',
             'is_active'=> 'sometimes|boolean',
             'per_page' => 'sometimes|integer|min:1|max:100',
@@ -66,14 +66,12 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'full_name' => 'required|string|max:255',
             'email'     => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')],
-            'password'  => 'required|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
+            'password'  => ['required', 'string', \App\Rules\StrongPassword::get()],
             'role'      => 'required|string|in:kepala_balai,kepala_seksi,project_manager,scrum_master,staff,administrator',
             'division'  => 'sometimes|nullable|string|max:100',
             'position'  => 'sometimes|nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
-        ], [
-            'password.regex' => 'Password harus mengandung minimal 1 huruf dan 1 angka.',
-        ]);
+        ], \App\Rules\StrongPassword::messages());
 
         $user = $this->adminUserService->createUser($data);
 
@@ -90,15 +88,13 @@ class AdminUserController extends Controller
         $data = $request->validate([
             'full_name'        => 'sometimes|string|max:255',
             'email'            => ['sometimes', 'email', Rule::unique('users', 'email')->whereNull('deleted_at')->ignore($id)],
-            'password'         => 'sometimes|string|min:8|regex:/^(?=.*[a-zA-Z])(?=.*[0-9]).+$/',
+            'password'         => ['sometimes', 'string', \App\Rules\StrongPassword::get()],
             'division'         => 'sometimes|nullable|string|max:100',
             'position'         => 'sometimes|nullable|string|max:100',
             'telegram_chat_id' => 'sometimes|nullable|string|max:50',
             'avatar'           => 'sometimes|nullable|string|url',
             'is_active'        => 'sometimes|boolean',
-        ], [
-            'password.regex' => 'Password harus mengandung minimal 1 huruf dan 1 angka.',
-        ]);
+        ], \App\Rules\StrongPassword::messages());
 
         $user = $this->adminUserService->findOrFail($id);
         $updated = $this->adminUserService->updateUser($user, $data);

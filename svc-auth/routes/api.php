@@ -24,6 +24,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/auth/me',       [AuthController::class, 'me']);
         Route::post('/auth/logout',  [AuthController::class, 'logout']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+        Route::post('/auth/change-password', [AuthController::class, 'changePassword']);
 
         Route::post('/auth/telegram', function (Request $request) {
             $request->validate(['telegram_chat_id' => 'required|string|max:50']);
@@ -32,11 +33,18 @@ Route::prefix('v1')->group(function () {
         });
 
 
-    Route::get('/admin/user-groups',         [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
-    Route::post('/admin/user-groups',        [\App\Http\Controllers\Admin\UserGroupController::class, 'store']);
-    Route::get('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'show']);
-    Route::put('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'update']);
-    Route::delete('/admin/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'destroy']);
+    Route::middleware('jwt.auth')->group(function () {
+        Route::get('/user-groups',      [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
+        Route::get('/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'show']);
+    });
+
+    Route::middleware(['jwt.auth', \App\Http\Middleware\EnsureAdminRole::class])->group(function () {
+        Route::get('/admin/user-groups',         [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
+        Route::post('/admin/user-groups',        [\App\Http\Controllers\Admin\UserGroupController::class, 'store']);
+        Route::get('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'show']);
+        Route::put('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'update']);
+        Route::delete('/admin/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'destroy']);
+    });
     Route::get('/admin/activity',                    [\App\Http\Controllers\Admin\AdminActivityController::class, 'index']);
     Route::get('/admin/activity/users/{userId}/login', [\App\Http\Controllers\Admin\AdminActivityController::class, 'loginHistory']);
     Route::apiResource('users', UserController::class);
@@ -50,7 +58,7 @@ Route::prefix('v1')->group(function () {
             return response()->json(['message' => 'Telegram chat ID updated']);
         });
 
-        Route::prefix('admin')->group(function () {
+        Route::prefix('admin')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
 
             Route::get('/users/stats',          [AdminUserController::class, 'stats']);
             Route::get('/users',                [AdminUserController::class, 'index']);

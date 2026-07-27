@@ -17,6 +17,7 @@ class SprintController extends Controller
 
     public function index(string $projectId): JsonResponse
     {
+        $this->authorizeProjectAccess($projectId);
         return response()->json(['data' => SprintResource::collection(
             $this->service->listByProject($projectId)
         )]);

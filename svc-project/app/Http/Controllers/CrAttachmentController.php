@@ -13,7 +13,15 @@ class CrAttachmentController extends Controller
     // GET /v1/change-requests/{id}/attachments
     public function index(string $crId, Request $request): JsonResponse
     {
-        $cr = ChangeRequest::findOrFail($crId);
+        $cr     = ChangeRequest::with('approvals')->findOrFail($crId);
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        abort_if(
+            $cr->requester_id !== $userId
+                && !$cr->approvals->contains('approver_id', $userId)
+                && empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator'])),
+            403, 'Forbidden'
+        );
         $attachments = DB::table('cr_attachments')
             ->where('cr_id', $crId)
             ->orderBy('created_at', 'desc')

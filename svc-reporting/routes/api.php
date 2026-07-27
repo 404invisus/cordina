@@ -14,8 +14,10 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/reports/export/velocity',         [ReportController::class, 'exportVelocity']);
     Route::get('/reports/export/time-tracking',    [ReportController::class, 'exportTimeTracking']);
 
-    Route::get('/admin/reports/export/users',    [ReportController::class, 'adminExportUsers']);
-    Route::get('/admin/reports/export/projects', [ReportController::class, 'adminExportProjects']);
-    Route::get('/admin/reports/export/calendar', [ReportController::class, 'adminExportCalendar']);
-    Route::get('/admin/reports/export/workload', [ReportController::class, 'adminExportWorkload']);
+    Route::prefix('admin/reports/export')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
+        Route::get('/users',    [ReportController::class, 'adminExportUsers']);
+        Route::get('/projects', [ReportController::class, 'adminExportProjects']);
+        Route::get('/calendar', [ReportController::class, 'adminExportCalendar']);
+        Route::get('/workload', [ReportController::class, 'adminExportWorkload']);
+    });
 });

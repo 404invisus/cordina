@@ -10,6 +10,7 @@ class RoadmapController extends Controller
 {
     public function show(string $projectId): JsonResponse
     {
+        $this->authorizeProjectAccess($projectId);
         $epics = Epic::where('project_id', $projectId)->with('stories')->get()
             ->map(fn($e) => [
                 'id' => $e->id, 'title' => $e->title, 'color' => $e->color,

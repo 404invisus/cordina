@@ -10,6 +10,7 @@ class EpicController extends Controller
 {
     public function index(string $projectId): JsonResponse
     {
+        $this->authorizeProjectAccess($projectId);
         $epics = Epic::where('project_id', $projectId)->withCount('stories')->get();
         return response()->json(['data' => $epics]);
     }
@@ -31,6 +32,7 @@ class EpicController extends Controller
     public function show(string $epicId): JsonResponse
     {
         $epic = Epic::with('stories')->findOrFail($epicId);
+        $this->authorizeProjectAccess($epic->project_id);
         return response()->json(['data' => $epic]);
     }
 

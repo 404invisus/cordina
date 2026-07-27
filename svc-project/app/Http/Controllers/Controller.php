@@ -28,6 +28,50 @@ abstract class Controller
         abort_if(!$this->hasRole($allowed), 403, 'Forbidden: insufficient role');
     }
 
+    protected function authorizeTaskAccess(string $taskId): void
+    {
+        if ($this->hasRole(['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master'])) return;
+
+        $DB   = \Illuminate\Support\Facades\DB::class;
+        $task = \Illuminate\Support\Facades\DB::table('tasks')->where('id', $taskId)->first();
+        abort_if(!$task, 404, 'Task tidak ditemukan');
+
+        $uid = $this->authId();
+        if ($task->assignee_id === $uid || $task->reporter_id === $uid) return;
+        if (\Illuminate\Support\Facades\DB::table('task_assignees')
+                ->where('task_id', $taskId)->where('user_id', $uid)->exists()) return;
+
+        $projectId = \Illuminate\Support\Facades\Schema::hasColumn('tasks', 'project_id')
+            ? ($task->project_id ?? null)
+            : \Illuminate\Support\Facades\DB::table('sprints')->where('id', $task->sprint_id)->value('project_id');
+
+        abort_if(
+            !$projectId || !\Illuminate\Support\Facades\DB::table('project_members')
+                ->where('project_id', $projectId)->where('user_id', $uid)->exists(),
+            403, 'Forbidden: task ini bukan milik Anda'
+        );
+    }
+
+    protected function authorizeEpicAccess(string $epicId): void
+    {
+        $pid = \Illuminate\Support\Facades\DB::table('epics')->where('id', $epicId)->value('project_id');
+        abort_if(!$pid, 404, 'Epic tidak ditemukan');
+        $this->authorizeProjectAccess($pid);
+    }
+
+    protected function authorizeProjectAccess(string $projectId): void
+    {
+        if ($this->hasRole(['administrator', 'kepala_balai', 'kepala_seksi'])) return;
+
+        $uid = $this->authId();
+        abort_if(!$uid, 401, 'Unauthenticated');
+        abort_if(
+            !\Illuminate\Support\Facades\DB::table('project_members')
+                ->where('project_id', $projectId)->where('user_id', $uid)->exists(),
+            403, 'Forbidden: bukan anggota project ini'
+        );
+    }
+
     protected function hasPermission(string $permission): bool
     {
         $userId = $this->authId();

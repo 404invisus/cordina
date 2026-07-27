@@ -74,6 +74,22 @@ export default function StoragePage() {
     if (file) doUpload(file);
   };
 
+  const handleDownload = async (file: any) => {
+    try {
+      const res = await storageService.download(file.id);
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.file_name || file.name || 'download';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      toast.error('Gagal mengunduh file');
+    }
+  };
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => storageService.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['files'] }); toast.success('File dihapus'); setDeleteId(null); },
@@ -180,10 +196,10 @@ export default function StoragePage() {
                       <td className="px-5 py-4 text-sm text-slate-500">{f.created_at?.slice(0, 10)}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <a href={f.url} target="_blank" rel="noopener noreferrer"
+                          <button onClick={() => handleDownload(f)}
                             className="p-2 text-slate-400 hover:text-[#284074] hover:bg-[#284074]/8 rounded-lg transition-colors" title="Download">
                             <Download className="w-4 h-4" />
-                          </a>
+                          </button>
                           <button onClick={() => setDeleteId(f.id)}
                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
                             <Trash2 className="w-4 h-4" />

@@ -9,9 +9,14 @@ class RegisterRequest extends FormRequest
         return [
             'full_name' => 'required|string|max:255',
             'email'     => 'required|email|unique:users,email',
-            'password'  => 'required|string|min:8|confirmed',
+            'password'  => ['required', 'string', 'confirmed', \App\Rules\StrongPassword::get()],
             'division'  => 'nullable|string|max:100',
             'position'  => 'nullable|string|max:100',
         ];
+    }
+
+    public function messages(): array
+    {
+        return \App\Rules\StrongPassword::messages();
     }
 }

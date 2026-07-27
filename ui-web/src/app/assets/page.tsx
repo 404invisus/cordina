@@ -30,6 +30,7 @@ function AssetModal({ open, onClose, editData }: { open: boolean; onClose: () =>
     acquired_at:         editData?.acquired_at?.slice(0,10) || '',
     value:               editData?.value               || '',
     notes:               editData?.notes               || '',
+    responsible_user_id: editData?.responsible_user_id || '',
   });
 
   const { data: usersData } = useQuery({
@@ -146,7 +147,7 @@ export default function AssetsPage() {
 
   return (
     <AppLayout>
-      <AssetModal open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
+      <AssetModal key={editData?.id || 'new'} open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
 
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">

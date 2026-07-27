@@ -37,6 +37,8 @@ export const authService = {
   logout: () => api.post('/api/v1/auth/logout'),
   me: () => api.get('/api/v1/auth/me'),
   refresh: () => api.post('/api/v1/auth/refresh'),
+  changePassword: (data: { current_password: string; password: string; password_confirmation: string }) =>
+    api.post('/api/v1/auth/change-password', data),
   setTelegram: (telegram_chat_id: string) => api.post('/api/v1/auth/telegram', { telegram_chat_id }),
   updateMe: (data: any) => api.put(`/api/v1/users/${data.id || ''}`, data),
 };
@@ -61,8 +63,8 @@ export const adminUserService = {
 };
 
 export const userGroupService = {
-  list:    ()                           => api.get('/api/v1/admin/user-groups'),
-  show:    (id: string)                 => api.get(`/api/v1/admin/user-groups/${id}`),
+  list:    ()                           => api.get('/api/v1/user-groups'),
+  show:    (id: string)                 => api.get(`/api/v1/user-groups/${id}`),
   create:  (data: any)                  => api.post('/api/v1/admin/user-groups', data),
   update:  (id: string, data: any)      => api.put(`/api/v1/admin/user-groups/${id}`, data),
   destroy: (id: string)                 => api.delete(`/api/v1/admin/user-groups/${id}`),
@@ -203,7 +205,7 @@ export const notificationService = {
 export const storageService = {
   upload: (formData: FormData) => api.post('/api/v1/storage/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   list: () => api.get('/api/v1/storage'),
-  download: (fileId: string) => api.get(`/api/v1/storage/${fileId}/download`),
+  download: (fileId: string) => api.get(`/api/v1/storage/${fileId}/download`, { responseType: 'blob' }),
   delete: (fileId: string) => api.delete(`/api/v1/storage/${fileId}`),
 };
 

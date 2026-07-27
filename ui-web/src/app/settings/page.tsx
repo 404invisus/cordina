@@ -7,10 +7,12 @@ import api, { authService, notificationService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { getRoleLabel } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Cookies from 'js-cookie';
 
 const TABS = [
   { id: 'profile', label: 'Profil', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   { id: 'notif',   label: 'Notifikasi', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
+  { id: 'security', label: 'Keamanan', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
 ];
 
 const AVATAR_GRADIENTS = [
@@ -100,6 +102,102 @@ function NotifSettings() {
   );
 }
 
+const PW_RULES = [
+  { label: 'Minimal 12 karakter',        test: (v: string) => v.length >= 12 },
+  { label: 'Huruf besar dan kecil',      test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
+  { label: 'Minimal 1 angka',            test: (v: string) => /[0-9]/.test(v) },
+  { label: 'Minimal 1 simbol',           test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+];
+
+function SecuritySettings() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+
+  const passed = PW_RULES.map(r => r.test(next));
+  const allPassed = passed.every(Boolean);
+  const matched = next.length > 0 && next === confirm;
+  const canSubmit = current.length > 0 && allPassed && matched;
+
+  const mutation = useMutation({
+    mutationFn: () => authService.changePassword({
+      current_password: current, password: next, password_confirmation: confirm,
+    }),
+    onSuccess: () => {
+      toast.success('Password berhasil diubah. Silakan login ulang.');
+      setCurrent(''); setNext(''); setConfirm(''); setErrors({});
+      setTimeout(() => {
+        Cookies.remove('token'); Cookies.remove('user_roles');
+        sessionStorage.clear();
+        window.location.href = '/login';
+      }, 1500);
+    },
+    onError: (e: any) => {
+      setErrors(e?.response?.data?.errors || {});
+      toast.error(e?.response?.data?.message || 'Gagal mengubah password');
+    },
+  });
+
+  const field = (label: string, value: string, setter: (v: string) => void, key: string) => (
+    <div>
+      <label className="block text-xs font-semibold text-slate-500 mb-1.5">{label}</label>
+      <input type={show ? 'text' : 'password'} value={value} onChange={e => setter(e.target.value)}
+        autoComplete={key === 'current_password' ? 'current-password' : 'new-password'}
+        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]/40 transition-all" />
+      {errors[key]?.map((m, i) => (
+        <p key={i} className="text-xs text-red-500 mt-1.5">{m}</p>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 max-w-lg">
+      <h3 className="font-bold text-slate-800 mb-1">Ubah Password</h3>
+      <p className="text-xs text-slate-400 mb-5">Kamu akan diminta login ulang setelah password diubah</p>
+
+      <div className="space-y-4">
+        {field('Password Saat Ini', current, setCurrent, 'current_password')}
+        {field('Password Baru', next, setNext, 'password')}
+        {field('Konfirmasi Password Baru', confirm, setConfirm, 'password_confirmation')}
+
+        <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
+          <input type="checkbox" checked={show} onChange={e => setShow(e.target.checked)}
+            className="rounded border-slate-300 text-[#284074] focus:ring-[#284074]/20" />
+          Tampilkan password
+        </label>
+
+        {next.length > 0 && (
+          <div className="bg-slate-50 rounded-xl p-3.5 space-y-1.5">
+            {PW_RULES.map((r, i) => (
+              <div key={r.label} className={`flex items-center gap-2 text-xs ${passed[i] ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${passed[i] ? 'bg-emerald-100' : 'bg-slate-200'}`}>
+                  {passed[i] ? '\u2713' : ''}
+                </span>
+                {r.label}
+              </div>
+            ))}
+            {confirm.length > 0 && (
+              <div className={`flex items-center gap-2 text-xs ${matched ? 'text-emerald-600' : 'text-red-500'}`}>
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${matched ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                  {matched ? '\u2713' : '\u00d7'}
+                </span>
+                Konfirmasi password cocok
+              </div>
+            )}
+          </div>
+        )}
+
+        <button onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending}
+          className="w-full px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3159] disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          {mutation.isPending ? 'Menyimpan...' : 'Ubah Password'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore();
   const [telegramId, setTelegramId] = useState(user?.telegram_chat_id || '');
@@ -182,6 +280,11 @@ export default function SettingsPage() {
 
         <div className="flex-1 min-w-0">
           <AnimatePresence mode="wait">
+            {tab === 'security' && (
+              <motion.div key="security" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <SecuritySettings />
+              </motion.div>
+            )}
             {tab === 'profile' && (
               <motion.div key="profile" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 className="space-y-4">

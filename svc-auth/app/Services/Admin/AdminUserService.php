@@ -23,7 +23,12 @@ class AdminUserService
                        ->orWhere('division', 'ilike', "%{$s}%");
                 });
             })
-            ->when($filters['role'] ?? null, fn($q, $r) => $q->role($r))
+            ->when($filters['role'] ?? null, fn($q, $r) =>
+                $q->whereExists(fn($sub) => $sub->selectRaw('1')
+                    ->from('model_has_roles as mhr')
+                    ->join('roles as rl', 'rl.id', '=', 'mhr.role_id')
+                    ->whereRaw('mhr.model_id::text = users.id::text')
+                    ->where('rl.name', $r)))
             ->when($filters['division'] ?? null, fn($q, $d) => $q->where('division', $d))
             ->when(isset($filters['is_active']), fn($q) => $q->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN)))
             ->orderBy($sortBy, $sortDir)

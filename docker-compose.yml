@@ -121,6 +121,7 @@ services:
      - ./svc-workload/config:/var/www/html/config
      - ./svc-workload/database:/var/www/html/database
      - ./svc-workload/app:/var/www/html/app
+     - ./svc-workload/routes:/var/www/html/routes
     build:
       context: ./svc-workload
       dockerfile: Dockerfile

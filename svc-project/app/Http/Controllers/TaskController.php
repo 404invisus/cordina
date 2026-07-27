@@ -14,10 +14,19 @@ class TaskController extends Controller
 {
     public function __construct(private readonly TaskService $service) {}
 
+    private const PRIVILEGED = ['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master'];
+
     public function index(Request $request): JsonResponse
     {
+        $filters = $request->all();
+
+        if (!$this->hasRole(self::PRIVILEGED)) {
+            unset($filters['assignee_id']);
+            $filters['restrict_user_id'] = $this->authId();
+        }
+
         return response()->json(['data' => TaskResource::collection(
-            $this->service->list($request->all())
+            $this->service->list($filters)
         )]);
     }
 
@@ -30,9 +39,23 @@ class TaskController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        return response()->json(['data' => new TaskResource(
-            $this->service->findOrFail($id)
-        )]);
+        $task = $this->service->findOrFail($id);
+
+        if (!$this->hasRole(self::PRIVILEGED)) {
+            $uid = $this->authId();
+            $projectIdOfTask = \Illuminate\Support\Facades\Schema::hasColumn('tasks', 'project_id')
+                ? $task->project_id
+                : DB::table('sprints')->where('id', $task->sprint_id)->value('project_id');
+
+            $allowed = $task->assignee_id === $uid
+                || $task->reporter_id === $uid
+                || DB::table('task_assignees')->where('task_id', $task->id)->where('user_id', $uid)->exists()
+                || ($projectIdOfTask && DB::table('project_members')
+                        ->where('project_id', $projectIdOfTask)->where('user_id', $uid)->exists());
+            abort_if(!$allowed, 403, 'Forbidden: task ini bukan milik Anda');
+        }
+
+        return response()->json(['data' => new TaskResource($task)]);
     }
 
     public function update(UpdateTaskRequest $request, string $id): JsonResponse
@@ -78,6 +101,14 @@ class TaskController extends Controller
             'logged_at'    => 'nullable|date|before_or_equal:today',
         ]);
         $task = $this->service->findOrFail($id);
+
+        if (!$this->hasRole(self::PRIVILEGED)) {
+            $uid = $this->authId();
+            $isAssignee = $task->assignee_id === $uid
+                || DB::table('task_assignees')->where('task_id', $task->id)->where('user_id', $uid)->exists();
+            abort_if(!$isAssignee, 403, 'Hanya penanggung jawab task yang bisa mencatat waktu kerja');
+        }
+
         $this->service->logTime($task, $this->authId(), $request->all());
         return response()->json(['message' => 'Time logged successfully']);
     }

@@ -171,6 +171,11 @@ function UserMultiSelect({ selected, onChange, users, showOrder = true }: {
 }
 
 function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
+  const { data: allGroups = [] } = useQuery({
+    queryKey: ['user-groups-tte-detail'],
+    queryFn: () => userGroupService.list().then(r => r.data.data || []),
+    staleTime: 60000,
+  });
   const qc = useQueryClient();
   const { user } = useAuthStore();
   const [passphrase, setPassphrase] = useState('');

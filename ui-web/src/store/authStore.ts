@@ -11,6 +11,8 @@ export interface User {
   telegram_chat_id?: string;
   avatar?: string;
   is_active: boolean;
+  nik?: string;
+  tte_specimen_url?: string;
 }
 
 interface AuthState {

@@ -13,7 +13,7 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/workload/velocity', [WorkloadController::class, 'velocity']);
 
     // Admin workload routes
-    Route::prefix('admin/workload')->group(function () {
+    Route::prefix('admin/workload')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
         Route::get('/summary',                    [AdminWorkloadController::class, 'summary']);
         Route::get('/capacity',                   [AdminWorkloadController::class, 'capacityOverview']);
         Route::post('/capacity',                  [AdminWorkloadController::class, 'setCapacity']);
@@ -117,7 +117,7 @@ Route::prefix('v1')->middleware('internal')->group(function () {
 });
 
 Route::middleware('jwt.auth')->group(function () {
-    Route::prefix('v1/admin/calendar')->group(function () {
+    Route::prefix('v1/admin/calendar')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'index']);
         Route::post('/', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'store']);
         Route::get('/{id}', [\App\Http\Controllers\Admin\AdminCalendarController::class, 'show']);

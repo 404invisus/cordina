@@ -450,7 +450,7 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
   });
 
   const implementMutation = useMutation({
-    mutationFn: () => changeRequestService.implement(cr.id),
+    mutationFn: () => changeRequestService.implement(crId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('CR ditandai sebagai diimplementasikan'); },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
   });

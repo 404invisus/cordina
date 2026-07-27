@@ -10,6 +10,25 @@ class TaskService
     public function list(array $filters): LengthAwarePaginator
     {
         return Task::with(['story', 'subtasks', 'timeLogs'])
+            ->when($filters['restrict_user_id'] ?? null, function ($q, $uid) {
+                $projectIds = \Illuminate\Support\Facades\DB::table('project_members')
+                    ->where('user_id', $uid)->pluck('project_id');
+                $taskIds = \Illuminate\Support\Facades\DB::table('task_assignees')
+                    ->where('user_id', $uid)->pluck('task_id');
+                $q->where(function ($w) use ($uid, $projectIds, $taskIds) {
+                    $w->where('assignee_id', $uid)
+                      ->orWhere('reporter_id', $uid)
+                      ->orWhereIn('id', $taskIds);
+
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('tasks', 'project_id')) {
+                        $w->orWhereIn('project_id', $projectIds);
+                    } else {
+                        $w->orWhereIn('sprint_id',
+                            \Illuminate\Support\Facades\DB::table('sprints')
+                                ->whereIn('project_id', $projectIds)->pluck('id'));
+                    }
+                });
+            })
             ->when($filters['sprint_id']   ?? null, fn($q, $v) => $q->where('sprint_id', $v))
             ->when($filters['assignee_id'] ?? null, fn($q, $v) => $q->where('assignee_id', $v))
             ->when($filters['status']      ?? null, fn($q, $v) => $q->where('status', $v))

@@ -10,6 +10,7 @@ class StoryController extends Controller
 {
     public function index(string $epicId): JsonResponse
     {
+        $this->authorizeEpicAccess($epicId);
         $stories = Story::where('epic_id', $epicId)->with('tasks')->get();
         return response()->json(['data' => $stories]);
     }
@@ -35,6 +36,7 @@ class StoryController extends Controller
     public function show(string $storyId): JsonResponse
     {
         $story = Story::with('tasks')->findOrFail($storyId);
+        $this->authorizeEpicAccess($story->epic_id);
         return response()->json(['data' => $story]);
     }
 

@@ -519,9 +519,24 @@ class ChangeRequestController extends Controller
     }
 
     // ── GET /v1/change-requests/{id}/logs ──
+    private function authorizeCrAccess(string $id, Request $request): ChangeRequest
+    {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+
+        abort_if(
+            $cr->requester_id !== $userId
+                && !$cr->approvals->contains('approver_id', $userId)
+                && empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator'])),
+            403, 'Forbidden'
+        );
+        return $cr;
+    }
+
     public function logs(string $id, Request $request): JsonResponse
     {
-        ChangeRequest::findOrFail($id);
+        $this->authorizeCrAccess($id, $request);
         $logs = \Illuminate\Support\Facades\DB::table('cr_activity_logs')
             ->where('cr_id', $id)
             ->orderBy('created_at', 'asc')

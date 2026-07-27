@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     Route::middleware('jwt.auth')->group(function () {
-        Route::prefix('admin')->group(function () {
+        Route::prefix('admin')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
             Route::get('/projects/stats',              [AdminProjectController::class, 'stats']);
             Route::get('/projects',                    [AdminProjectController::class, 'index']);
             Route::get('/projects/{id}',               [AdminProjectController::class, 'show']);
@@ -76,6 +76,15 @@ Route::prefix('v1')->group(function () {
         Route::get('projects/{project}/roadmap', [\App\Http\Controllers\RoadmapController::class, 'show']);
 
         Route::get('projects/{project}/members', function (string $projectId) {
+            $roles = [];
+            try { $roles = (array) auth()->payload()->get('roles'); } catch (\Throwable) {}
+            if (empty(array_intersect($roles, ['administrator', 'kepala_balai', 'kepala_seksi']))) {
+                abort_if(
+                    !DB::table('project_members')->where('project_id', $projectId)
+                        ->where('user_id', auth()->id())->exists(),
+                    403, 'Forbidden: bukan anggota project ini'
+                );
+            }
             $members = DB::table('project_members')->where('project_id', $projectId)->get();
             if ($members->isEmpty()) return response()->json(['data' => []]);
 

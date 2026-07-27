@@ -14,6 +14,19 @@ class ProjectController extends Controller
 {
     public function __construct(private readonly ProjectService $service) {}
 
+    protected function authorizeProjectAccess(string $projectId): void
+    {
+        if ($this->hasRole(['administrator', 'kepala_balai', 'kepala_seksi'])) return;
+
+        $uid = $this->authId();
+        abort_if(!$uid, 401, 'Unauthenticated');
+        abort_if(
+            !\Illuminate\Support\Facades\DB::table('project_members')
+                ->where('project_id', $projectId)->where('user_id', $uid)->exists(),
+            403, 'Forbidden: bukan anggota project ini'
+        );
+    }
+
     public function index(Request $request): JsonResponse
     {
         $projects = $this->service->listForUser($this->authId(), $request->all());
@@ -29,6 +42,7 @@ class ProjectController extends Controller
 
     public function show(string $id): JsonResponse
     {
+        $this->authorizeProjectAccess($id);
         $project = $this->service->findOrFail($id);
         return response()->json(['data' => new ProjectResource($project)]);
     }

@@ -8,6 +8,7 @@ class BoardController extends Controller
 {
     public function show(Request $request, string $projectId): JsonResponse
     {
+        $this->authorizeProjectAccess($projectId);
         $query = Task::query();
         if ($request->query('sprint_id')) {
             $query->where('sprint_id', $request->query('sprint_id'));

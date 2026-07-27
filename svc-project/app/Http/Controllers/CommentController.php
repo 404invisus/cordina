@@ -11,12 +11,14 @@ class CommentController extends Controller
 {
     public function index(string $taskId): JsonResponse
     {
+        $this->authorizeTaskAccess($taskId);
         $comments = Comment::where('task_id', $taskId)->orderBy('created_at')->get();
         return response()->json(['data' => $comments]);
     }
 
     public function store(Request $request, string $taskId): JsonResponse
     {
+        $this->authorizeTaskAccess($taskId);
         $validated = $request->validate([
             'content'    => 'required|string|max:2000',
             'mentions'   => 'nullable|array',
