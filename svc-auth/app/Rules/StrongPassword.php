@@ -19,6 +19,9 @@ class StrongPassword
             'password.numbers' => 'Password harus mengandung minimal 1 angka.',
             'password.symbols'   => 'Password harus mengandung minimal 1 simbol.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'full_name.not_regex' => 'Nama tidak boleh mengandung karakter < atau >.',
+            'division.not_regex'  => 'Divisi tidak boleh mengandung karakter < atau >.',
+            'position.not_regex'  => 'Jabatan tidak boleh mengandung karakter < atau >.',
             'current_password.required' => 'Password saat ini wajib diisi.',
         ];
     }
