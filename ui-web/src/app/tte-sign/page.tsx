@@ -202,7 +202,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
   const signMutation = useMutation({
     mutationFn: async () => {
-      await fetch('http://localhost:8000/api/v1/esign/warmup').catch(() => {});
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/esign/warmup`).catch(() => {});
       return tteSignService.sign(id, passphrase);
     },
     onSuccess: () => {

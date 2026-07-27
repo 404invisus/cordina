@@ -349,7 +349,7 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   const [passphrase, setPassphrase] = useState('');
   const mutation = useMutation({
     mutationFn: async () => {
-      await fetch('http://localhost:8000/api/v1/esign/warmup').catch(() => {});
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/v1/esign/warmup`).catch(() => {});
       return api.post(`/api/v1/change-requests/${cr?.id}/sign`, { passphrase });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['change-requests'] }); toast.success('Dokumen berhasil ditandatangani!'); onClose(); setPassphrase(''); },

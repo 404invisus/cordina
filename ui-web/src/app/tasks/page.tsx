@@ -47,13 +47,19 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 const STATUS_FILTERS = ['all', 'todo', 'in_progress', 'review', 'done'];
 
 export default function TasksPage() {
-  const { hasRole } = useAuthStore();
+  const { hasRole, user } = useAuthStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const { data: tasks, isLoading } = useQuery({
-    queryKey: ['tasks', statusFilter],
-    queryFn: () => taskService.list(statusFilter !== 'all' ? { status: statusFilter } : {}).then(r => r.data.data),
+    queryKey: ['tasks', statusFilter, onlyMine, user?.id],
+    queryFn: () => {
+      const params: any = {};
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (onlyMine && user?.id) params.assignee_id = user.id;
+      return taskService.list(params).then(r => r.data.data);
+    },
   });
 
   const filtered = (tasks || []).filter((t: any) =>
@@ -102,6 +108,16 @@ export default function TasksPage() {
             <input value={search} onChange={e => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all bg-white"
               placeholder="Cari task..." />
+          </div>
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
+            <button onClick={() => setOnlyMine(false)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${!onlyMine ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              Semua Task
+            </button>
+            <button onClick={() => setOnlyMine(true)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${onlyMine ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              Task Saya
+            </button>
           </div>
           <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
             {STATUS_FILTERS.map(s => {

@@ -21,8 +21,12 @@ class TaskController extends Controller
         $filters = $request->all();
 
         if (!$this->hasRole(self::PRIVILEGED)) {
-            unset($filters['assignee_id']);
-            $filters['restrict_user_id'] = $this->authId();
+            $uid = $this->authId();
+            // hanya boleh memfilter task milik sendiri; filter ke user lain diabaikan
+            if (!empty($filters['assignee_id']) && $filters['assignee_id'] !== $uid) {
+                unset($filters['assignee_id']);
+            }
+            $filters['restrict_user_id'] = $uid;
         }
 
         return response()->json(['data' => TaskResource::collection(
