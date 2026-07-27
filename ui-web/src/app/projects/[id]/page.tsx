@@ -531,9 +531,14 @@ export default function ProjectDetailPage() {
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
   const canAdmin = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, error: projectError } = useQuery({
     queryKey: ['project', id],
     queryFn: () => projectService.show(id).then(r => r.data.data),
+    retry: (count, err: any) => {
+      const st = err?.response?.status;
+      if (st === 403 || st === 404) return false;
+      return count < 2;
+    },
   });
   const { data: sprints } = useQuery({
     queryKey: ['sprints', id],
@@ -552,6 +557,34 @@ export default function ProjectDetailPage() {
   });
 
   if (isLoading) return <AppLayout><LoadingSpinner /></AppLayout>;
+
+  const errStatus = (projectError as any)?.response?.status;
+  if (errStatus === 403 || errStatus === 404 || (!isLoading && !project)) {
+    const denied = errStatus === 403;
+    return (
+      <AppLayout>
+        <div className="max-w-md mx-auto mt-16 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="1.8" className="w-7 h-7">
+              <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 mb-1.5">
+            {denied ? 'Akses Ditolak' : 'Project Tidak Ditemukan'}
+          </h2>
+          <p className="text-sm text-slate-400 mb-6">
+            {denied
+              ? 'Kamu bukan anggota project ini. Hubungi Project Manager jika merasa seharusnya punya akses.'
+              : 'Project yang kamu cari tidak tersedia atau sudah dihapus.'}
+          </p>
+          <Link href="/projects"
+            className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all">
+            Kembali ke Projects
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const activeSprints = sprints?.filter((s: any) => s.status === 'active') || [];
 

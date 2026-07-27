@@ -7,16 +7,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date) {
-  return format(new Date(date), 'dd MMM yyyy', { locale: id });
+function toValidDate(date: string | Date | null | undefined): Date | null {
+  if (!date) return null;
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? null : d;
 }
 
-export function formatDateTime(date: string | Date) {
-  return format(new Date(date), 'dd MMM yyyy, HH:mm', { locale: id });
+export function formatDate(date: string | Date | null | undefined) {
+  const d = toValidDate(date);
+  return d ? format(d, 'dd MMM yyyy', { locale: id }) : '-';
 }
 
-export function timeAgo(date: string | Date) {
-  return formatDistanceToNow(new Date(date), { addSuffix: true, locale: id });
+export function formatDateTime(date: string | Date | null | undefined) {
+  const d = toValidDate(date);
+  return d ? format(d, 'dd MMM yyyy, HH:mm', { locale: id }) : '-';
+}
+
+export function timeAgo(date: string | Date | null | undefined) {
+  const d = toValidDate(date);
+  return d ? formatDistanceToNow(d, { addSuffix: true, locale: id }) : '-';
 }
 
 export function getRoleBadgeColor(role: string) {
