@@ -43,7 +43,7 @@ export default function StoragePage() {
 
   const { data: files, isLoading } = useQuery({
     queryKey: ['files'],
-    queryFn: () => storageService.list().then(r => r.data.data || []).catch(() => []),
+    queryFn: () => storageService.list().then(r => r.data.data || []),
   });
 
   const doUpload = async (file: File) => {
@@ -52,7 +52,8 @@ export default function StoragePage() {
       const formData = new FormData();
       formData.append('file', file);
       await storageService.upload(formData);
-      qc.invalidateQueries({ queryKey: ['files'] });
+      await qc.invalidateQueries({ queryKey: ['files'] });
+      await qc.refetchQueries({ queryKey: ['files'] });
       toast.success(`${file.name} berhasil diupload!`);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Gagal upload');
@@ -92,7 +93,7 @@ export default function StoragePage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => storageService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['files'] }); toast.success('File dihapus'); setDeleteId(null); },
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['files'] }); await qc.refetchQueries({ queryKey: ['files'] }); toast.success('File dihapus'); setDeleteId(null); },
     onError: () => toast.error('Gagal menghapus file'),
   });
 
