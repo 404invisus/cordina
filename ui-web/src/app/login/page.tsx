@@ -64,23 +64,45 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex font-sans">
-      <div className="hidden lg:flex flex-col justify-between w-[420px] flex-shrink-0 bg-navy-700 px-12 py-10">
-        <div />
+      <div className="hidden lg:flex flex-col w-[420px] flex-shrink-0 bg-navy-900 px-12 py-10 relative overflow-hidden">
+        {/* Ambient glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 55% 50% at 50% 35%, rgba(201,151,27,0.12), transparent 70%)' }}
+        />
 
-        <div className="flex items-center justify-center">
+        <div className="relative z-10 flex items-center gap-2.5 flex-none">
+          <img src="/logo-only-white.png" alt="" width={24} height={24} className="object-contain" />
+          <span className="text-white font-semibold text-[14px] tracking-tight">ConnectOne</span>
+        </div>
+
+        <div className="relative z-10 flex-1 flex items-center justify-center">
           <img src="/logo-only-white.png" alt="ConnectOne" width={120} height={120} className="object-contain opacity-10" />
         </div>
 
-        <p className="text-white/20 text-xs">Balai Layanan Penghubung Identitas Digital</p>
+        <p className="relative z-10 text-white/25 text-xs flex-none">Balai Layanan Penghubung Identitas Digital</p>
       </div>
 
-      <div className="flex-1 flex flex-col bg-bg-page">
-        <div className="lg:hidden px-6 py-5 flex items-center gap-2 border-b border-navy-700/8">
+      <div className="flex-1 flex flex-col bg-bg-page relative overflow-hidden">
+        {/* Ambient glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 45% 50% at 82% 18%, rgba(201,151,27,0.06), transparent 70%)' }}
+        />
+
+        {/* Faint logo watermark */}
+        <img
+          src="/logo-only-black.png"
+          alt=""
+          className="absolute -right-28 -bottom-28 w-[440px] h-[440px] object-contain opacity-[0.025] pointer-events-none select-none"
+        />
+
+        <div className="relative z-10 lg:hidden px-6 py-5 flex items-center gap-2 border-b border-navy-700/8">
           <img src="/logo-only-black.png" alt="ConnectOne" width={20} height={20} className="object-contain" />
           <span className="font-semibold text-navy-700 text-sm">ConnectOne</span>
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-8 py-12">
+        <div className="relative z-10 flex-1 flex items-center justify-center px-8 py-12">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -98,7 +120,7 @@ export default function LoginPage() {
                     pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email format' },
                   })}
                   type="email"
-                  placeholder="nama@bssn.go.id"
+                  placeholder="email@bssn.go.id"
                   autoComplete="email"
                   className={`w-full px-4 py-3 border-b-2 bg-transparent text-sm text-navy-900 placeholder:text-navy-700/25 outline-none transition-colors ${
                     errors.email ? 'border-danger' : 'border-navy-700/15 focus:border-navy-700'
@@ -149,7 +171,15 @@ export default function LoginPage() {
               </div>
             </form>
 
-            <p className="text-xs text-navy-700/35 mt-8">Don't have access? Contact your system administrator.</p>
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px bg-navy-700/10" />
+              <span className="text-[11px] font-semibold text-navy-700/35 uppercase tracking-wider">or</span>
+              <div className="flex-1 h-px bg-navy-700/10" />
+            </div>
+
+            <button type="button" className="w-full flex items-center justify-center">
+              <img src="/login-with-connectidn.png" alt="Login with CONNECTIDN" className="h-11 object-contain" />
+            </button>
           </motion.div>
         </div>
       </div>
