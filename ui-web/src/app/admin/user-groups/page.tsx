@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, Pencil, Trash2, X, Check, UserPlus } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import { userGroupService, adminUserService } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -150,23 +151,20 @@ export default function UserGroupsPage() {
         editData={editData}
       />
 
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-navy-700 to-navy-700 rounded-[6px] flex items-center justify-center border border-navy-700/10">
-            <Users className="w-5 h-5 text-navy-700" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-navy-900">User Groups</h1>
-            <p className="text-sm text-text-placeholder mt-0.5">Manage groups for notifications and calendar invites</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-colors "
-        >
-          <Plus className="w-4 h-4" /> New Group
-        </button>
-      </div>
+      <PageHeader
+        section="ADMIN"
+        title="User Groups"
+        subtitle="Manage groups for notifications and calendar invites"
+        actions={
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold hover:bg-navy-900 transition-colors"
+          >
+            <Plus className="w-3 h-3" strokeWidth={2.5} />
+            New Group
+          </button>
+        }
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

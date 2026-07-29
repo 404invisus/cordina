@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Activity, Users, TrendingUp, BarChart2, ChevronDown, Download, Loader2 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-import { adminWorkloadService, adminProjectService, adminReportExportService } from '@/lib/api';
+import { adminWorkloadService, adminProjectService, adminReportExportService, sprintService } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import toast from 'react-hot-toast';
-import Cookies from 'js-cookie';
 
 const GRADIENTS = [
   'from-navy-700 to-navy-700',
@@ -49,15 +48,7 @@ export default function AdminWorkloadPage() {
 
   const { data: sprints } = useQuery({
     queryKey: ['admin-project-sprints', selectedProject],
-    queryFn: async () => {
-      const token = Cookies.get('token') || '';
-      const res = await fetch(`/api/v1/projects/${selectedProject}/sprints`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return data.data || [];
-    },
+    queryFn: () => sprintService.list(selectedProject).then((r) => r.data.data || []),
     enabled: !!selectedProject,
   });
 

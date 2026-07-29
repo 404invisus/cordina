@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -461,12 +462,14 @@ function PermissionModal({ user, onClose }: any) {
   );
 }
 
-function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onPermission, onClose }: any) {
+function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelete, onPermission, onClose }: any) {
   return (
     <motion.div
+      ref={menuRef}
       initial={{ opacity: 0, scale: 0.95, y: -4 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      className="absolute right-0 top-full mt-1 w-44 bg-white rounded-[6px] border border-border-subtle overflow-hidden z-20"
+      style={{ position: 'fixed', top: position.top, left: position.left }}
+      className="w-44 bg-white rounded-[6px] border border-border-subtle shadow-[0_8px_24px_rgba(13,43,72,0.16)] overflow-hidden z-50"
     >
       <button
         onClick={() => {
@@ -518,6 +521,60 @@ function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onPermission, on
         <Trash2 className="w-3.5 h-3.5" /> Delete
       </button>
     </motion.div>
+  );
+}
+
+const ACTION_MENU_WIDTH = 176; // w-44
+
+function UserRowActions({ user, openMenu, setOpenMenu, onEdit, onRole, onToggle, onDelete, onPermission }: any) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const isOpen = openMenu === user.id;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen, setOpenMenu]);
+
+  const handleToggle = () => {
+    if (!isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, left: Math.max(8, rect.right - ACTION_MENU_WIDTH) });
+    }
+    setOpenMenu(isOpen ? null : user.id);
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button ref={btnRef} onClick={handleToggle} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
+        <MoreVertical className="w-4 h-4 text-text-placeholder" />
+      </button>
+      {isOpen &&
+        position &&
+        createPortal(
+          <AnimatePresence>
+            <ActionMenu
+              user={user}
+              position={position}
+              menuRef={menuRef}
+              onEdit={onEdit}
+              onRole={onRole}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onPermission={onPermission}
+              onClose={() => setOpenMenu(null)}
+            />
+          </AnimatePresence>,
+          document.body,
+        )}
+    </div>
   );
 }
 
@@ -774,27 +831,16 @@ export default function AdminUsersPage() {
               align: 'right',
               shrink: true,
               render: (u) => (
-                <div className="relative inline-block">
-                  <button
-                    onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)}
-                    className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors"
-                  >
-                    <MoreVertical className="w-4 h-4 text-text-placeholder" />
-                  </button>
-                  <AnimatePresence>
-                    {openMenu === u.id && (
-                      <ActionMenu
-                        user={u}
-                        onEdit={() => setEditUser(u)}
-                        onRole={() => setRoleUser(u)}
-                        onToggle={() => toggleStatus.mutate(u)}
-                        onDelete={() => setDeleteUser(u)}
-                        onPermission={() => setPermissionUser(u)}
-                        onClose={() => setOpenMenu(null)}
-                      />
-                    )}
-                  </AnimatePresence>
-                </div>
+                <UserRowActions
+                  user={u}
+                  openMenu={openMenu}
+                  setOpenMenu={setOpenMenu}
+                  onEdit={() => setEditUser(u)}
+                  onRole={() => setRoleUser(u)}
+                  onToggle={() => toggleStatus.mutate(u)}
+                  onDelete={() => setDeleteUser(u)}
+                  onPermission={() => setPermissionUser(u)}
+                />
               ),
             },
           ] as DataTableColumn<any>[]

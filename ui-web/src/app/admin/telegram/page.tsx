@@ -52,7 +52,15 @@ export default function AdminTelegramPage() {
 
   const telegramUsers = data || [];
   const groups = telegramUsers.filter((u: any) => u.chat_id < 0);
-  const privates = telegramUsers.filter((u: any) => u.chat_id > 0);
+  const chatLogById = new Map(telegramUsers.map((u: any) => [String(u.chat_id), u]));
+
+  // Users who have a telegram_chat_id saved on their profile — the source of truth for
+  // "who has set up the bot", independent of whether they show up in the bot's chat log.
+  const connectedUsers = (appUsers || []).filter((au: any) => au.telegram_chat_id);
+  const connectedChatIds = new Set(connectedUsers.map((au: any) => String(au.telegram_chat_id)));
+
+  // Private chat-log entries not yet linked to any app user.
+  const unlinkedChats = telegramUsers.filter((u: any) => u.chat_id > 0 && !connectedChatIds.has(String(u.chat_id)));
 
   return (
     <AppLayout>
@@ -124,16 +132,67 @@ export default function AdminTelegramPage() {
             </div>
           )}
 
-          {privates.length > 0 && (
+          {connectedUsers.length > 0 && (
+            <div className="bg-white rounded-[6px] border border-border-subtle overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-border-subtle flex items-center gap-2">
+                <Users className="w-4 h-4 text-text-placeholder" />
+                <h3 className="font-bold text-navy-800 text-sm">Connected Users ({connectedUsers.length})</h3>
+              </div>
+              <div className="divide-y divide-surface-2">
+                {connectedUsers.map((au: any) => {
+                  const chatLog: any = chatLogById.get(String(au.telegram_chat_id));
+                  const telegramName = chatLog ? [chatLog.first_name, chatLog.last_name].filter(Boolean).join(' ') : null;
+                  return (
+                    <motion.div
+                      key={au.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex items-center gap-4 px-5 py-3.5"
+                    >
+                      <div className="w-10 h-10 rounded-[6px] bg-success-soft flex items-center justify-center flex-shrink-0 text-success-text text-sm font-bold">
+                        {getInitials(au.full_name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-navy-800">{au.full_name}</span>
+                          {chatLog?.username && <span className="text-xs text-text-placeholder">@{chatLog.username}</span>}
+                          <span className="text-[10px] px-2 py-0.5 bg-success-soft text-success-text rounded-full font-semibold">Connected</span>
+                        </div>
+                        <div className="text-xs text-text-placeholder font-mono mt-0.5">
+                          {au.telegram_chat_id}
+                          {telegramName && ` · ${telegramName}`}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => copy(Number(au.telegram_chat_id))}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
+                      >
+                        {copiedId === String(au.telegram_chat_id) ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-success" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" /> Copy ID
+                          </>
+                        )}
+                      </button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {unlinkedChats.length > 0 && (
             <div className="bg-white rounded-[6px] border border-border-subtle overflow-hidden">
               <div className="px-5 py-3.5 border-b border-border-subtle flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-text-placeholder" />
-                <h3 className="font-bold text-navy-800 text-sm">Private Chats ({privates.length})</h3>
+                <h3 className="font-bold text-navy-800 text-sm">Unlinked Chats ({unlinkedChats.length})</h3>
               </div>
               <div className="divide-y divide-surface-2">
-                {privates.map((u: any) => {
+                {unlinkedChats.map((u: any) => {
                   const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ');
-                  const linkedUser = (appUsers || []).find((au: any) => au.telegram_chat_id === String(u.chat_id));
                   return (
                     <motion.div
                       key={u.chat_id}
@@ -141,23 +200,18 @@ export default function AdminTelegramPage() {
                       animate={{ opacity: 1 }}
                       className="flex items-center gap-4 px-5 py-3.5"
                     >
-                      <div className="w-10 h-10 rounded-[6px] bg-sky-100 flex items-center justify-center flex-shrink-0 text-sky-700 text-sm font-bold">
+                      <div className="w-10 h-10 rounded-[6px] bg-info-soft flex items-center justify-center flex-shrink-0 text-info-text text-sm font-bold">
                         {getInitials(fullName || u.username || '?')}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-navy-800">{fullName || 'No name'}</span>
                           {u.username && <span className="text-xs text-text-placeholder">@{u.username}</span>}
-                          {linkedUser && (
-                            <span className="text-[10px] px-2 py-0.5 bg-success-soft text-success-text rounded-full font-semibold">
-                              {linkedUser.full_name}
-                            </span>
-                          )}
                         </div>
                         <div className="text-xs text-text-placeholder font-mono mt-0.5">{u.chat_id}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {!linkedUser && appUsers && (
+                        {appUsers && (
                           <select
                             onChange={(e) => e.target.value && saveToUser(e.target.value, u.chat_id)}
                             disabled={savingId !== null}
@@ -195,7 +249,7 @@ export default function AdminTelegramPage() {
             </div>
           )}
 
-          {telegramUsers.length === 0 && (
+          {groups.length === 0 && connectedUsers.length === 0 && unlinkedChats.length === 0 && (
             <div className="text-center py-16 bg-white rounded-[6px] border border-border-subtle">
               <MessageCircle className="w-10 h-10 mx-auto mb-3 text-border-button" />
               <p className="text-sm text-text-placeholder">Nobody has messaged the bot yet</p>
