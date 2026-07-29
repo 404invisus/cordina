@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 
 const STATUS_CONFIG = [
   { key: 'draft',       label: 'Draft',        color: 'bg-slate-100 text-slate-600',     icon: FileText },
-  { key: 'submitted',   label: 'Diajukan',     color: 'bg-amber-100 text-amber-700',     icon: Clock },
-  { key: 'approved',    label: 'Disetujui',    color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
-  { key: 'rejected',    label: 'Ditolak',      color: 'bg-red-100 text-red-700',         icon: XCircle },
+  { key: 'submitted',   label: 'Submitted',    color: 'bg-amber-100 text-amber-700',     icon: Clock },
+  { key: 'approved',    label: 'Approved',     color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
+  { key: 'rejected',    label: 'Rejected',     color: 'bg-red-100 text-red-700',         icon: XCircle },
   { key: 'implemented', label: 'Implemented',  color: 'bg-blue-100 text-blue-700',       icon: Wrench },
 ];
 
@@ -48,7 +48,7 @@ export default function CRSummaryCard() {
         </div>
         <button onClick={() => router.push('/change-management')}
           className="flex items-center gap-1 text-xs text-[#284074] font-semibold hover:underline">
-          Lihat semua <ChevronRight className="w-3 h-3" />
+          View all <ChevronRight className="w-3 h-3" />
         </button>
       </div>
       <div className="grid grid-cols-5 gap-2">

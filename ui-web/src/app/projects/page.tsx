@@ -2,118 +2,114 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FolderKanban, Plus, Search, LayoutGrid, List, Calendar, ArrowRight, Clock, CheckCircle2, Zap } from 'lucide-react';
+import {
+  FolderKanban, Plus, Search, LayoutGrid, List, TrendingUp, CheckCircle2, AlertTriangle, Activity, ChevronDown,
+} from 'lucide-react';
 import Link from 'next/link';
 import { projectService } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
 import Modal from '@/components/ui/Modal';
-import { LoadingSpinner } from '@/components/ui/EmptyState';
-import { getStatusColor, getStatusLabel, formatDate } from '@/lib/utils';
+import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-const STATUS_META: Record<string, { dot: string; bg: string; text: string }> = {
-  active:    { dot: 'bg-emerald-400', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
-  completed: { dot: 'bg-[#284074]',   bg: 'bg-blue-50',     text: 'text-blue-700'    },
-  planned:   { dot: 'bg-slate-400',   bg: 'bg-slate-100',   text: 'text-slate-600'   },
-  on_hold:   { dot: 'bg-amber-400',   bg: 'bg-amber-50',    text: 'text-amber-700'   },
+const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot: string; bar: string }> = {
+  active:            { label: 'In progress',       bg: '#eaf1f8', color: '#14406a', dot: '#14406a', bar: '#14406a' },
+  on_track:          { label: 'On track',          bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
+  at_risk:           { label: 'At risk',           bg: '#fdeceb', color: '#a3231c', dot: '#b3261e', bar: '#b3261e' },
+  awaiting_approval: { label: 'Awaiting approval', bg: '#fbf3e0', color: '#8a6209', dot: '#c9971b', bar: '#c9971b' },
+  completed:         { label: 'Completed',         bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
+  planned:           { label: 'Planned',           bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
+  on_hold:           { label: 'On hold',           bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
 };
 
-const STATUS_FILTERS = ['Semua', 'active', 'planned', 'completed', 'on_hold'];
+const STATUS_FILTERS = [
+  { value: '',        label: 'All'        },
+  { value: 'active',  label: 'In progress'},
+  { value: 'on_track',label: 'On track'  },
+  { value: 'at_risk', label: 'At risk'   },
+  { value: 'planned', label: 'Planned'   },
+  { value: 'on_hold', label: 'On hold'   },
+  { value: 'completed',label: 'Completed'},
+];
 
 function StatusBadge({ status }: { status: string }) {
-  const m = STATUS_META[status] ?? STATUS_META['planned'];
+  const cfg = STATUS_CFG[status] ?? STATUS_CFG.planned;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${m.bg} ${m.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-      {getStatusLabel(status)}
+    <span className="inline-flex items-center gap-[5px] h-[21px] px-[8px] rounded-[3px] text-[10.5px] font-semibold flex-none"
+      style={{ background: cfg.bg, color: cfg.color }}>
+      <span className="w-[5px] h-[5px] rounded-full flex-none" style={{ background: cfg.dot }} />
+      {cfg.label}
     </span>
   );
+}
+
+function initials(name: string) {
+  return (name || 'U').split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function fmtDate(iso: string) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
-  const [focused, setFocused] = useState<string | null>(null);
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => projectService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Project berhasil dibuat!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat project'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Project created!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create project'),
   });
 
-  const fieldClass = (name: string, hasError?: boolean) =>
-    `w-full px-4 py-3 rounded-xl bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400`;
-  const wrapClass = (name: string, hasError?: boolean) =>
-    `rounded-xl border-2 transition-all duration-200 ${
-      focused === name
-        ? 'border-[#284074] shadow-[0_0_0_4px_rgba(40,64,116,0.08)]'
-        : hasError
-        ? 'border-red-400'
-        : 'border-slate-200 hover:border-slate-300'
-    }`;
-
   return (
-    <Modal open={open} onClose={onClose} title="Buat Project Baru" size="md">
-      <form onSubmit={handleSubmit(d => mutate(d))} className="space-y-4">
+    <Modal open={open} onClose={onClose} title="New project">
+      <form onSubmit={handleSubmit(d => mutate(d))} className="flex flex-col gap-[10px]">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Project</label>
-          <div className={wrapClass('name', !!errors.name)}>
-            <input {...register('name', { required: 'Wajib diisi' })} onFocus={() => setFocused('name')} onBlur={() => setFocused(null)}
-              className={fieldClass('name')} placeholder="Masukkan nama project..." />
-          </div>
-          <AnimatePresence>{errors.name && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-red-500 text-xs mt-1.5">{errors.name.message as string}</motion.p>}</AnimatePresence>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]">NAME</label>
+          <input {...register('name', { required: true })}
+            className="mt-1 w-full h-[32px] px-[10px] border border-[#d9d6cf] rounded-[5px] text-[12px] text-[#12283c] bg-white focus:outline-none focus:border-brand"
+            placeholder="Project name..." />
+          {errors.name && <p className="text-[10.5px] text-danger mt-1">Name is required</p>}
         </div>
-
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi</label>
-          <div className={wrapClass('desc')}>
-            <textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)}
-              className={`${fieldClass('desc')} h-24 resize-none`} placeholder="Jelaskan tujuan dan scope project..." />
-          </div>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]">DESCRIPTION</label>
+          <textarea {...register('description')} rows={3}
+            className="mt-1 w-full px-[10px] py-[6px] border border-[#d9d6cf] rounded-[5px] text-[12px] text-[#12283c] bg-white resize-none focus:outline-none"
+            placeholder="Scope and goals..." />
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-[8px]">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Mulai</label>
-            <div className={wrapClass('start', !!errors.start_date)}>
-              <input {...register('start_date', { required: 'Wajib' })} type="date" onFocus={() => setFocused('start')} onBlur={() => setFocused(null)} className={fieldClass('start')} />
-            </div>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]">START DATE</label>
+            <input {...register('start_date', { required: true })} type="date"
+              className="mt-1 w-full h-[32px] px-[8px] border border-[#d9d6cf] rounded-[5px] text-[12px] text-[#12283c] bg-white focus:outline-none" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Selesai</label>
-            <div className={wrapClass('end', !!errors.end_date)}>
-              <input {...register('end_date', { required: 'Wajib' })} type="date" onFocus={() => setFocused('end')} onBlur={() => setFocused(null)} className={fieldClass('end')} />
-            </div>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]">END DATE</label>
+            <input {...register('end_date', { required: true })} type="date"
+              className="mt-1 w-full h-[32px] px-[8px] border border-[#d9d6cf] rounded-[5px] text-[12px] text-[#12283c] bg-white focus:outline-none" />
           </div>
         </div>
-
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Divisi</label>
-          <div className={wrapClass('division')}>
-            <input {...register('division')} onFocus={() => setFocused('division')} onBlur={() => setFocused(null)}
-              className={fieldClass('division')} placeholder="Nama divisi atau unit..." />
-          </div>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]">DIVISION</label>
+          <input {...register('division')}
+            className="mt-1 w-full h-[32px] px-[10px] border border-[#d9d6cf] rounded-[5px] text-[12px] text-[#12283c] bg-white focus:outline-none"
+            placeholder="Division or unit name" />
         </div>
-
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-[6px] pt-[4px]">
           <button type="button" onClick={onClose}
-            className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:border-slate-300 hover:bg-slate-50 transition-all">
-            Batal
+            className="flex-1 h-[34px] border border-[#d9d6cf] rounded-[6px] text-[12px] font-semibold text-[#4b5563] hover:bg-[#f5f4f2] transition-colors">
+            Cancel
           </button>
-          <motion.button type="submit" disabled={isPending} whileTap={{ scale: 0.98 }}
-            className="flex-1 bg-[#284074] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 disabled:opacity-70">
-            <AnimatePresence mode="wait">
-              {isPending ? (
-                <motion.div key="spin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <motion.span key="text" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Buat Project
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+          <button type="submit" disabled={isPending}
+            className="flex-1 h-[34px] rounded-[6px] bg-accent text-[#12283c] text-[12px] font-bold disabled:opacity-60 transition-opacity"
+            style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}>
+            {isPending ? 'Creating…' : 'Create project'}
+          </button>
         </div>
       </form>
     </Modal>
@@ -121,50 +117,30 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 function ProjectCard({ project, index }: { project: any; index: number }) {
-  const daysLeft = Math.ceil((new Date(project.end_date).getTime() - Date.now()) / 86400000);
-  const m = STATUS_META[project.status] ?? STATUS_META['planned'];
-
+  const cfg = STATUS_CFG[project.status] ?? STATUS_CFG.planned;
   return (
-    <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, type: 'spring', stiffness: 200, damping: 20 }}>
-      <Link href={`/projects/${project.id}`} className="group block h-full">
-        <div className="relative bg-white rounded-2xl border border-slate-100 p-5 h-full flex flex-col transition-all duration-300 hover:border-[#284074]/20 hover:shadow-[0_8px_40px_rgba(40,64,116,0.12)] hover:-translate-y-1">
-          <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-gradient-to-r from-[#284074] to-[#3d5a9e] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-11 h-11 rounded-xl bg-[#284074]/8 flex items-center justify-center group-hover:bg-[#284074] transition-all duration-300 flex-shrink-0">
-              <FolderKanban className="w-5 h-5 text-[#284074] group-hover:text-white transition-colors duration-300" />
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, type: 'spring', stiffness: 220, damping: 22 }}>
+      <Link href={`/projects/${project.id}`} className="block group">
+        <div className="bg-white border border-[#e6e4df] rounded-[6px] px-[14px] py-[12px] flex flex-col gap-[10px] hover:border-brand hover:shadow-[0_2px_12px_rgba(40,64,116,0.10)] transition-all">
+          <div className="flex items-start justify-between gap-2">
+            <div className="w-[28px] h-[28px] rounded-[5px] bg-brand-soft flex items-center justify-center flex-none">
+              <FolderKanban className="w-[14px] h-[14px] text-brand" />
             </div>
             <StatusBadge status={project.status} />
           </div>
-
-          <div className="flex-1">
-            <h3 className="font-semibold text-slate-900 mb-1.5 group-hover:text-[#284074] transition-colors leading-snug">{project.name}</h3>
-            <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">{project.description || 'Tidak ada deskripsi'}</p>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <Calendar className="w-3.5 h-3.5" />
-              {formatDate(project.start_date)}
-            </div>
-            {daysLeft > 0 ? (
-              <div className="flex items-center gap-1 text-xs font-medium text-slate-500">
-                <Clock className="w-3.5 h-3.5" />
-                {daysLeft}h lagi
-              </div>
-            ) : project.status !== 'completed' ? (
-              <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Overdue</span>
-            ) : null}
-          </div>
-
-          <div className="mt-3 flex items-center justify-between">
-            {project.division && (
-              <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">{project.division}</span>
+          <div>
+            <div className="text-[12.5px] font-semibold text-[#12283c] group-hover:text-brand transition-colors leading-snug">{project.name}</div>
+            {project.division && <div className="font-mono text-[10px] text-[#9ca3af] mt-[2px]">{project.division}</div>}
+            {project.description && (
+              <p className="text-[11px] text-[#8a8f98] mt-[5px] line-clamp-2 leading-relaxed">{project.description}</p>
             )}
-            <div className="ml-auto flex items-center gap-1 text-xs font-semibold text-[#284074] opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1 group-hover:translate-x-0">
-              Buka <ArrowRight className="w-3.5 h-3.5" />
-            </div>
+          </div>
+          <div className="flex items-center justify-between text-[10.5px]">
+            <span className="font-mono text-[#8a8f98]">
+              {project.start_date ? fmtDate(project.start_date) : '—'}
+              {project.end_date ? ` – ${fmtDate(project.end_date)}` : ''}
+            </span>
           </div>
         </div>
       </Link>
@@ -173,11 +149,11 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
 }
 
 export default function ProjectsPage() {
-  const { hasRole, hasPermission } = useAuthStore();
+  const { hasPermission } = useAuthStore();
   const [search, setSearch] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [statusFilter, setStatusFilter] = useState('Semua');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'due' | 'name' | 'status'>('due');
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data: projects, isLoading } = useQuery({
@@ -185,157 +161,237 @@ export default function ProjectsPage() {
     queryFn: () => projectService.list().then(r => r.data.data),
   });
 
-  const filtered = (projects || []).filter((p: any) => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'Semua' || p.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const filtered = [...(projects || [])]
+    .filter((p: any) => {
+      const q = search.toLowerCase();
+      const matchQ = !q || p.name.toLowerCase().includes(q) || p.division?.toLowerCase().includes(q);
+      const matchS = !statusFilter || p.status === statusFilter;
+      return matchQ && matchS;
+    })
+    .sort((a: any, b: any) => {
+      if (sortBy === 'due')    return (a.end_date || '').localeCompare(b.end_date || '');
+      if (sortBy === 'name')   return a.name.localeCompare(b.name);
+      if (sortBy === 'status') return a.status.localeCompare(b.status);
+      return 0;
+    });
 
   const canCreate = hasPermission('project.create');
-  const stats = {
-    total:     projects?.length || 0,
-    active:    projects?.filter((p: any) => p.status === 'active').length || 0,
-    completed: projects?.filter((p: any) => p.status === 'completed').length || 0,
-  };
+  const total     = projects?.length || 0;
+  const active    = (projects || []).filter((p: any) => p.status === 'active' || p.status === 'on_track').length;
+  const awaiting  = (projects || []).filter((p: any) => p.status === 'awaiting_approval' || p.status === 'at_risk').length;
+  const completed = (projects || []).filter((p: any) => p.status === 'completed').length;
+
+  const subtitle = total
+    ? `${total} project${total !== 1 ? 's' : ''} · ${active} active · ${completed} completed`
+    : 'Manage and monitor all team projects';
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Projects</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Kelola dan pantau semua project tim</p>
-          </div>
-          {canCreate && (
-            <motion.button whileTap={{ scale: 0.97 }} whileHover={{ scale: 1.01 }} onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 hover:shadow-xl hover:shadow-[#284074]/25 hover:-translate-y-0.5">
-              <Plus className="w-4 h-4" /> Buat Project
-            </motion.button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Total Project', value: stats.total,     icon: <FolderKanban className="w-4 h-4 text-[#284074]" />, bg: 'bg-[#284074]/8' },
-            { label: 'Aktif',         value: stats.active,    icon: <Zap className="w-4 h-4 text-emerald-500" />,        bg: 'bg-emerald-50'  },
-            { label: 'Selesai',       value: stats.completed, icon: <CheckCircle2 className="w-4 h-4 text-blue-500" />,  bg: 'bg-blue-50'     },
-          ].map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              className="bg-white rounded-2xl border border-slate-100 px-4 py-3.5 flex items-center gap-3 shadow-sm">
-              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center flex-shrink-0`}>{s.icon}</div>
-              <div>
-                <div className="text-xl font-extrabold text-slate-900">{s.value}</div>
-                <div className="text-xs text-slate-400">{s.label}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className={`relative flex-1 min-w-48 rounded-xl border-2 transition-all duration-200 ${searchFocused ? 'border-[#284074] shadow-[0_0_0_4px_rgba(40,64,116,0.08)]' : 'border-slate-200 hover:border-slate-300'}`}>
-            <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${searchFocused ? 'text-[#284074]' : 'text-slate-400'}`} />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
-              placeholder="Cari project..." />
-          </div>
-
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-            {STATUS_FILTERS.map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === s ? 'bg-white text-[#284074] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                {s === 'Semua' ? 'Semua' : getStatusLabel(s)}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-1 border-2 border-slate-200 rounded-xl p-1">
-            <button onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-[#284074] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-              <LayoutGrid className="w-4 h-4" />
+      <PageHeader
+        section="PROJECTS"
+        title="Projects"
+        subtitle={subtitle}
+        actions={
+          canCreate ? (
+            <button onClick={() => setCreateOpen(true)}
+              className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-accent text-[#12283c] text-[12px] font-bold"
+              style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}>
+              <Plus className="w-3 h-3" strokeWidth={2.5} />
+              New project
             </button>
-            <button onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-[#284074] text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          ) : undefined
+        }
+      />
 
-        {isLoading ? <LoadingSpinner /> : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 bg-[#284074]/8 rounded-2xl flex items-center justify-center mb-4">
-              <FolderKanban className="w-7 h-7 text-[#284074]/40" />
-            </div>
-            <h3 className="font-semibold text-slate-700 mb-1">Belum ada project</h3>
-            <p className="text-sm text-slate-400 mb-5">Mulai dengan membuat project pertama</p>
-            {canCreate && (
-              <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCreateOpen(true)}
-                className="inline-flex items-center gap-2 bg-[#284074] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20">
-                <Plus className="w-4 h-4" /> Buat Project
-              </motion.button>
-            )}
-          </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((p: any, i: number) => <ProjectCard key={p.id} project={p} index={i} />)}
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  {['Project', 'Status', 'Divisi', 'Periode', 'Sisa Hari', ''].map(h => (
-                    <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p: any, i: number) => {
-                  const daysLeft = Math.ceil((new Date(p.end_date).getTime() - Date.now()) / 86400000);
-                  return (
-                    <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70 transition-colors group">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-[#284074]/8 flex items-center justify-center flex-shrink-0 group-hover:bg-[#284074] transition-colors">
-                            <FolderKanban className="w-4 h-4 text-[#284074] group-hover:text-white transition-colors" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-slate-800 group-hover:text-[#284074] transition-colors">{p.name}</div>
-                            <div className="text-xs text-slate-400 mt-0.5">{p.description?.slice(0, 45)}{p.description?.length > 45 ? '…' : ''}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4"><StatusBadge status={p.status} /></td>
-                      <td className="px-5 py-4 text-sm text-slate-500">{p.division || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-slate-400">
-                        <div>{formatDate(p.start_date)}</div>
-                        <div className="text-slate-300 mt-0.5">→ {formatDate(p.end_date)}</div>
-                      </td>
-                      <td className="px-5 py-4">
-                        {daysLeft > 0 ? (
-                          <span className={`text-sm font-semibold ${daysLeft < 7 ? 'text-red-500' : daysLeft < 30 ? 'text-orange-500' : 'text-slate-600'}`}>{daysLeft}h</span>
-                        ) : p.status !== 'completed' ? (
-                          <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">Overdue</span>
-                        ) : (
-                          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">✓ Selesai</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <Link href={`/projects/${p.id}`}
-                          className="inline-flex items-center gap-1 text-sm font-semibold text-[#284074] opacity-0 group-hover:opacity-100 transition-all">
-                          Buka <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* StatCards */}
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard index={0} title="Total Projects"    value={total}     subtitle="all time"       icon={FolderKanban} color="brand"  progress={100} />
+        <StatCard index={1} title="Active"            value={active}    subtitle="in progress"    icon={Activity}     color="brand"  progress={total > 0 ? Math.round((active / total) * 100) : 0} />
+        <StatCard index={2} title="Needs Attention"  value={awaiting}  subtitle="at risk / pending" icon={AlertTriangle} color="red" progress={total > 0 ? Math.round((awaiting / total) * 100) : 0} />
+        <StatCard index={3} title="Completed"        value={completed}  subtitle="this quarter"   icon={CheckCircle2} color="green" progress={total > 0 ? Math.round((completed / total) * 100) : 0} />
       </div>
+
+      {/* Filter bar */}
+      <div className="bg-white border border-[#e6e4df] rounded-[6px] flex items-center gap-[10px] px-[15px] py-[10px] flex-wrap">
+        {/* Search */}
+        <div className="flex items-center gap-[7px] h-[32px] px-[11px] border border-[#e2e0da] rounded-[6px] w-[250px] text-[#9ca3af]">
+          <Search className="w-[13px] h-[13px] flex-none" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 bg-transparent text-[12px] text-[#12283c] placeholder:text-[#9ca3af] focus:outline-none"
+            placeholder="Search projects"
+          />
+        </div>
+
+        {/* Status filter */}
+        <div className="relative">
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="h-[32px] pl-[11px] pr-[26px] border border-[#e2e0da] rounded-[6px] text-[12px] font-medium text-[#4b5563] appearance-none bg-white focus:outline-none cursor-pointer">
+            {STATUS_FILTERS.map(s => (
+              <option key={s.value} value={s.value}>{`Status: ${s.label}`}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-[7px] top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-[#9ca3af] pointer-events-none" strokeWidth={1.8} />
+        </div>
+
+        {/* Sort */}
+        <div className="relative">
+          <select value={sortBy} onChange={e => setSortBy(e.target.value as any)}
+            className="h-[32px] pl-[11px] pr-[26px] border border-[#e2e0da] rounded-[6px] text-[12px] font-medium text-[#4b5563] appearance-none bg-white focus:outline-none cursor-pointer">
+            <option value="due">Sort: Due date ↑</option>
+            <option value="name">Sort: Name A–Z</option>
+            <option value="status">Sort: Status</option>
+          </select>
+          <ChevronDown className="absolute right-[7px] top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-[#9ca3af] pointer-events-none" strokeWidth={1.8} />
+        </div>
+
+        {/* View toggle */}
+        <div className="ml-auto flex border border-[#e2e0da] rounded-[6px] overflow-hidden h-[32px]">
+          <button onClick={() => setViewMode('list')}
+            className="w-[34px] flex items-center justify-center transition-colors"
+            style={viewMode === 'list' ? { background: '#14406a' } : {}}>
+            <List className="w-[13px] h-[13px]" style={{ color: viewMode === 'list' ? '#fff' : '#9ca3af' }} />
+          </button>
+          <button onClick={() => setViewMode('grid')}
+            className="w-[34px] flex items-center justify-center border-l border-[#e2e0da] transition-colors"
+            style={viewMode === 'grid' ? { background: '#14406a' } : {}}>
+            <LayoutGrid className="w-[13px] h-[13px]" style={{ color: viewMode === 'grid' ? '#fff' : '#9ca3af' }} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-48">
+            <LoadingSpinner />
+          </motion.div>
+        ) : filtered.length === 0 ? (
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <EmptyState
+              icon={FolderKanban}
+              title={search || statusFilter ? 'No projects match your filters' : 'No projects yet'}
+              subtitle={canCreate ? 'Create the first project to get started' : 'No projects have been created yet'}
+              action={canCreate && !search && !statusFilter ? (
+                <button onClick={() => setCreateOpen(true)}
+                  className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-accent text-[#12283c] text-[12px] font-bold mt-2"
+                  style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}>
+                  <Plus className="w-3 h-3" strokeWidth={2.5} />New project
+                </button>
+              ) : undefined}
+            />
+          </motion.div>
+        ) : viewMode === 'grid' ? (
+          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[10px]">
+            {filtered.map((p: any, i: number) => <ProjectCard key={p.id} project={p} index={i} />)}
+          </motion.div>
+        ) : (
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="bg-white border border-[#e6e4df] rounded-[6px] flex flex-col overflow-hidden">
+            {/* Table header */}
+            <div className="grid px-[15px] h-[30px] items-center border-b border-[#eceae4] bg-[#faf9f7]"
+              style={{ gridTemplateColumns: '1fr 132px 116px 130px 104px 78px' }}>
+              {['PROJECT', 'OWNER', 'TEAM', 'STATUS', 'PROGRESS', 'DUE'].map((h, i) => (
+                <div key={h} className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]"
+                  style={i === 5 ? { textAlign: 'right' } : {}}>
+                  {h}
+                </div>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {filtered.map((p: any, i: number) => {
+              const cfg = STATUS_CFG[p.status] ?? STATUS_CFG.planned;
+              const ownerName = p.owner_name || p.created_by_name || p.manager_name || '';
+              const progress = p.progress ?? (p.status === 'completed' ? 100 : 0);
+              const teamMembers: string[] = p.members?.slice(0, 3) || [];
+              const extraCount = (p.members?.length || 0) - 3;
+
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="grid px-[15px] h-[40px] items-center border-b border-[#f2f0ec] last:border-b-0 hover:bg-[#faf9f7] transition-colors cursor-pointer"
+                  style={{ gridTemplateColumns: '1fr 132px 116px 130px 104px 78px' }}
+                  onClick={() => window.location.href = `/projects/${p.id}`}
+                >
+                  {/* Project */}
+                  <div className="flex flex-col gap-[1px] min-w-0">
+                    <div className="text-[12.5px] font-semibold text-[#12283c] truncate">{p.name}</div>
+                    <div className="font-mono text-[10px] text-[#9ca3af] truncate">
+                      {[p.code, p.division].filter(Boolean).join(' · ') || p.description?.slice(0, 30)}
+                    </div>
+                  </div>
+
+                  {/* Owner */}
+                  <div className="flex items-center gap-[7px]">
+                    {ownerName ? (
+                      <>
+                        <div className="w-[22px] h-[22px] rounded-[4px] bg-[#eaf1f8] text-[#14406a] flex items-center justify-center font-mono text-[9.5px] font-bold flex-none">
+                          {initials(ownerName)}
+                        </div>
+                        <span className="text-[12px] text-[#4b5563] truncate">{ownerName}</span>
+                      </>
+                    ) : (
+                      <span className="text-[11px] text-[#c0bcb4]">—</span>
+                    )}
+                  </div>
+
+                  {/* Team */}
+                  <div className="flex items-center">
+                    {teamMembers.length > 0 ? (
+                      <div className="flex">
+                        {teamMembers.map((m: any, ti: number) => (
+                          <div key={ti}
+                            className="w-[22px] h-[22px] rounded-full bg-[#dfe6ee] border-[1.5px] border-white flex items-center justify-center font-mono text-[9px] font-semibold text-[#14406a]"
+                            style={{ marginLeft: ti === 0 ? 0 : -7 }}>
+                            {initials(m.name || m)}
+                          </div>
+                        ))}
+                        {extraCount > 0 && (
+                          <div className="w-[22px] h-[22px] rounded-full bg-[#f1f0ed] border-[1.5px] border-white flex items-center justify-center font-mono text-[8.5px] font-semibold text-[#6b7280]"
+                            style={{ marginLeft: -7 }}>
+                            +{extraCount}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-[#c0bcb4]">—</span>
+                    )}
+                  </div>
+
+                  {/* Status */}
+                  <div><StatusBadge status={p.status} /></div>
+
+                  {/* Progress */}
+                  <div className="flex items-center gap-[7px]">
+                    <div className="flex-1 h-[4px] rounded-[2px] bg-[#eceae4] overflow-hidden">
+                      <div className="h-full rounded-[2px]" style={{ width: `${progress}%`, background: cfg.bar }} />
+                    </div>
+                    <span className="font-mono text-[10.5px] text-[#6b7280] w-[24px] text-right">{progress}</span>
+                  </div>
+
+                  {/* Due date */}
+                  <div className="text-right font-mono text-[11px] text-[#4b5563]">
+                    {p.end_date ? fmtDate(p.end_date) : '—'}
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {/* Footer */}
+            <div className="h-[36px] flex items-center justify-between px-[15px] border-t border-[#eceae4] bg-[#faf9f7]">
+              <span className="text-[11px] text-[#8a8f98]">
+                Showing {filtered.length} of {total}
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <CreateProjectModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </AppLayout>

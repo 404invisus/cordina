@@ -7,28 +7,28 @@ import Link from 'next/link';
 const MODULES = [
   {
     n: '01',
-    title: 'Agenda dan Kalender',
-    body: 'Jadwalkan kegiatan, tentukan peserta, dan sistem akan mengirim notifikasi ke Telegram secara otomatis ketika ada perubahan.',
+    title: 'Agenda & Calendar',
+    body: 'Schedule activities, assign participants, and the system automatically sends Telegram notifications whenever there are changes.',
   },
   {
     n: '02',
-    title: 'Manajemen Proyek',
-    body: 'Pantau perkembangan proyek dari level epic hingga subtask. Sprint, kanban board, dan roadmap tersedia dalam satu alur kerja yang terhubung.',
+    title: 'Project Management',
+    body: 'Track project progress from epic to subtask level. Sprints, kanban board, and roadmap are all available in one connected workflow.',
   },
   {
     n: '03',
     title: 'Change Management',
-    body: 'Setiap usulan perubahan melewati alur pengajuan, peninjauan, dan persetujuan yang tercatat lengkap dan bisa diaudit kapan saja.',
+    body: 'Every change request goes through a submission, review, and approval flow — fully recorded and auditable at any time.',
   },
   {
     n: '04',
-    title: 'Aset dan Dokumen',
-    body: 'Inventaris digital untuk aset fisik dan dokumen resmi. Dilengkapi notifikasi masa berlaku, riwayat versi, dan pengaturan hak akses.',
+    title: 'Assets & Documents',
+    body: 'Digital inventory for physical assets and official documents. Includes expiry notifications, version history, and access control.',
   },
   {
     n: '05',
     title: 'Daily Brief',
-    body: 'Ringkasan harian yang menampilkan kondisi layanan, task yang perlu perhatian, dan kegiatan yang akan berlangsung hari ini.',
+    body: 'A daily summary showing service status, tasks that need attention, and activities scheduled for today.',
   },
 ];
 
@@ -69,7 +69,7 @@ export default function LandingPage() {
             href="/login"
             className="text-sm font-medium text-[#083858] border border-[#083858]/25 px-4 py-1.5 rounded-sm hover:bg-[#083858] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#3fa3d0] transition-all duration-150"
           >
-            Masuk
+            Sign in
           </Link>
         </div>
       </nav>
@@ -92,8 +92,8 @@ export default function LandingPage() {
             className="font-display text-white leading-[1.08] tracking-tight mb-7"
             style={{ fontSize: 'clamp(2.4rem, 5.5vw, 4.2rem)' }}
           >
-            Semua yang tim butuhkan,<br />
-            <span className="text-[#d4a31d]">dalam satu sistem.</span>
+            Everything your team needs,<br />
+            <span className="text-[#d4a31d]">in one system.</span>
           </motion.h1>
 
           <motion.p
@@ -102,9 +102,9 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="text-[#e8e4dc]/65 text-base leading-relaxed max-w-lg mb-10"
           >
-            ConnectOne menghubungkan penjadwalan kegiatan, manajemen proyek,
-            proses persetujuan perubahan, dan pengelolaan aset dalam satu
-            platform
+            ConnectOne brings together activity scheduling, project management,
+            change approval workflows, and asset management into a single
+            platform.
           </motion.p>
 
           <motion.div
@@ -116,7 +116,7 @@ export default function LandingPage() {
               href="/login"
               className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150"
             >
-              Buka ConnectOne
+              Open ConnectOne
             </Link>
           </motion.div>
         </div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-baseline justify-between pb-4 border-b border-[#083858]/12 mb-2">
-            <h2 className="font-display text-[#083858] text-xl">Apa saja yang tersedia</h2>
+            <h2 className="font-display text-[#083858] text-xl">What's available</h2>
           </div>
 
           {MODULES.map((m, i) => (
@@ -150,14 +150,14 @@ export default function LandingPage() {
       <section className="bg-[#083858] py-16 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <h2 className="font-display text-white text-2xl mb-1">Akun kamu sudah tersedia.</h2>
-            <p className="text-[#e8e4dc]/50 text-sm">Hubungi administrator jika belum mendapat akses.</p>
+            <h2 className="font-display text-white text-2xl mb-1">Your account is ready.</h2>
+            <p className="text-[#e8e4dc]/50 text-sm">Contact your administrator if you don't have access yet.</p>
           </div>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150 flex-shrink-0"
           >
-            Masuk ke ConnectOne
+            Sign in to ConnectOne
           </Link>
         </div>
       </section>

@@ -21,7 +21,7 @@ export default function Modal({ open, onClose, title, subtitle, children, size =
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
             className={cn('relative bg-white rounded-3xl shadow-2xl shadow-slate-900/20 w-full overflow-hidden', sizes[size])}
           >
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#284074] via-[#3d5a9e] to-[#284074]" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand via-brand-light to-brand" />
             {title && (
               <div className="flex items-start justify-between px-6 pt-6 pb-4">
                 <div>

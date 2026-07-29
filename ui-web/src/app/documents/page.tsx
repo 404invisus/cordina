@@ -2,22 +2,37 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { FileText, Plus, X, Search, Download, AlertTriangle } from 'lucide-react';
+import {
+  FileText, Plus, X, Search, Download, Eye, Pencil,
+  Clock, AlertTriangle, CheckCircle2, FileSignature, ChevronDown,
+} from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/authStore';
 import { documentService } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+const CATEGORIES = ['Decree', 'SOP', 'Report', 'Circular', 'Contract', 'Minutes', 'Other'];
+
 function formatSize(bytes: any) {
-  if (!bytes) return '-';
+  if (!bytes) return '';
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function daysUntil(date: string) {
+  return Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
 }
 
 function isExpiringSoon(date: string) {
   if (!date) return false;
   const d = new Date(date);
-  return d >= new Date() && d <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  return d >= new Date() && d <= new Date(Date.now() + 30 * 86400000);
 }
 
 function isExpired(date: string) {
@@ -25,230 +40,393 @@ function isExpired(date: string) {
   return new Date(date) < new Date();
 }
 
+function docStatus(doc: any) {
+  if (!doc.expires_at) return 'valid';
+  if (isExpired(doc.expires_at)) return 'expired';
+  if (isExpiringSoon(doc.expires_at)) return 'expiring';
+  return 'valid';
+}
+
+function StatusBadge({ doc }: { doc: any }) {
+  const s = docStatus(doc);
+  if (s === 'expired') {
+    const d = new Date(doc.expires_at);
+    return (
+      <span className="inline-flex items-center gap-[5px] h-[21px] px-2 rounded-[3px] bg-danger-soft text-[10.5px] font-semibold text-red-700">
+        <span className="w-[5px] h-[5px] rounded-full bg-danger flex-shrink-0" />
+        Expired {d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+      </span>
+    );
+  }
+  if (s === 'expiring') {
+    const days = daysUntil(doc.expires_at);
+    return (
+      <span className="inline-flex items-center gap-[5px] h-[21px] px-2 rounded-[3px] bg-accent-soft text-[10.5px] font-semibold text-accent-dim">
+        <span className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />
+        Expires in {days} d
+      </span>
+    );
+  }
+  if (doc.status === 'awaiting_signature') {
+    return (
+      <span className="inline-flex items-center gap-[5px] h-[21px] px-2 rounded-[3px] bg-accent-soft text-[10.5px] font-semibold text-accent-dim">
+        <span className="w-[5px] h-[5px] rounded-full bg-accent flex-shrink-0" />
+        Awaiting signature
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-[5px] h-[21px] px-2 rounded-[3px] bg-success-soft text-[10.5px] font-semibold text-emerald-700">
+      <span className="w-[5px] h-[5px] rounded-full bg-success flex-shrink-0" />
+      Valid
+    </span>
+  );
+}
+
+function DocRowIcon({ doc }: { doc: any }) {
+  const s = docStatus(doc);
+  const cls = s === 'expired' ? 'bg-danger-soft text-danger'
+    : s === 'expiring' ? 'bg-danger-soft text-danger'
+    : 'bg-brand-soft text-brand';
+  return (
+    <div className={cn('w-[26px] h-[26px] flex-none rounded-[5px] flex items-center justify-center', cls)}>
+      <FileText className="w-3.5 h-3.5" />
+    </div>
+  );
+}
+
 function DocModal({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    title:       editData?.title       || '',
-    category:    editData?.category    || '',
-    doc_number:  editData?.doc_number  || '',
-    issued_at:   editData?.issued_at?.slice(0,10)  || '',
-    expires_at:  editData?.expires_at?.slice(0,10) || '',
-    description: editData?.description || '',
+    title:       editData?.title       ?? '',
+    category:    editData?.category    ?? '',
+    doc_number:  editData?.doc_number  ?? '',
+    issued_at:   editData?.issued_at?.slice(0, 10)  ?? '',
+    expires_at:  editData?.expires_at?.slice(0, 10) ?? '',
+    description: editData?.description ?? '',
   });
   const [file, setFile] = useState<File | null>(null);
 
   const mutation = useMutation({
     mutationFn: (fd: FormData) => editData ? documentService.update(editData.id, fd) : documentService.create(fd),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success(editData ? 'Dokumen diperbarui' : 'Dokumen ditambahkan'); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+      toast.success(editData ? 'Document updated' : 'Document uploaded');
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
   });
 
   const handleSubmit = () => {
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+    Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v as string); });
     if (file) fd.append('file', file);
     mutation.mutate(fd);
   };
 
-  if (!open) return null;
+  const field = (key: string, label: string, type = 'text', placeholder = '') => (
+    <div key={key}>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
+      <input type={type} value={(form as any)[key]}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900">{editData ? 'Edit Dokumen' : 'Tambah Dokumen'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X className="w-4 h-4 text-slate-500" /></button>
+    <Modal open={open} onClose={onClose} title={editData ? 'Edit Document' : 'Upload Document'} size="md">
+      <div className="space-y-4">
+        {field('title', 'Document Title *', 'text', 'e.g. Cooperation Agreement with BSrE')}
+
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Category *</label>
+          <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+            className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand/20">
+            <option value="">Select category…</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Judul Dokumen *</label>
-            <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="SOP Keamanan Sistem"
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori *</label>
-            <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
-              <option value="">Pilih kategori...</option>
-              <option value="SK">Surat Keputusan (SK)</option>
-              <option value="SOP">SOP</option>
-              <option value="Laporan">Laporan</option>
-              <option value="Surat Edaran">Surat Edaran</option>
-              <option value="Kontrak">Kontrak</option>
-              <option value="Notulensi">Notulensi</option>
-              <option value="Lainnya">Lainnya</option>
-            </select>
-          </div>
-          {[
-            { key: 'doc_number', label: 'Nomor Dokumen',  type: 'text', placeholder: 'SOP-2024-001' },
-            { key: 'issued_at',  label: 'Tanggal Terbit', type: 'date', placeholder: '' },
-            { key: 'expires_at', label: 'Berlaku Hingga', type: 'date', placeholder: '' },
-          ].map(({ key, label, type, placeholder }) => (
-            <div key={key}>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
-              <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                placeholder={placeholder}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
-            </div>
-          ))}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi</label>
-            <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              File {editData ? '(kosongkan jika tidak diganti)' : ''}
-            </label>
-            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              onChange={e => setFile(e.target.files?.[0] || null)}
-              className="mt-1 w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#284074]/10 file:text-[#284074] hover:file:bg-[#284074]/20" />
-          </div>
+
+        {field('doc_number', 'Document Number', 'text', 'e.g. SK/2026/019')}
+        {field('issued_at', 'Issue Date', 'date')}
+        {field('expires_at', 'Expiry Date', 'date')}
+
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</label>
+          <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
+            className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand/20" />
         </div>
-        <div className="flex gap-3 p-6 pt-0">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+            File {editData ? '(leave blank to keep existing)' : ''}
+          </label>
+          <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            onChange={e => setFile(e.target.files?.[0] || null)}
+            className="w-full text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-soft file:text-brand hover:file:bg-brand/15" />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-md border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+            Cancel
+          </button>
           <button onClick={handleSubmit} disabled={mutation.isPending || !form.title || !form.category}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-50">
-            {mutation.isPending ? 'Menyimpan...' : 'Simpan'}
+            className="flex-1 px-4 py-2 rounded-md bg-accent text-[#12283c] text-sm font-bold hover:bg-amber-500 disabled:opacity-50 transition-colors">
+            {mutation.isPending ? 'Saving…' : 'Save'}
           </button>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   );
 }
 
 export default function DocumentsPage() {
   const qc = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
   const { user } = useAuthStore();
-  const [editData, setEditData] = useState<any>(null);
-  const [search, setSearch] = useState('');
-  const [filterExpiring, setFilterExpiring] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editData,   setEditData]   = useState<any>(null);
+  const [deleteId,   setDeleteId]   = useState<string | null>(null);
+  const [search,     setSearch]     = useState('');
+  const [category,   setCategory]   = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['documents', search, filterExpiring],
-    queryFn: () => documentService.list({
-      search: search || undefined,
-      expiring: filterExpiring ? '1' : undefined,
-    }).then(r => r.data.data),
+    queryKey: ['documents', search],
+    queryFn: () => documentService.list({ search: search || undefined }).then(r => r.data.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => documentService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success('Dokumen dihapus'); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); toast.success('Document deleted'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
   });
 
   const handleDownload = async (doc: any) => {
     try {
       const res = await documentService.download(doc.id);
       const url = URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement('a');
-      a.href = url; a.download = doc.file_name || 'dokumen';
-      a.click(); URL.revokeObjectURL(url);
-    } catch { toast.error('Gagal download file'); }
+      const a = document.createElement('a'); a.href = url; a.download = doc.file_name || 'document'; a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error('Download failed'); }
   };
 
-  const docs = data?.data || [];
+  const allDocs: any[] = data?.data || [];
+
+  // stats
+  const total      = allDocs.length;
+  const expiring   = allDocs.filter(d => isExpiringSoon(d.expires_at)).length;
+  const expired    = allDocs.filter(d => isExpired(d.expires_at)).length;
+  const awaitingSig = allDocs.filter(d => d.status === 'awaiting_signature').length;
+
+  // first expiring doc for banner
+  const firstExpiring = allDocs.find(d => isExpiringSoon(d.expires_at));
+
+  // filtered list
+  const docs = allDocs.filter(d => {
+    if (category && d.category !== category) return false;
+    if (statusFilter === 'expired'  && !isExpired(d.expires_at)) return false;
+    if (statusFilter === 'expiring' && !isExpiringSoon(d.expires_at)) return false;
+    if (statusFilter === 'valid'    && (isExpired(d.expires_at) || isExpiringSoon(d.expires_at))) return false;
+    return true;
+  });
+
+  const subtitleText = [
+    `${total} document${total !== 1 ? 's' : ''}`,
+    expiring  ? `${expiring} expire within 30 days` : null,
+    expired   ? `${expired} already expired` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <AppLayout>
       <DocModal open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
+      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => { if (deleteId) deleteMutation.mutate(deleteId); }}
+        title="Delete Document" message="This document and its version history will be permanently removed." danger />
 
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-2xl flex items-center justify-center border border-blue-100">
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dokumen Resmi</h1>
-            <p className="text-sm text-slate-400 mt-0.5">SK, SOP, laporan, dan dokumen organisasi</p>
-          </div>
-        </div>
-        <button onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-colors shadow-sm">
-          <Plus className="w-4 h-4" /> Tambah Dokumen
-        </button>
+      <PageHeader
+        section="RECORDS"
+        title="Official Documents"
+        subtitle={isLoading ? undefined : subtitleText}
+        actions={
+          <>
+            <button className="h-[34px] flex items-center gap-1.5 px-[13px] border border-[#d9d6cf] rounded-md bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50">
+              Categories
+            </button>
+            <button onClick={() => setCreateOpen(true)}
+              className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-md bg-accent text-[#12283c] text-sm font-bold shadow-sm hover:bg-amber-500 transition-colors">
+              <Plus className="w-3 h-3" />
+              Upload document
+            </button>
+          </>
+        }
+      />
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <StatCard title="Total"              value={total}      subtitle="documents"        icon={FileText}      color="blue"   index={0} progress={100} />
+        <StatCard title="Expiring Soon"      value={expiring}   subtitle="within 30 days"   icon={Clock}         color="orange" index={1} progress={total ? Math.round(expiring / total * 100) : 0} />
+        <StatCard title="Expired"            value={expired}    subtitle="needs renewal"     icon={AlertTriangle} color="red"    index={2} progress={total ? Math.round(expired  / total * 100) : 0} />
+        <StatCard title="Awaiting Signature" value={awaitingSig} subtitle="in e-Sign queue" icon={FileSignature} color="orange" index={3} progress={total ? Math.round(awaitingSig / total * 100) : 0} />
       </div>
 
-      <div className="flex gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari judul dokumen..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-        </div>
-        <button onClick={() => setFilterExpiring(!filterExpiring)}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors border ${
-            filterExpiring ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-slate-600 border-slate-200 hover:border-amber-300'
-          }`}>
-          <AlertTriangle className="w-4 h-4" />
-          Segera Kadaluarsa
-        </button>
-      </div>
+      {/* Expiry action banner */}
+      {firstExpiring && (
+        <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3.5 bg-white border border-[#e6e4df] border-l-[3px] border-l-accent rounded-md px-[15px] py-[11px] mb-4">
+          <div className="w-[30px] h-[30px] flex-none rounded-[5px] bg-accent-soft flex items-center justify-center">
+            <Clock className="w-4 h-4 text-accent-dim" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[12.5px] font-semibold text-[#12283c] truncate">
+              {firstExpiring.doc_number && `${firstExpiring.doc_number} — `}{firstExpiring.title} expires in {daysUntil(firstExpiring.expires_at)} days
+            </div>
+            <div className="text-[11.5px] text-slate-500 mt-0.5">
+              Renewal reminders are sent to the document owner at 30, 14 and 3 days before expiry.
+            </div>
+          </div>
+          <button className="h-[34px] flex-none flex items-center px-[13px] border border-[#d9d6cf] rounded-md bg-white text-[12px] font-semibold text-slate-600 hover:bg-slate-50 whitespace-nowrap">
+            Notification rules
+          </button>
+          <button className="h-[30px] flex-none flex items-center px-[13px] rounded-md bg-accent text-[#12283c] text-[11.5px] font-bold hover:bg-amber-500 transition-colors whitespace-nowrap">
+            Start renewal
+          </button>
+        </motion.div>
+      )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#284074]/20 border-t-[#284074] rounded-full animate-spin" />
+      {/* Table */}
+      <div className="bg-white border border-[#e6e4df] rounded-md flex flex-col overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex items-center gap-2.5 px-[15px] py-[9px] border-b border-[#eceae4] flex-wrap">
+          <div className="flex items-center gap-2 h-[30px] px-[11px] border border-[#e2e0da] rounded-md w-[250px] text-slate-400 text-[12px] bg-white focus-within:border-brand focus-within:ring-1 focus-within:ring-brand/20">
+            <Search className="w-3 h-3 flex-shrink-0" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search title or document number"
+              className="flex-1 bg-transparent text-slate-700 placeholder:text-slate-400 focus:outline-none text-[12px]" />
+          </div>
+
+          <div className="relative">
+            <select value={category} onChange={e => setCategory(e.target.value)}
+              className="h-[30px] pl-3 pr-7 border border-[#e2e0da] rounded-md bg-white text-[11.5px] font-medium text-slate-600 appearance-none focus:outline-none focus:border-brand cursor-pointer">
+              <option value="">Category: All</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-slate-400" />
+          </div>
+
+          <div className="relative">
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+              className="h-[30px] pl-3 pr-7 border border-[#e2e0da] rounded-md bg-white text-[11.5px] font-medium text-slate-600 appearance-none focus:outline-none focus:border-brand cursor-pointer">
+              <option value="">Status: All</option>
+              <option value="valid">Valid</option>
+              <option value="expiring">Expiring soon</option>
+              <option value="expired">Expired</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-slate-400" />
+          </div>
         </div>
-      ) : docs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center">
-          <FileText className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-400">Belum ada dokumen</p>
-          <button onClick={() => setCreateOpen(true)} className="mt-3 text-sm text-[#284074] font-semibold hover:underline">Tambah sekarang</button>
+
+        {/* Column headers */}
+        <div className="grid px-[15px] h-[30px] items-center border-b border-[#eceae4] bg-[#faf9f7]"
+          style={{ gridTemplateColumns: '1fr 108px 100px 140px 100px 88px' }}>
+          {['DOCUMENT', 'CATEGORY', 'VERSION', 'STATUS', 'VALID UNTIL', 'ACTIONS'].map((h, i) => (
+            <div key={h} className={cn('font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]', i === 5 && 'text-right')}>
+              {h}
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {docs.map((doc: any, i: number) => {
-            const expired = isExpired(doc.expires_at);
-            const expiring = !expired && isExpiringSoon(doc.expires_at);
-            return (
-              <motion.div key={doc.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:border-slate-200 transition-colors">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600">{doc.category}</span>
-                      {doc.doc_number && <span className="text-xs font-mono text-slate-400">{doc.doc_number}</span>}
-                      {doc.version > 1 && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">v{doc.version}</span>}
-                      {expired && <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600">Kadaluarsa</span>}
-                      {expiring && <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600">Segera Kadaluarsa</span>}
-                    </div>
-                    <h3 className="font-semibold text-slate-900">{doc.title}</h3>
-                    {doc.description && <p className="text-sm text-slate-400 mt-0.5 line-clamp-1">{doc.description}</p>}
-                    <div className="flex gap-4 mt-2 text-xs text-slate-400">
-                      {doc.issued_at && <span>Terbit: {doc.issued_at.slice(0,10)}</span>}
-                      {doc.expires_at && <span className={expired ? 'text-red-500' : expiring ? 'text-amber-500' : ''}>
-                        Berlaku s.d: {doc.expires_at.slice(0,10)}
-                      </span>}
-                      {doc.file_name && <span>{formatSize(doc.file_size)}</span>}
+
+        {/* Rows */}
+        {isLoading ? (
+          <LoadingSpinner label="Loading documents…" />
+        ) : docs.length === 0 ? (
+          <EmptyState icon={FileText} title="No documents yet" subtitle="Upload your first official document."
+            action={<button onClick={() => setCreateOpen(true)} className="text-sm text-brand font-semibold hover:underline">Upload now</button>} />
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            {docs.map((doc: any) => {
+              const canEdit = (user as any)?.id === doc.created_by;
+              const validUntil = doc.expires_at ? new Date(doc.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+              const s = docStatus(doc);
+              const dateColor = s === 'expired' ? 'text-danger' : s === 'expiring' ? 'text-accent-dim' : 'text-slate-600';
+
+              return (
+                <div key={doc.id}
+                  className="grid px-[15px] h-[38px] items-center border-b border-[#f2f0ec] hover:bg-[#faf9f7] transition-colors"
+                  style={{ gridTemplateColumns: '1fr 108px 100px 140px 100px 88px' }}>
+
+                  {/* Document */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <DocRowIcon doc={doc} />
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-semibold text-[#12283c] truncate leading-none">{doc.title}</div>
+                      <div className="font-mono text-[10px] text-slate-400 truncate leading-none mt-px">
+                        {[doc.doc_number, formatSize(doc.file_size)].filter(Boolean).join(' · ')}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+
+                  {/* Category */}
+                  <div>
+                    <span className="inline-flex items-center h-5 px-[7px] rounded-[3px] bg-brand-soft text-brand text-[10.5px] font-semibold">
+                      {doc.category}
+                    </span>
+                  </div>
+
+                  {/* Version */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] font-semibold text-brand">v{doc.version ?? 1}</span>
+                    {(doc.version ?? 1) > 1 && (
+                      <span className="text-[10px] text-slate-400 underline cursor-pointer hover:text-brand">history</span>
+                    )}
+                  </div>
+
+                  {/* Status */}
+                  <div><StatusBadge doc={doc} /></div>
+
+                  {/* Valid until */}
+                  <div className={cn('font-mono text-[11px] font-medium', dateColor)}>{validUntil}</div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 justify-end">
                     {doc.file_path && (
-                      <button onClick={() => handleDownload(doc)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#284074]/10 text-[#284074] hover:bg-[#284074]/20 transition-colors">
-                        <Download className="w-3.5 h-3.5" /> Download
+                      <button onClick={() => handleDownload(doc)} title="Download"
+                        className="text-slate-400 hover:text-brand transition-colors">
+                        <Download className="w-[13px] h-[13px]" />
                       </button>
                     )}
-                    {(user as any)?.id === doc.created_by && (<>
-                    <button onClick={() => setEditData(doc)}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
-                      Edit
+                    <button title="View" className="text-slate-400 hover:text-brand transition-colors">
+                      <Eye className="w-[13px] h-[13px]" />
                     </button>
-                    <button onClick={() => deleteMutation.mutate(doc.id)}
-                      className="p-1.5 rounded-xl text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                    </>)}
+                    {canEdit && (
+                      <>
+                        <button onClick={() => setEditData(doc)} title="Edit"
+                          className="text-slate-400 hover:text-brand transition-colors">
+                          <Pencil className="w-[13px] h-[13px]" />
+                        </button>
+                        <button onClick={() => setDeleteId(doc.id)} title="Delete"
+                          className="text-slate-400 hover:text-danger transition-colors">
+                          <X className="w-[13px] h-[13px]" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+
+        {/* Footer */}
+        {!isLoading && docs.length > 0 && (
+          <div className="h-[36px] flex-none flex items-center justify-between px-[15px] border-t border-[#eceae4] bg-[#faf9f7]">
+            <span className="text-[11px] text-[#8a8f98]">
+              Showing {docs.length} of {total} · version history keeps every uploaded file
+            </span>
+          </div>
+        )}
+      </div>
     </AppLayout>
   );
 }

@@ -48,11 +48,11 @@ export default function LoginPage() {
         const permRes = await permissionService.myPermissions();
         if (permRes.data?.data) setPermissions(permRes.data.data);
       } catch {}
-      toast.success(`Selamat datang, ${user.full_name.split(' ')[0]}.`);
+      toast.success(`Welcome, ${user.full_name.split(' ')[0]}!`);
       router.push(getDashboardPath(user.roles?.[0]));
     } catch (err: any) {
       const msg = err?.response?.data?.message;
-      toast.error(msg || 'Email atau password salah.');
+      toast.error(msg || 'Incorrect email or password.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ export default function LoginPage() {
               className="text-[#083858] mb-8 leading-tight"
               style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: '1.6rem' }}
             >
-              Masuk
+              Sign in
             </h1>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -107,8 +107,8 @@ export default function LoginPage() {
                 </label>
                 <input
                   {...register('email', {
-                    required: 'Email wajib diisi',
-                    pattern: { value: /\S+@\S+\.\S+/, message: 'Format email tidak valid' },
+                    required: 'Email is required',
+                    pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email format' },
                   })}
                   type="email"
                   placeholder="nama@bssn.go.id"
@@ -126,11 +126,11 @@ export default function LoginPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#083858]/60 uppercase tracking-wider mb-2">
-                  Kata sandi
+                  Password
                 </label>
                 <div className="relative">
                   <input
-                    {...register('password', { required: 'Kata sandi wajib diisi' })}
+                    {...register('password', { required: 'Password is required' })}
                     type={showPass ? 'text' : 'password'}
                     placeholder="••••••••"
                     autoComplete="current-password"
@@ -165,13 +165,13 @@ export default function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
-                  ) : 'Masuk'}
+                  ) : 'Sign in'}
                 </button>
               </div>
             </form>
 
             <p className="text-xs text-[#083858]/35 mt-8">
-              Belum punya akses? Hubungi administrator sistem.
+              Don't have access? Contact your system administrator.
             </p>
           </motion.div>
         </div>

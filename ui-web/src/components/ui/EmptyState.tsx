@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function EmptyState({ icon: Icon, title, subtitle, action }: {
@@ -15,9 +15,7 @@ export function EmptyState({ icon: Icon, title, subtitle, action }: {
           <Icon className="w-8 h-8 text-slate-300" />
         </div>
         <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3 text-slate-400">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
+          <Plus className="w-3 h-3 text-slate-400" />
         </div>
       </div>
       <h3 className="text-base font-bold text-slate-700 mb-1">{title}</h3>
@@ -33,9 +31,10 @@ export function LoadingSpinner({ size = 'md', label }: { size?: 'sm' | 'md' | 'l
     <div className="flex flex-col items-center justify-center py-16 gap-3">
       <div className="relative">
         <div className={`${s[size]} rounded-full border-2 border-slate-100`} />
-        <div className={`${s[size]} rounded-full border-2 border-transparent border-t-[#284074] animate-spin absolute inset-0`} />
+        <div className={`${s[size]} rounded-full border-2 border-transparent border-t-brand animate-spin absolute inset-0`} />
+        <div className={`${s[size]} rounded-full border-2 border-transparent border-r-brand/30 animate-spin absolute inset-0`} style={{ animationDuration: '1.5s' }} />
       </div>
-      {label && <p className="text-xs font-medium text-slate-400">{label}</p>}
+      {label && <p className="text-xs font-medium text-slate-400 animate-pulse">{label}</p>}
     </div>
   );
 }

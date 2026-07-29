@@ -15,13 +15,12 @@ import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, getDay,
   isSameDay, addMonths, subMonths,
 } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 
 const EVENT_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  internal: { label: 'Internal',    color: 'text-blue-700',    bg: 'bg-blue-100',    dot: 'bg-blue-500' },
-  external: { label: 'External',   color: 'text-red-700',     bg: 'bg-red-100',     dot: 'bg-red-500' },
-  cuti:     { label: 'Cuti',   color: 'text-amber-700',   bg: 'bg-amber-100',   dot: 'bg-amber-500' },
-  lainnya:  { label: 'Lainnya',    color: 'text-slate-600',   bg: 'bg-slate-100',   dot: 'bg-slate-400' },
+  internal: { label: 'Internal', color: 'text-blue-700',  bg: 'bg-blue-100',  dot: 'bg-blue-500' },
+  external: { label: 'External', color: 'text-red-700',   bg: 'bg-red-100',   dot: 'bg-red-500' },
+  cuti:     { label: 'Leave',    color: 'text-amber-700', bg: 'bg-amber-100', dot: 'bg-amber-500' },
+  lainnya:  { label: 'Other',    color: 'text-slate-600', bg: 'bg-slate-100', dot: 'bg-slate-400' },
 };
 
 function getInitials(name: string) {
@@ -31,7 +30,7 @@ function getInitials(name: string) {
 function formatEventDate(e: any) {
   if (!e.start_date) return '';
   try {
-    const d = format(new Date(e.start_date), 'EEEE, d MMM', { locale: idLocale });
+    const d = format(new Date(e.start_date), 'EEEE, d MMM');
     const t = e.start_time ? ' · ' + e.start_time.slice(0, 5) : '';
     return d + t;
   } catch { return ''; }
@@ -48,9 +47,9 @@ function GroupPicker({ selected, onChange }: { selected: string[]; onChange: (id
   return (
     <div className="mt-3">
       <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-        Group Peserta
+        Participant Groups
         {selected.length > 0 && (
-          <span className="ml-2 bg-violet-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{selected.length} dipilih</span>
+          <span className="ml-2 bg-violet-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">{selected.length} selected</span>
         )}
       </label>
       {selected.length > 0 && (
@@ -78,7 +77,7 @@ function GroupPicker({ selected, onChange }: { selected: string[]; onChange: (id
                 </div>
                 <div>
                   <div className="text-sm font-medium text-slate-800">{g.name}</div>
-                  <div className="text-xs text-slate-400">{g.member_count || 0} anggota</div>
+                  <div className="text-xs text-slate-400">{g.member_count || 0} members</div>
                 </div>
               </div>
             );
@@ -102,10 +101,10 @@ function ParticipantPicker({ users, selected, onChange }: {
   return (
     <div>
       <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-        Peserta Kegiatan
+        Event Participants
         {selected.length > 0 && (
           <span className="ml-2 bg-[#284074] text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-            {selected.length} dipilih
+            {selected.length} selected
           </span>
         )}
       </label>
@@ -129,7 +128,7 @@ function ParticipantPicker({ users, selected, onChange }: {
         <div className="px-3 py-2 border-b border-slate-100">
           <input value={search} onChange={e => setSearch(e.target.value)}
             className="w-full text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none"
-            placeholder="Cari nama..." />
+            placeholder="Search by name..." />
         </div>
         <div className="max-h-36 overflow-y-auto">
           {filtered.map((u: any) => {
@@ -145,7 +144,7 @@ function ParticipantPicker({ users, selected, onChange }: {
               </button>
             );
           })}
-          {filtered.length === 0 && <div className="text-center py-4 text-xs text-slate-400">Tidak ditemukan</div>}
+          {filtered.length === 0 && <div className="text-center py-4 text-xs text-slate-400">No results found</div>}
         </div>
       </div>
     </div>
@@ -184,14 +183,14 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-calendar'] });
-      toast.success(isEdit ? 'Event diperbarui!' : 'Event dibuat!');
+      toast.success(isEdit ? 'Event updated!' : 'Event created!');
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const handleSubmit = () => {
-    if (!form.title || !form.start_date) { toast.error('Judul dan tanggal mulai wajib diisi'); return; }
+    if (!form.title || !form.start_date) { toast.error('Title and start date are required'); return; }
     const payload: any = {
       title: form.title, description: form.description, type: form.type,
       start_date: form.start_date, end_date: form.end_date || form.start_date,
@@ -213,21 +212,21 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-          <h2 className="font-bold text-slate-900">{isEdit ? 'Edit Event' : 'Tambah Event'}</h2>
+          <h2 className="font-bold text-slate-900">{isEdit ? 'Edit Event' : 'Add Event'}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
             <X className="w-4 h-4 text-slate-400" />
           </button>
         </div>
         <div className="p-6 space-y-4 overflow-y-auto">
           <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Judul *</label>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Title *</label>
             <input value={form.title} onChange={e => set('title', e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-              placeholder="Judul event" />
+              placeholder="Event title" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Tipe</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Type</label>
               <select value={form.type} onChange={e => set('type', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]">
                 {Object.entries(EVENT_TYPE_CONFIG).filter(([k]) => k !== 'other').map(([v, c]) => (
@@ -241,18 +240,18 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
                   onClick={() => set('all_day', !form.all_day)}>
                   <div className={`w-4 h-4 bg-white rounded-full shadow-sm mt-0.5 transition-transform ${form.all_day ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
-                <span className="text-sm text-slate-600 font-medium">Seharian</span>
+                <span className="text-sm text-slate-600 font-medium">All day</span>
               </label>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Tanggal Mulai *</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Date *</label>
               <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Tanggal Selesai</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Date</label>
               <input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
             </div>
@@ -260,45 +259,45 @@ function EventFormModal({ open, onClose, editEvent, users }: any) {
           {!form.all_day && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Jam Mulai</label>
+                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Start Time</label>
                 <input type="time" value={form.start_time} onChange={e => set('start_time', e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Jam Selesai</label>
+                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">End Time</label>
                 <input type="time" value={form.end_time} onChange={e => set('end_time', e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
               </div>
             </div>
           )}
           <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Lokasi</label>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Location</label>
             <input value={form.location} onChange={e => set('location', e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]"
-              placeholder="Online / Ruang Meeting A" />
+              placeholder="Online / Meeting Room A" />
           </div>
           <ParticipantPicker users={users || []} selected={participantIds} onChange={setParticipantIds} />
           <GroupPicker selected={participantGroupIds} onChange={setParticipantGroupIds} />
           <div>
-            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Deskripsi</label>
+            <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Description</label>
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] resize-none"
-              placeholder="Keterangan event..." />
+              placeholder="Event description..." />
           </div>
           <label className="flex items-center gap-2.5 cursor-pointer">
             <div className={`w-9 h-5 rounded-full transition-colors ${form.is_private ? 'bg-[#284074]' : 'bg-slate-200'}`}
               onClick={() => set('is_private', !form.is_private)}>
               <div className={`w-4 h-4 bg-white rounded-full shadow-sm mt-0.5 transition-transform ${form.is_private ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </div>
-            <span className="text-sm text-slate-600 font-medium">Event Privat</span>
+            <span className="text-sm text-slate-600 font-medium">Private Event</span>
             {form.is_private ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : <Globe className="w-3.5 h-3.5 text-slate-400" />}
           </label>
         </div>
         <div className="px-6 pb-5 flex gap-3 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
           <button onClick={handleSubmit} disabled={mutation.isPending}
             className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-50">
-            {mutation.isPending ? 'Menyimpan...' : (isEdit ? 'Simpan' : 'Buat Event')}
+            {mutation.isPending ? 'Saving...' : (isEdit ? 'Save' : 'Create Event')}
           </button>
         </div>
       </motion.div>
@@ -312,10 +311,10 @@ function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
     queryFn: () => adminCalendarService.participants(event.id).then(r => r.data.data),
   });
   const dateStr = event.start_date ? (() => {
-    try { return format(new Date(event.start_date), 'EEEE, d MMMM yyyy', { locale: idLocale }); }
+    try { return format(new Date(event.start_date), 'EEEE, d MMMM yyyy'); }
     catch { return String(event.start_date); }
   })() : '—';
-  const timeStr = event.all_day ? 'Seharian'
+  const timeStr = event.all_day ? 'All day'
     : [event.start_time?.slice(0, 5), event.end_time?.slice(0, 5)].filter(Boolean).join(' — ') || '—';
 
   return (
@@ -356,12 +355,12 @@ function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
             {event.creator_name && (
               <div className="flex items-center gap-2.5 text-sm text-slate-600">
                 <Users className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <span>Dibuat oleh <span className="font-semibold">{event.creator_name}</span></span>
+                <span>Created by <span className="font-semibold">{event.creator_name}</span></span>
               </div>
             )}
             {(event.visibility === 'private' || event.is_private) && (
               <div className="flex items-center gap-2.5 text-sm text-amber-600">
-                <Lock className="w-4 h-4 flex-shrink-0" /> Event Privat
+                <Lock className="w-4 h-4 flex-shrink-0" /> Private Event
               </div>
             )}
           </div>
@@ -372,7 +371,7 @@ function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
           )}
           <div>
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-              Peserta {participants ? `(${participants.length})` : ''}
+              Participants {participants ? `(${participants.length})` : ''}
             </div>
             {participants && participants.length > 0 ? (
               <div className="space-y-2">
@@ -395,7 +394,7 @@ function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
             ) : (
               <div className="text-center py-4 text-slate-400">
                 <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">Belum ada peserta</p>
+                <p className="text-xs">No participants yet</p>
               </div>
             )}
           </div>
@@ -419,10 +418,10 @@ export default function AdminCalendarPage() {
     try {
       const res = await adminReportExportService.calendar(f, t);
       const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a'); a.href = url; a.download = 'laporan_kalender.pdf'; a.click();
+      const a = document.createElement('a'); a.href = url; a.download = 'calendar_report.pdf'; a.click();
       URL.revokeObjectURL(url);
-      toast.success('Laporan berhasil diunduh');
-    } catch { toast.error('Gagal mengunduh laporan'); }
+      toast.success('Report downloaded successfully');
+    } catch { toast.error('Failed to download report'); }
     finally { setExporting(false); }
   };
   const [viewEvent, setViewEvent]       = useState<any>(null);
@@ -446,11 +445,11 @@ export default function AdminCalendarPage() {
     mutationFn: (id: string) => adminCalendarService.destroy(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-calendar'] });
-      toast.success('Event dihapus');
+      toast.success('Event deleted');
       setDeleteEvent(null);
       setViewEvent(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const monthStart = startOfMonth(currentMonth);
@@ -472,17 +471,17 @@ export default function AdminCalendarPage() {
             <CalendarRange className="w-5 h-5 text-sky-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Kelola Kalender</h1>
-            <p className="text-sm text-slate-400 mt-0.5">{(events as any[]).length} event bulan ini</p>
+            <h1 className="text-2xl font-bold text-slate-900">Manage Calendar</h1>
+            <p className="text-sm text-slate-400 mt-0.5">{(events as any[]).length} events this month</p>
           </div>
         </div>
         <button onClick={() => setShowExportBar(v => !v)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-          <Download className="w-4 h-4" /> Ekspor PDF
+          <Download className="w-4 h-4" /> Export PDF
         </button>
                 <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-          <Plus className="w-4 h-4" /> Tambah Event
+          <Plus className="w-4 h-4" /> Add Event
         </button>
       </div>
 
@@ -499,13 +498,13 @@ export default function AdminCalendarPage() {
           <button onClick={() => setCurrentMonth(m => subMonths(m, 1))} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
             <ChevronLeft className="w-4 h-4 text-slate-600" />
           </button>
-          <h3 className="font-bold text-slate-800">{format(currentMonth, 'MMMM yyyy', { locale: idLocale })}</h3>
+          <h3 className="font-bold text-slate-800">{format(currentMonth, 'MMMM yyyy')}</h3>
           <button onClick={() => setCurrentMonth(m => addMonths(m, 1))} className="p-2 rounded-xl hover:bg-slate-100 transition-colors">
             <ChevronRight className="w-4 h-4 text-slate-600" />
           </button>
         </div>
         <div className="grid grid-cols-7 border-b border-slate-100">
-          {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d => (
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
             <div key={d} className="py-2.5 text-center text-xs font-semibold text-slate-400">{d}</div>
           ))}
         </div>
@@ -531,7 +530,7 @@ export default function AdminCalendarPage() {
                       </button>
                     );
                   })}
-                  {dayEvents.length > 3 && <div className="text-[10px] text-slate-400 px-1.5">+{dayEvents.length - 3} lagi</div>}
+                  {dayEvents.length > 3 && <div className="text-[10px] text-slate-400 px-1.5">+{dayEvents.length - 3} more</div>}
                 </div>
               </div>
             );
@@ -542,7 +541,7 @@ export default function AdminCalendarPage() {
       {(events as any[]).length > 0 && (
         <div className="mt-5 bg-white rounded-2xl border border-slate-100 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-sm">Semua Event Bulan Ini</h3>
+            <h3 className="font-bold text-slate-800 text-sm">All Events This Month</h3>
           </div>
           <div className="divide-y divide-slate-50">
             {(events as any[]).map((e: any) => {
@@ -577,17 +576,17 @@ export default function AdminCalendarPage() {
       <AnimatePresence>
         {showExportBar && (
         <div className="mb-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-slate-500 font-medium">Rentang laporan:</span>
+          <span className="text-sm text-slate-500 font-medium">Report range:</span>
           <input type="date" value={exportFrom} onChange={e => setExportFrom(e.target.value)}
             className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-          <span className="text-slate-400 text-sm">s/d</span>
+          <span className="text-slate-400 text-sm">to</span>
           <input type="date" value={exportTo} onChange={e => setExportTo(e.target.value)}
             className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-          <p className="text-xs text-slate-400">Kosongkan untuk gunakan bulan ini</p>
+          <p className="text-xs text-slate-400">Leave empty to use current month</p>
           <button onClick={handleExport} disabled={exporting}
             className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-40">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Unduh PDF
+            Download PDF
           </button>
         </div>
       )}
@@ -610,16 +609,16 @@ export default function AdminCalendarPage() {
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">Hapus Event?</h3>
+              <h3 className="font-bold text-slate-900 mb-1">Delete Event?</h3>
               <p className="text-sm text-slate-500 mb-5">
-                <span className="font-semibold text-slate-700">{deleteEvent.title}</span> akan dihapus permanen.
+                <span className="font-semibold text-slate-700">{deleteEvent.title}</span> will be permanently deleted.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteEvent(null)}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button onClick={() => deleteMutation.mutate(deleteEvent.id)} disabled={deleteMutation.isPending}
                   className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50">
-                  {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </motion.div>

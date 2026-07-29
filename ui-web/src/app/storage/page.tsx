@@ -2,30 +2,17 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HardDrive, Upload, Download, Trash2 } from 'lucide-react';
+import {
+  HardDrive, Upload, Download, Trash2, Folder, Plus, Search,
+  File as FileIcon, FileText, FileSpreadsheet, FileImage,
+} from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner, EmptyState } from '@/components/ui/EmptyState';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { storageService } from '@/lib/api';
 import toast from 'react-hot-toast';
-
-const MIME_CONFIG: Record<string, { bg: string; color: string; label: string; icon: React.ReactNode }> = {
-  'application/pdf': {
-    bg: 'bg-red-50', color: 'text-red-500', label: 'PDF',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-  },
-  'image/png':  { bg: 'bg-violet-50', color: 'text-violet-500', label: 'PNG', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> },
-  'image/jpeg': { bg: 'bg-violet-50', color: 'text-violet-500', label: 'JPG', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> },
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { bg: 'bg-emerald-50', color: 'text-emerald-600', label: 'XLSX', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg> },
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { bg: 'bg-blue-50', color: 'text-blue-500', label: 'DOCX', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg> },
-};
-
-function getMimeConf(mime: string) {
-  return MIME_CONFIG[mime] || {
-    bg: 'bg-slate-100', color: 'text-slate-500', label: mime?.split('/')[1]?.toUpperCase() || 'FILE',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-  };
-}
+import { cn } from '@/lib/utils';
 
 function formatSize(bytes: number) {
   if (!bytes) return '—';
@@ -34,29 +21,81 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function uploaderInitials(name: string) {
+  if (!name || name === '—') return '—';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0];
+  return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+}
+
+function fmtDate(iso: string) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+type FileTypeInfo = { label: string; iconBg: string; iconColor: string; Icon: React.ElementType };
+
+function getFileTypeInfo(mime: string): FileTypeInfo {
+  if (mime?.includes('spreadsheet') || mime?.includes('excel') || mime?.includes('csv') || mime?.includes('xlsx')) {
+    return { label: 'Sheet', iconBg: '#e9f4ee', iconColor: '#0f6144', Icon: FileSpreadsheet };
+  }
+  if (mime === 'application/pdf') {
+    return { label: 'PDF', iconBg: '#fdeceb', iconColor: '#a3231c', Icon: FileText };
+  }
+  if (mime?.includes('word') || mime?.includes('document') || mime?.includes('docx')) {
+    return { label: 'Doc', iconBg: '#eaf1f8', iconColor: '#14406a', Icon: FileText };
+  }
+  if (mime?.includes('image')) {
+    return { label: 'Image', iconBg: '#fbf3e0', iconColor: '#8a6209', Icon: FileImage };
+  }
+  return { label: 'File', iconBg: '#f1f0ed', iconColor: '#5c6470', Icon: FileIcon };
+}
+
+const QUOTA_GB = 50;
+
+const FOLDERS = [
+  { id: 'all',       label: 'All files' },
+  { id: 'task',      label: 'Task attachments' },
+  { id: 'cr',        label: 'CR attachments' },
+  { id: 'sprint',    label: 'Sprint artefacts' },
+  { id: 'signature', label: 'Signature specimens' },
+  { id: 'templates', label: 'Templates' },
+  { id: 'unsorted',  label: 'Unsorted' },
+];
+
 export default function StoragePage() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
+  const [deleteId, setDeleteId]     = useState<string | null>(null);
+  const [uploading, setUploading]   = useState(false);
+  const [dragOver, setDragOver]     = useState(false);
+  const [activeFolder, setActiveFolder] = useState('all');
+  const [search, setSearch]         = useState('');
 
-  const { data: files, isLoading } = useQuery({
+  const { data: files = [], isLoading } = useQuery<any[]>({
     queryKey: ['files'],
     queryFn: () => storageService.list().then(r => r.data.data || []),
   });
 
+  const totalBytes  = files.reduce((a, f) => a + (f.file_size || 0), 0);
+  const usedGB      = totalBytes / (1024 ** 3);
+  const usedPct     = Math.min(100, (usedGB / QUOTA_GB) * 100);
+  const usedDisplay = usedGB < 0.01
+    ? `${(totalBytes / 1024 / 1024).toFixed(1)} MB`
+    : `${usedGB.toFixed(1)} GB`;
+
   const doUpload = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      await storageService.upload(formData);
+      const fd = new FormData();
+      fd.append('file', file);
+      await storageService.upload(fd);
       await qc.invalidateQueries({ queryKey: ['files'] });
       await qc.refetchQueries({ queryKey: ['files'] });
-      toast.success(`${file.name} berhasil diupload!`);
+      toast.success(`${file.name} uploaded successfully`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Gagal upload');
+      toast.error(err?.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -64,164 +103,307 @@ export default function StoragePage() {
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) doUpload(file);
+    const f = e.target.files?.[0];
+    if (f) doUpload(f);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) doUpload(file);
+    const f = e.dataTransfer.files?.[0];
+    if (f) doUpload(f);
   };
 
   const handleDownload = async (file: any) => {
     try {
       const res = await storageService.download(file.id);
       const url = window.URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement('a');
+      const a   = document.createElement('a');
       a.href = url;
-      a.download = file.file_name || file.name || 'download';
+      a.download = file.original_name || file.file_name || file.filename || 'download';
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-      toast.error('Gagal mengunduh file');
+    } catch {
+      toast.error('Download failed');
     }
   };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => storageService.delete(id),
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ['files'] }); await qc.refetchQueries({ queryKey: ['files'] }); toast.success('File dihapus'); setDeleteId(null); },
-    onError: () => toast.error('Gagal menghapus file'),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['files'] });
+      await qc.refetchQueries({ queryKey: ['files'] });
+      toast.success('File deleted');
+      setDeleteId(null);
+    },
+    onError: () => toast.error('Failed to delete file'),
   });
 
-  const totalSize = files?.reduce((a: number, f: any) => a + (f.file_size || 0), 0) || 0;
+  const filtered = files.filter(f => {
+    if (!search) return true;
+    const name = (f.original_name || f.filename || f.file_name || '').toLowerCase();
+    return name.includes(search.toLowerCase());
+  });
+
+  const activeFolderLabel = FOLDERS.find(f => f.id === activeFolder)?.label ?? 'All files';
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-gradient-to-br from-[#284074]/10 to-[#284074]/5 rounded-2xl flex items-center justify-center border border-[#284074]/10">
-              <HardDrive className="w-5 h-5 text-[#284074]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Storage</h1>
-              <p className="text-sm text-slate-400 mt-0.5">
-                {files?.length || 0} file · {formatSize(totalSize)} digunakan
-              </p>
-            </div>
-          </div>
-          <div>
-            <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
-            <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-60 transition-all shadow-sm">
-              {uploading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
-                  </svg>
-                  Mengupload...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Upload File
-                </>
-              )}
+      <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
+
+      <PageHeader
+        section="FILES"
+        title="Storage"
+        subtitle="Working files only — signed records live in Official Documents"
+        actions={
+          <>
+            <button className="h-[34px] flex items-center gap-[6px] px-[13px] border border-[#d9d6cf] rounded-[6px] bg-white text-[12px] font-semibold text-[#4b5563] hover:bg-[#f5f4f2] transition-colors">
+              <Plus className="w-3 h-3" />
+              New folder
             </button>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-accent text-[#12283c] text-[12px] font-bold disabled:opacity-60 transition-opacity"
+              style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
+            >
+              <Upload className="w-3 h-3" />
+              {uploading ? 'Uploading…' : 'Upload'}
+            </button>
+          </>
+        }
+      />
+
+      {/* Quota banner */}
+      <div className="bg-white border border-[#e6e4df] rounded-[6px] px-[15px] py-[11px] flex items-center gap-4 mb-[14px]">
+        <div className="w-[30px] h-[30px] flex-none rounded-[5px] bg-brand-soft flex items-center justify-center">
+          <HardDrive className="w-4 h-4 text-brand" />
+        </div>
+        <div className="min-w-[160px]">
+          <div className="text-[12.5px] font-semibold text-[#12283c]">
+            {usedDisplay} of {QUOTA_GB} GB used
+          </div>
+          <div className="text-[11px] text-[#8a8f98]">
+            Institution quota · {files.length.toLocaleString()} files
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col gap-[5px]">
+          <div className="h-[8px] rounded-full bg-[#eceae4] overflow-hidden flex">
+            <div className="h-full bg-brand"   style={{ width: `${usedPct * 0.55}%` }} />
+            <div className="h-full bg-accent"  style={{ width: `${usedPct * 0.27}%` }} />
+            <div className="h-full bg-success" style={{ width: `${usedPct * 0.11}%` }} />
+            <div className="h-full bg-[#8a8f98]" style={{ width: `${usedPct * 0.07}%` }} />
+          </div>
+          <div className="flex gap-[14px] text-[10.5px] text-[#6b7280]">
+            {[
+              { color: 'bg-brand',      label: 'Task attachments' },
+              { color: 'bg-accent',     label: 'CR attachments' },
+              { color: 'bg-success',    label: 'Signature specimens' },
+              { color: 'bg-[#8a8f98]', label: 'Other' },
+            ].map(s => (
+              <span key={s.label} className="flex items-center gap-[5px]">
+                <span className={cn('w-2 h-2 rounded-[2px] inline-block', s.color)} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <button className="h-[34px] flex items-center gap-[6px] px-[13px] border border-[#d9d6cf] rounded-[6px] bg-white text-[12px] font-semibold text-[#4b5563] flex-none hover:bg-[#f5f4f2] transition-colors">
+          Manage quota
+        </button>
+      </div>
+
+      {/* Two-panel layout */}
+      <div className="flex gap-[14px]" style={{ minHeight: 460 }}>
+
+        {/* Folder panel */}
+        <div className="w-[216px] flex-none bg-white border border-[#e6e4df] rounded-[6px] flex flex-col overflow-hidden">
+          <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-[#eceae4]">
+            <span className="text-[12.5px] font-semibold text-[#0d2b48]">Folders</span>
+          </div>
+          <div className="p-[8px] flex flex-col gap-[1px]">
+            {FOLDERS.map(folder => {
+              const isActive = activeFolder === folder.id;
+              const count    = folder.id === 'all' ? files.length : undefined;
+              return (
+                <button
+                  key={folder.id}
+                  onClick={() => setActiveFolder(folder.id)}
+                  className={cn(
+                    'flex items-center gap-[9px] px-[10px] py-[8px] rounded-[5px] w-full text-left transition-colors',
+                    isActive ? 'bg-[#eaf1f8]' : 'hover:bg-[#f5f4f2]'
+                  )}
+                >
+                  <Folder
+                    className="w-[15px] h-[15px] flex-none"
+                    style={{ color: isActive ? '#14406a' : '#8a8f98' }}
+                    strokeWidth={1.5}
+                  />
+                  <span
+                    className="flex-1 text-[12px] leading-none"
+                    style={{ color: isActive ? '#14406a' : '#4b5563', fontWeight: isActive ? 600 : 500 }}
+                  >
+                    {folder.label}
+                  </span>
+                  {count !== undefined && (
+                    <span className="font-mono text-[10px] text-[#a6a094]">{count.toLocaleString()}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-auto p-[11px] border-t border-[#eceae4] bg-[#faf9f7]">
+            <div className="text-[11px] font-semibold text-[#0d2b48] mb-1">Where does a file belong?</div>
+            <div className="text-[10.5px] leading-[1.45] text-[#8a8f98]">
+              Storage holds working files. A document with a number, an issue date or an expiry belongs in Official Documents.
+            </div>
           </div>
         </div>
 
+        {/* File list panel */}
         <div
-          onClick={() => !uploading && fileRef.current?.click()}
+          className={cn(
+            'flex-1 bg-white border border-[#e6e4df] rounded-[6px] flex flex-col overflow-hidden transition-colors',
+            dragOver && 'border-accent bg-accent-soft'
+          )}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all overflow-hidden ${dragOver ? 'border-[#284074] bg-[#284074]/8 scale-[1.01]' : 'border-slate-200 hover:border-[#284074]/40 hover:bg-slate-50'}`}
         >
-          <div className={`transition-all ${dragOver ? 'scale-110' : ''}`}>
-            <div className={`w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center transition-colors ${dragOver ? 'bg-[#284074] text-white' : 'bg-slate-100 text-slate-400'}`}>
-              <Upload className="w-6 h-6" />
+          {/* Toolbar */}
+          <div className="flex items-center px-[15px] py-[9px] gap-[10px] border-b border-[#eceae4]">
+            <span className="text-[12.5px] font-semibold text-[#0d2b48]">{activeFolderLabel}</span>
+            <div className="flex items-center gap-[8px] h-[30px] px-[11px] border border-[#e2e0da] rounded-[6px] w-[200px]">
+              <Search className="w-3 h-3 text-[#9ca3af] flex-none" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search files"
+                className="flex-1 text-[12px] outline-none bg-transparent"
+              />
             </div>
-            <p className={`text-sm font-semibold transition-colors ${dragOver ? 'text-[#284074]' : 'text-slate-500'}`}>
-              {dragOver ? 'Lepaskan file di sini' : 'Klik atau drag & drop file di sini'}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">PDF, DOC, DOCX, XLS, PNG, JPG — maks. 10MB</p>
           </div>
-        </div>
-      </div>
 
-      {isLoading ? <LoadingSpinner /> : !files?.length ? (
-        <EmptyState icon={HardDrive} title="Belum ada file" subtitle="Upload file pertama kamu menggunakan area di atas" />
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="font-bold text-slate-800">File Tersimpan</h2>
-            <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">{files.length} file</span>
+          {/* Column headers */}
+          <div
+            className="grid px-[15px] h-[30px] items-center border-b border-[#eceae4] bg-[#faf9f7]"
+            style={{ gridTemplateColumns: '1fr 132px 108px 108px 60px' }}
+          >
+            {['FILE', 'TYPE', 'UPLOADED BY', 'DATE', ''].map((h, i) => (
+              <div
+                key={i}
+                className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]"
+                style={i === 4 ? { textAlign: 'right' } : {}}
+              >
+                {h}
+              </div>
+            ))}
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                {['File', 'Tipe', 'Ukuran', 'Diupload', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+
+          {/* Rows */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <LoadingSpinner />
+              </div>
+            ) : !filtered.length ? (
+              <EmptyState
+                icon={HardDrive}
+                title="No files yet"
+                subtitle={dragOver ? 'Drop your file here' : 'Upload a file or drag & drop it onto this panel'}
+              />
+            ) : (
               <AnimatePresence>
-                {files.map((f: any, i: number) => {
-                  const conf = getMimeConf(f.mime_type);
+                {filtered.map((f, i) => {
+                  const { label, iconBg, iconColor, Icon } = getFileTypeInfo(f.mime_type);
+                  const uploader = f.uploader_name || f.uploaded_by || f.user_name || '—';
                   return (
-                    <motion.tr key={f.id}
-                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                      className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors group">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl ${conf.bg} flex items-center justify-center flex-shrink-0 ${conf.color}`}>
-                            {conf.icon}
+                    <motion.div
+                      key={f.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.025 }}
+                      className="grid px-[15px] h-[38px] items-center border-b border-[#f2f0ec] group hover:bg-[#faf9f7] transition-colors"
+                      style={{ gridTemplateColumns: '1fr 132px 108px 108px 60px' }}
+                    >
+                      {/* File name + icon */}
+                      <div className="flex items-center gap-[10px] min-w-0">
+                        <div
+                          className="w-[26px] h-[26px] flex-none rounded-[5px] flex items-center justify-center"
+                          style={{ background: iconBg }}
+                        >
+                          <Icon className="w-[14px] h-[14px]" style={{ color: iconColor }} strokeWidth={1.5} />
+                        </div>
+                        <div className="flex flex-col gap-[1px] min-w-0">
+                          <div className="text-[12.5px] font-semibold text-[#12283c] truncate">
+                            {f.original_name || f.filename || f.file_name}
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-slate-800 truncate max-w-xs">{f.original_name || f.filename}</div>
-                            <div className="text-xs text-slate-400 font-mono truncate">{f.file_name}</div>
+                          <div className="font-mono text-[10px] text-[#9ca3af] truncate">
+                            {formatSize(f.file_size)}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${conf.bg} ${conf.color}`}>{conf.label}</span>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-500 font-mono">{formatSize(f.file_size)}</td>
-                      <td className="px-5 py-4 text-sm text-slate-500">{f.created_at?.slice(0, 10)}</td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleDownload(f)}
-                            className="p-2 text-slate-400 hover:text-[#284074] hover:bg-[#284074]/8 rounded-lg transition-colors" title="Download">
-                            <Download className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setDeleteId(f.id)}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Hapus">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
+                      </div>
+
+                      {/* Type badge */}
+                      <div>
+                        <span className="inline-flex items-center h-[20px] px-[7px] rounded-[3px] bg-[#f1f0ed] text-[#5c6470] text-[10.5px] font-semibold">
+                          {label}
+                        </span>
+                      </div>
+
+                      {/* Uploaded by */}
+                      <div className="font-mono text-[11px] text-[#4b5563] truncate">
+                        {uploaderInitials(uploader)}
+                      </div>
+
+                      {/* Date */}
+                      <div className="font-mono text-[11px] text-[#4b5563]">
+                        {fmtDate(f.created_at)}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex justify-end items-center gap-[2px]">
+                        <button
+                          onClick={() => handleDownload(f)}
+                          className="p-1 text-[#8a8f98] hover:text-brand transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-[13px] h-[13px]" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(f.id)}
+                          className="p-1 text-[#8a8f98] hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-[13px] h-[13px]" />
+                        </button>
+                      </div>
+                    </motion.div>
                   );
                 })}
               </AnimatePresence>
-            </tbody>
-          </table>
+            )}
+          </div>
+
+          {/* Footer */}
+          {!isLoading && filtered.length > 0 && (
+            <div className="h-[36px] flex-none flex items-center justify-between px-[15px] border-t border-[#eceae4] bg-[#faf9f7]">
+              <span className="text-[11px] text-[#8a8f98]">
+                Showing {filtered.length} of {files.length} files
+              </span>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <ConfirmDialog
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-        title="Hapus File?"
-        message="File yang dihapus tidak bisa dikembalikan."
+        title="Delete File?"
+        message="This action cannot be undone."
       />
     </AppLayout>
   );

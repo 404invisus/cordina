@@ -26,10 +26,10 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
       : userGroupService.create({ name, description: desc, telegram_chat_id: chatId, member_ids: memberIds }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-groups'] });
-      toast.success(editData ? 'Group diperbarui' : 'Group dibuat');
+      toast.success(editData ? 'Group updated' : 'Group created');
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const toggle = (id: string) => setMemberIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -44,26 +44,26 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
             <div className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center">
               <Users className="w-4 h-4 text-violet-600" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">{editData ? 'Edit Group' : 'Buat Group Baru'}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{editData ? 'Edit Group' : 'Create New Group'}</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X className="w-4 h-4 text-slate-500" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nama Group *</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Group Name *</label>
             <input value={name} onChange={e => setName(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              placeholder="Contoh: All Squad, Tim Teknis" />
+              placeholder="e.g. All Squad, Tech Team" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</label>
             <input value={desc} onChange={e => setDesc(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              placeholder="Deskripsi group (opsional)" />
+              placeholder="Group description (optional)" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Anggota <span className="text-violet-600 font-bold">{memberIds.length} dipilih</span></label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Members <span className="text-violet-600 font-bold">{memberIds.length} selected</span></label>
             <div className="mt-1 border border-slate-200 rounded-xl overflow-hidden">
               <div className="max-h-48 overflow-y-auto divide-y divide-slate-50">
                 {users.map((u: any) => {
@@ -88,7 +88,7 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
         <div className="px-6 pb-6">
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !name}
             className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {mutation.isPending ? 'Menyimpan...' : (editData ? 'Simpan Perubahan' : 'Buat Group')}
+            {mutation.isPending ? 'Saving...' : (editData ? 'Save Changes' : 'Create Group')}
           </button>
         </div>
       </motion.div>
@@ -108,8 +108,8 @@ export default function UserGroupsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => userGroupService.destroy(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['user-groups'] }); toast.success('Group dihapus'); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menghapus'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['user-groups'] }); toast.success('Group deleted'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
   });
 
   const groups = Array.isArray(data) ? data : [];
@@ -124,13 +124,13 @@ export default function UserGroupsPage() {
             <Users className="w-5 h-5 text-violet-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Group Pengguna</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Kelola group untuk distribusi & undangan kalender</p>
+            <h1 className="text-2xl font-bold text-slate-900">User Groups</h1>
+            <p className="text-sm text-slate-400 mt-0.5">Manage groups for notifications and calendar invites</p>
           </div>
         </div>
         <button onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
-          <Plus className="w-4 h-4" /> Buat Group
+          <Plus className="w-4 h-4" /> New Group
         </button>
       </div>
 
@@ -141,7 +141,7 @@ export default function UserGroupsPage() {
       ) : groups.length === 0 ? (
         <div className="text-center py-20">
           <Users className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <div className="text-slate-400 text-sm">Belum ada group</div>
+          <div className="text-slate-400 text-sm">No groups yet</div>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -158,7 +158,7 @@ export default function UserGroupsPage() {
                     {g.description && <div className="text-xs text-slate-400 mt-0.5">{g.description}</div>}
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <UserPlus className="w-3 h-3" /> {g.member_count || 0} anggota
+                        <UserPlus className="w-3 h-3" /> {g.member_count || 0} member{(g.member_count || 0) !== 1 ? 's' : ''}
                       </span>
                       {g.telegram_chat_id && (
                         <span className="text-xs text-blue-500 font-mono">{g.telegram_chat_id}</span>
@@ -172,7 +172,7 @@ export default function UserGroupsPage() {
                   }} className="p-2 hover:bg-slate-100 rounded-xl">
                     <Pencil className="w-4 h-4 text-slate-400" />
                   </button>
-                  <button onClick={() => { if (confirm('Hapus group ini?')) deleteMutation.mutate(g.id); }}
+                  <button onClick={() => { if (confirm('Delete this group?')) deleteMutation.mutate(g.id); }}
                     className="p-2 hover:bg-red-50 rounded-xl">
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </button>

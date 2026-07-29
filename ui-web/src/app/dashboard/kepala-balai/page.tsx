@@ -50,26 +50,27 @@ export default function KepalaBalaiDashboard() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard Product Owner"
-        subtitle="Pantau seluruh project dan tim"
-        icon={Activity}
+        section="OVERVIEW"
+        title="Dashboard"
+        subtitle="Monitor all projects and team"
         actions={
           <Link
             href="/projects"
-            className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-md hover:-translate-y-0.5"
+            className="h-[34px] inline-flex items-center gap-[6px] px-[14px] rounded-[6px] bg-accent text-[#12283c] text-[12px] font-bold"
+            style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
-            <Plus className="w-4 h-4" />
-            Buat Project
+            <Plus className="w-3 h-3" strokeWidth={2.5} />
+            New project
           </Link>
         }
       />
       <CRSummaryCard />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Project"   value={total}            icon={FolderKanban} color="blue"   index={0} />
-        <StatCard title="Project Aktif"   value={active}           icon={TrendingUp}   color="green"  index={1} />
-        <StatCard title="Total Anggota"   value={users?.length||0} icon={Users}        color="purple" index={2} />
-        <StatCard title="Selesai"         value={completed}        icon={CheckSquare}  color="orange" index={3} />
+        <StatCard title="Total Projects" value={total}            icon={FolderKanban} color="brand" index={0} />
+        <StatCard title="Active"         value={active}           icon={TrendingUp}   color="green" index={1} />
+        <StatCard title="Team Members"   value={users?.length||0} icon={Users}        color="brand" index={2} />
+        <StatCard title="Completed"      value={completed}        icon={CheckSquare}  color="green" index={3} />
       </div>
 
       {total > 0 && (
@@ -77,30 +78,30 @@ export default function KepalaBalaiDashboard() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm"
+          className="bg-white border border-[#e6e4df] rounded-[6px] p-5"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-[#284074]" />
-              <span className="text-sm font-semibold text-slate-700">Distribusi Status Project</span>
+              <BarChart2 className="w-4 h-4 text-brand" />
+              <span className="text-[12.5px] font-semibold text-[#0d2b48]">Project Status Distribution</span>
             </div>
-            <span className="text-xs text-slate-400">{total} total</span>
+            <span className="font-mono text-[10px] text-[#a6a094]">{total} total</span>
           </div>
           <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
-            {active    > 0 && <div style={{ width: `${(active/total)*100}%` }}    className="bg-emerald-400 transition-all" />}
-            {completed > 0 && <div style={{ width: `${(completed/total)*100}%` }} className="bg-[#284074] transition-all" />}
-            {onHold    > 0 && <div style={{ width: `${(onHold/total)*100}%` }}    className="bg-amber-400 transition-all" />}
-            <div className="flex-1 bg-slate-100" />
+            {active    > 0 && <div style={{ width: `${(active/total)*100}%` }}    className="bg-[#137a52] transition-all" />}
+            {completed > 0 && <div style={{ width: `${(completed/total)*100}%` }} className="bg-brand transition-all" />}
+            {onHold    > 0 && <div style={{ width: `${(onHold/total)*100}%` }}    className="bg-accent transition-all" />}
+            <div className="flex-1 bg-[#eceae4]" />
           </div>
           <div className="flex items-center gap-4 mt-2.5">
             {[
-              { label: 'Aktif',    val: active,    dot: 'bg-emerald-400' },
-              { label: 'Selesai',  val: completed, dot: 'bg-[#284074]' },
-              { label: 'On Hold',  val: onHold,    dot: 'bg-amber-400' },
-              { label: 'Lainnya', val: total - active - completed - onHold, dot: 'bg-slate-200' },
+              { label: 'Active',    val: active,    bg: '#137a52' },
+              { label: 'Completed', val: completed, bg: '#284074' },
+              { label: 'On hold',   val: onHold,    bg: '#c9971b' },
+              { label: 'Other',     val: total - active - completed - onHold, bg: '#c0bcb4' },
             ].map(item => (
-              <div key={item.label} className="flex items-center gap-1.5 text-xs text-slate-500">
-                <div className={`w-2 h-2 rounded-full ${item.dot}`} />
+              <div key={item.label} className="flex items-center gap-1.5 text-[11px] text-[#6b7280]">
+                <div className="w-2 h-2 rounded-full" style={{ background: item.bg }} />
                 {item.label} ({item.val})
               </div>
             ))}
@@ -109,80 +110,63 @@ export default function KepalaBalaiDashboard() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+        <div className="bg-white border border-[#e6e4df] rounded-[6px] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#eceae4]">
             <div className="flex items-center gap-2">
-              <FolderKanban className="w-4 h-4 text-[#284074]" />
-              <h2 className="font-semibold text-slate-800 text-sm">Semua Project</h2>
+              <FolderKanban className="w-4 h-4 text-brand" />
+              <h2 className="text-[12.5px] font-semibold text-[#0d2b48]">All Projects</h2>
             </div>
-            <Link
-              href="/projects"
-              className="text-xs text-[#284074] font-semibold flex items-center gap-1 hover:gap-2 transition-all"
-            >
-              Lihat semua <ArrowRight className="w-3 h-3" />
+            <Link href="/projects" className="text-[11.5px] font-semibold text-brand flex items-center gap-1 hover:gap-2 transition-all">
+              View all <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-[#f2f0ec]">
             {projects?.slice(0, 6).map((p: any, i: number) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link
-                  href={`/projects/${p.id}`}
-                  className="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors group"
-                >
+              <motion.div key={p.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
+                <Link href={`/projects/${p.id}`}
+                  className="flex items-center justify-between px-5 py-3.5 hover:bg-[#faf9f7] transition-colors group">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 bg-[#284074]/8 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-[#284074] transition-colors">
-                      <FolderKanban className="w-4 h-4 text-[#284074] group-hover:text-white transition-colors" />
+                    <div className="w-8 h-8 bg-[#eaf1f8] rounded-[4px] flex items-center justify-center flex-none">
+                      <FolderKanban className="w-3.5 h-3.5 text-brand" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-800 group-hover:text-[#284074] transition-colors truncate">
-                        {p.name}
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(p.start_date)} – {formatDate(p.end_date)}
+                      <div className="text-[12.5px] font-semibold text-[#12283c] group-hover:text-brand transition-colors truncate">{p.name}</div>
+                      <div className="flex items-center gap-1 text-[11px] text-[#9ca3af] mt-0.5">
+                        <Clock className="w-3 h-3" />{formatDate(p.start_date)} – {formatDate(p.end_date)}
                       </div>
                     </div>
                   </div>
-                  <span className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${getStatusColor(p.status)}`}>
+                  <span className={`flex-none text-[10.5px] font-semibold px-2 py-0.5 rounded-full ${getStatusColor(p.status)}`}>
                     {getStatusLabel(p.status)}
                   </span>
                 </Link>
               </motion.div>
             ))}
-
             {(!projects || projects.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                <FolderKanban className="w-8 h-8 mb-2 opacity-30" />
-                <span className="text-sm">Belum ada project</span>
-                <Link href="/projects" className="mt-3 text-xs text-[#284074] font-semibold hover:underline">
-                  + Buat project pertama
+              <div className="flex flex-col items-center justify-center py-12 text-[#c0bcb4]">
+                <FolderKanban className="w-8 h-8 mb-2 opacity-40" />
+                <span className="text-[12px]">No projects yet</span>
+                <Link href="/projects" className="mt-3 text-[11.5px] text-brand font-semibold hover:underline">
+                  + Create first project
                 </Link>
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
+        <div className="bg-white border border-[#e6e4df] rounded-[6px] overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#eceae4]">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#284074]" />
-              <h2 className="font-semibold text-slate-800 text-sm">Anggota Tim</h2>
+              <Users className="w-4 h-4 text-brand" />
+              <h2 className="text-[12.5px] font-semibold text-[#0d2b48]">Team Members</h2>
             </div>
-            <Link
-              href="/admin/users"
-              className="text-xs text-[#284074] font-semibold flex items-center gap-1 hover:gap-2 transition-all"
-            >
-              Kelola <ArrowRight className="w-3 h-3" />
+            <Link href="/admin/users" className="text-[11.5px] font-semibold text-brand flex items-center gap-1 hover:gap-2 transition-all">
+              Manage <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-50">
+          <div className="divide-y divide-[#f2f0ec]">
             {users?.slice(0, 8).map((u: any, i: number) => {
               const role     = u.roles?.[0] ?? 'staff';
               const initials = u.full_name.trim().split(' ').slice(0, 2).map((w: string) => w[0]).join('').toUpperCase();
@@ -192,38 +176,33 @@ export default function KepalaBalaiDashboard() {
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-[#faf9f7] transition-colors"
                 >
-                  {/* Avatar */}
                   {u.avatar ? (
-                    <img src={u.avatar} alt={u.full_name} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                    <img src={u.avatar} alt={u.full_name} className="w-8 h-8 rounded-[4px] object-cover flex-none" />
                   ) : (
-                    <div className="w-9 h-9 rounded-xl bg-[#284074] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-[4px] bg-[#eaf1f8] flex items-center justify-center text-brand text-[10px] font-bold flex-none">
                       {initials}
                     </div>
                   )}
-
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-slate-700 truncate">{u.full_name}</div>
-                    <div className="text-xs text-slate-400 truncate">{u.division || u.email}</div>
+                    <div className="text-[12.5px] font-semibold text-[#12283c] truncate">{u.full_name}</div>
+                    <div className="text-[11px] text-[#9ca3af] truncate">{u.division || u.email}</div>
                   </div>
-
-                  <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${ROLE_COLOR[role] ?? 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`flex-none text-[10px] font-semibold px-2 py-0.5 rounded-[3px] ${ROLE_COLOR[role] ?? 'bg-slate-100 text-slate-500'}`}>
                     {ROLE_LABEL[role] ?? role}
                   </span>
                 </motion.div>
               );
             })}
-
             {(!users || users.length === 0) && (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                <Users className="w-8 h-8 mb-2 opacity-30" />
-                <span className="text-sm">Belum ada anggota</span>
+              <div className="flex flex-col items-center justify-center py-12 text-[#c0bcb4]">
+                <Users className="w-8 h-8 mb-2 opacity-40" />
+                <span className="text-[12px]">No team members</span>
               </div>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

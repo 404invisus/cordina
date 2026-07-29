@@ -7,16 +7,16 @@ import { motion } from 'framer-motion';
 const adminSections = [
   {
     title: 'User Management',
-    desc: 'Kelola semua pengguna, role, dan akses sistem',
+    desc: 'Manage all users, roles, and system access',
     icon: Users,
     color: 'bg-blue-50 text-blue-600',
-    items: ['Buat & edit user', 'Assign role', 'Nonaktifkan akun', 'Reset password'],
+    items: ['Create & edit users', 'Assign roles', 'Deactivate accounts', 'Reset passwords'],
     action: '/admin/users',
-    actionLabel: 'Kelola Users',
+    actionLabel: 'Manage Users',
   },
   {
     title: 'System Configuration',
-    desc: 'Konfigurasi parameter sistem dan service',
+    desc: 'Configure system parameters and services',
     icon: Settings,
     color: 'bg-purple-50 text-purple-600',
     items: ['API settings', 'Service config', 'Environment vars', 'Feature flags'],
@@ -25,7 +25,7 @@ const adminSections = [
   },
   {
     title: 'Database Management',
-    desc: 'Monitor dan kelola database per service',
+    desc: 'Monitor and manage databases per service',
     icon: Database,
     color: 'bg-green-50 text-green-600',
     items: ['View tables', 'Run migrations', 'Backup data', 'Query explorer'],
@@ -34,7 +34,7 @@ const adminSections = [
   },
   {
     title: 'Service Monitor',
-    desc: 'Health check dan monitoring semua microservices',
+    desc: 'Health checks and monitoring for all microservices',
     icon: Server,
     color: 'bg-orange-50 text-orange-600',
     items: ['Service health', 'Queue monitor', 'Log viewer', 'Error tracking'],
@@ -43,16 +43,16 @@ const adminSections = [
   },
   {
     title: 'Notification Config',
-    desc: 'Konfigurasi Telegram bot dan channel notifikasi',
+    desc: 'Configure Telegram bot and notification channels',
     icon: Bell,
     color: 'bg-yellow-50 text-yellow-600',
-    items: ['Bot token', 'Channel settings', 'Template pesan', 'Test notif'],
+    items: ['Bot token', 'Channel settings', 'Message templates', 'Test notifications'],
     action: null,
     actionLabel: 'Coming Soon',
   },
   {
     title: 'Audit Logs',
-    desc: 'Riwayat aktivitas sistem dan pengguna',
+    desc: 'History of system and user activity',
     icon: FileText,
     color: 'bg-red-50 text-red-600',
     items: ['Login history', 'Action logs', 'API access logs', 'Export report'],
@@ -74,8 +74,9 @@ export default function SuperAdminDashboard() {
   return (
     <AppLayout>
       <PageHeader
+        section="ADMIN"
         title="Super Admin"
-        subtitle="Kelola keseluruhan sistem ConnectOne"
+        subtitle="Manage the entire ConnectOne system"
         icon={Shield}
       />
 

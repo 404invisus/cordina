@@ -1,247 +1,321 @@
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Archive, Plus, X, Search, Filter } from 'lucide-react';
+import { Archive, Plus, Search, ChevronDown, AlertTriangle, Wrench, DollarSign } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/authStore';
 import { assetService, userService } from '@/lib/api';
+import { cn, getInitials } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-const CONDITION_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  baik:         { label: 'Baik',         bg: 'bg-emerald-50', text: 'text-emerald-600' },
-  rusak_ringan: { label: 'Rusak Ringan', bg: 'bg-amber-50',   text: 'text-amber-600' },
-  rusak_berat:  { label: 'Rusak Berat',  bg: 'bg-red-50',     text: 'text-red-600' },
+const CONDITION: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  baik:         { label: 'Good',         bg: 'bg-success-soft', text: 'text-emerald-700', dot: 'bg-success'  },
+  rusak_ringan: { label: 'Minor damage', bg: 'bg-accent-soft',  text: 'text-accent-dim',  dot: 'bg-accent'   },
+  rusak_berat:  { label: 'Major damage', bg: 'bg-danger-soft',  text: 'text-red-700',     dot: 'bg-danger'   },
 };
 
+const ASSET_CATEGORIES = [
+  'Hardware', 'Software', 'Furniture', 'Vehicle', 'Network', 'Other',
+];
+
 function formatRupiah(val: any) {
-  if (!val) return '-';
+  if (!val) return '—';
   return 'Rp ' + Number(val).toLocaleString('id-ID');
+}
+
+function formatBookValue(assets: any[]) {
+  const total = assets.reduce((s, a) => s + (Number(a.value) || 0), 0);
+  if (total >= 1_000_000_000) return `Rp ${(total / 1_000_000_000).toFixed(2)} bn`;
+  if (total >= 1_000_000) return `Rp ${(total / 1_000_000).toFixed(1)} M`;
+  return formatRupiah(total);
+}
+
+function CondBadge({ condition }: { condition: string }) {
+  const c = CONDITION[condition] ?? CONDITION.baik;
+  return (
+    <span className={cn('inline-flex items-center gap-[5px] h-[21px] px-2 rounded-[3px] text-[10.5px] font-semibold', c.bg, c.text)}>
+      <span className={cn('w-[5px] h-[5px] rounded-full flex-shrink-0', c.dot)} />
+      {c.label}
+    </span>
+  );
 }
 
 function AssetModal({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
-    name:                editData?.name                || '',
-    category:            editData?.category            || '',
-    serial_number:       editData?.serial_number       || '',
-    condition:           editData?.condition           || 'baik',
-    location:            editData?.location            || '',
-    acquired_at:         editData?.acquired_at?.slice(0,10) || '',
-    value:               editData?.value               || '',
-    notes:               editData?.notes               || '',
-    responsible_user_id: editData?.responsible_user_id || '',
+    name:                editData?.name                ?? '',
+    category:            editData?.category            ?? '',
+    serial_number:       editData?.serial_number       ?? '',
+    condition:           editData?.condition           ?? 'baik',
+    location:            editData?.location            ?? '',
+    acquired_at:         editData?.acquired_at?.slice(0, 10) ?? '',
+    value:               editData?.value               ?? '',
+    notes:               editData?.notes               ?? '',
+    responsible_user_id: editData?.responsible_user_id ?? '',
   });
 
   const { data: usersData } = useQuery({
     queryKey: ['users-list'],
     queryFn: () => userService.list().then(r => r.data.data?.data || r.data.data || []),
   });
-  const users = usersData || [];
+  const users: any[] = usersData || [];
 
   const mutation = useMutation({
     mutationFn: (data: any) => editData ? assetService.update(editData.id, data) : assetService.create(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assets'] }); toast.success(editData ? 'Aset diperbarui' : 'Aset ditambahkan'); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['assets'] });
+      toast.success(editData ? 'Asset updated' : 'Asset added');
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
   });
 
-  if (!open) return null;
+  const inp = (key: string, label: string, type = 'text', placeholder = '') => (
+    <div key={key}>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
+      <input type={type} value={(form as any)[key]}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand" />
+    </div>
+  );
+
+  const sel = (key: string, label: string, options: { value: string; label: string }[]) => (
+    <div key={key}>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
+      <select value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand/20">
+        <option value="">Select…</option>
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900">{editData ? 'Edit Aset' : 'Tambah Aset'}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X className="w-4 h-4 text-slate-500" /></button>
+    <Modal open={open} onClose={onClose} title={editData ? 'Edit Asset' : 'Add Asset'} size="md">
+      <div className="space-y-4">
+        {inp('name', 'Asset Name *', 'text', 'e.g. HSM Thales Luna 7')}
+        {sel('category', 'Category *', ASSET_CATEGORIES.map(c => ({ value: c, label: c })))}
+        {inp('serial_number', 'Serial Number', 'text', 'e.g. HSM-2024-011')}
+        {inp('location', 'Location', 'text', 'e.g. Data centre — rack B3')}
+        {inp('acquired_at', 'Acquisition Date', 'date')}
+        {inp('value', 'Acquisition Value (Rp)', 'number', '1240000000')}
+        {sel('condition', 'Condition', [
+          { value: 'baik', label: 'Good' },
+          { value: 'rusak_ringan', label: 'Minor damage' },
+          { value: 'rusak_berat', label: 'Major damage' },
+        ])}
+        {sel('responsible_user_id', 'Custodian',
+          users.map(u => ({ value: u.id, label: `${u.full_name}${u.division ? ` (${u.division})` : ''}` }))
+        )}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2}
+            className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand/20" />
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nama Aset *</label>
-            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="Laptop Dell XPS 15"
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kategori *</label>
-            <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
-              <option value="">Pilih kategori...</option>
-              <option value="Perangkat Keras">Perangkat Keras</option>
-              <option value="Perangkat Lunak">Perangkat Lunak</option>
-              <option value="Furnitur">Furnitur</option>
-              <option value="Kendaraan">Kendaraan</option>
-              <option value="Jaringan">Jaringan</option>
-              <option value="Lainnya">Lainnya</option>
-            </select>
-          </div>
-          {[
-            { key: 'serial_number', label: 'Nomor Seri',        type: 'text',   placeholder: 'SN-2024-001' },
-            { key: 'location',      label: 'Lokasi',             type: 'text',   placeholder: 'Ruang Server' },
-            { key: 'acquired_at',   label: 'Tanggal Perolehan',  type: 'date',   placeholder: '' },
-            { key: 'value',         label: 'Nilai (Rp)',         type: 'number', placeholder: '25000000' },
-          ].map(({ key, label, type, placeholder }) => (
-            <div key={key}>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
-              <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                placeholder={placeholder}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074]" />
-            </div>
-          ))}
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kondisi</label>
-            <select value={form.condition} onChange={e => setForm(f => ({ ...f, condition: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
-              <option value="baik">Baik</option>
-              <option value="rusak_ringan">Rusak Ringan</option>
-              <option value="rusak_berat">Rusak Berat</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Penanggung Jawab</label>
-            <select value={form.responsible_user_id} onChange={e => setForm(f => ({ ...f, responsible_user_id: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
-              <option value="">Pilih penanggung jawab...</option>
-              {users.map((u: any) => (
-                <option key={u.id} value={u.id}>{u.full_name} {u.division ? `(${u.division})` : ''}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Catatan</label>
-            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-          </div>
-        </div>
-        <div className="flex gap-3 p-6 pt-0">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 px-4 py-2 rounded-md border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
           <button onClick={() => mutation.mutate(form)} disabled={mutation.isPending || !form.name || !form.category}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-50">
-            {mutation.isPending ? 'Menyimpan...' : 'Simpan'}
+            className="flex-1 px-4 py-2 rounded-md bg-accent text-[#12283c] text-sm font-bold hover:bg-amber-500 disabled:opacity-50 transition-colors">
+            {mutation.isPending ? 'Saving…' : 'Save'}
           </button>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </Modal>
   );
 }
 
 export default function AssetsPage() {
   const qc = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
   const { user } = useAuthStore();
-  const [editData, setEditData] = useState<any>(null);
-  const [search, setSearch] = useState('');
-  const [filterCondition, setFilterCondition] = useState('');
+  const [createOpen,  setCreateOpen]  = useState(false);
+  const [editData,    setEditData]    = useState<any>(null);
+  const [deleteId,    setDeleteId]    = useState<string | null>(null);
+  const [search,      setSearch]      = useState('');
+  const [condFilter,  setCondFilter]  = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['assets', search, filterCondition],
-    queryFn: () => assetService.list({ search: search || undefined, condition: filterCondition || undefined }).then(r => r.data.data),
+    queryKey: ['assets', search, condFilter],
+    queryFn: () => assetService.list({ search: search || undefined, condition: condFilter || undefined }).then(r => r.data.data),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => assetService.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assets'] }); toast.success('Aset dihapus'); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['assets'] }); toast.success('Asset deleted'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
   });
 
-  const assets = data?.data || [];
+  const assets: any[] = data?.data || [];
+  const total       = assets.length;
+  const minorDamage = assets.filter(a => a.condition === 'rusak_ringan').length;
+  const majorDamage = assets.filter(a => a.condition === 'rusak_berat').length;
+  const bookValue   = formatBookValue(assets);
+
+  const subtitle = isLoading ? undefined : [
+    `${total} item${total !== 1 ? 's' : ''}`,
+    bookValue !== 'Rp 0' ? `${bookValue} book value` : null,
+    (minorDamage + majorDamage) > 0 ? `${minorDamage + majorDamage} need attention` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <AppLayout>
-      <AssetModal key={editData?.id || 'new'} open={createOpen || !!editData} onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
+      <AssetModal key={editData?.id ?? 'new'} open={createOpen || !!editData}
+        onClose={() => { setCreateOpen(false); setEditData(null); }} editData={editData} />
+      <ConfirmDialog open={!!deleteId} onClose={() => setDeleteId(null)}
+        onConfirm={() => { if (deleteId) deleteMutation.mutate(deleteId); }}
+        title="Delete Asset" message="This asset record will be permanently removed." danger />
 
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-2xl flex items-center justify-center border border-amber-100">
-            <Archive className="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Aset & Dokumen</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Pencatatan aset fisik organisasi</p>
-          </div>
-        </div>
-        <button onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-colors shadow-sm">
-          <Plus className="w-4 h-4" /> Tambah Aset
-        </button>
+      <PageHeader
+        section="INVENTORY"
+        title="Physical Assets"
+        subtitle={subtitle}
+        actions={
+          <>
+            <button className="h-[34px] flex items-center gap-1.5 px-[13px] border border-[#d9d6cf] rounded-md bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50">
+              Export register
+            </button>
+            <button className="h-[34px] flex items-center gap-1.5 px-[13px] border border-[#d9d6cf] rounded-md bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50">
+              Record movement
+            </button>
+            <button onClick={() => setCreateOpen(true)}
+              className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-md bg-accent text-[#12283c] text-sm font-bold shadow-sm hover:bg-amber-500 transition-colors">
+              <Plus className="w-3 h-3" />
+              Add asset
+            </button>
+          </>
+        }
+      />
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <StatCard title="Total Assets"  value={total}       subtitle={`${new Set(assets.map(a => a.category)).size} categories`} icon={Archive}        color="blue"   index={0} progress={100} />
+        <StatCard title="Book Value"    value={bookValue}   subtitle="acquisition total"                                          icon={DollarSign}    color="blue"   index={1} progress={100} />
+        <StatCard title="Minor Damage"  value={minorDamage} subtitle="repairable"                                                 icon={Wrench}        color="orange" index={2} progress={total ? Math.round(minorDamage / total * 100) : 0} />
+        <StatCard title="Major Damage"  value={majorDamage} subtitle="disposal review"                                            icon={AlertTriangle} color="red"    index={3} progress={total ? Math.round(majorDamage / total * 100) : 0} />
       </div>
 
-      {/* Filter */}
-      <div className="flex gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama aset..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#284074]/20" />
-        </div>
-        <select value={filterCondition} onChange={e => setFilterCondition(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#284074]/20">
-          <option value="">Semua Kondisi</option>
-          <option value="baik">Baik</option>
-          <option value="rusak_ringan">Rusak Ringan</option>
-          <option value="rusak_berat">Rusak Berat</option>
-        </select>
-      </div>
+      {/* Table */}
+      <div className="bg-white border border-[#e6e4df] rounded-md flex flex-col overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex items-center gap-2.5 px-[15px] py-[9px] border-b border-[#eceae4] flex-wrap">
+          <div className="flex items-center gap-2 h-[30px] px-[11px] border border-[#e2e0da] rounded-md w-[240px] bg-white focus-within:border-brand focus-within:ring-1 focus-within:ring-brand/20">
+            <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search name or serial number"
+              className="flex-1 bg-transparent text-slate-700 placeholder:text-slate-400 focus:outline-none text-[12px]" />
+          </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#284074]/20 border-t-[#284074] rounded-full animate-spin" />
+          <div className="relative">
+            <select value={condFilter} onChange={e => setCondFilter(e.target.value)}
+              className="h-[30px] pl-3 pr-7 border border-[#e2e0da] rounded-md bg-white text-[11.5px] font-medium text-slate-600 appearance-none focus:outline-none focus:border-brand cursor-pointer">
+              <option value="">Condition: All</option>
+              <option value="baik">Good</option>
+              <option value="rusak_ringan">Minor damage</option>
+              <option value="rusak_berat">Major damage</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-slate-400" />
+          </div>
+
+          <span className="ml-auto text-[11px] text-[#8a8f98]">Only the custodian and admins can edit an asset</span>
         </div>
-      ) : assets.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-16 text-center">
-          <Archive className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-400">Belum ada aset tercatat</p>
-          <button onClick={() => setCreateOpen(true)} className="mt-3 text-sm text-[#284074] font-semibold hover:underline">Tambah sekarang</button>
+
+        {/* Column headers */}
+        <div className="grid px-[15px] h-[30px] items-center border-b border-[#eceae4] bg-[#faf9f7]"
+          style={{ gridTemplateColumns: '1fr 118px 140px 120px 140px 120px 60px' }}>
+          {['ASSET', 'SERIAL NO.', 'ACQUISITION VALUE', 'CONDITION', 'LOCATION', 'CUSTODIAN', ''].map((h, i) => (
+            <div key={i} className={cn('font-mono text-[9.5px] font-semibold tracking-[0.1em] text-[#8a8f98]', i === 6 && 'text-right')}>
+              {h}
+            </div>
+          ))}
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                {['Nama Aset', 'Kategori', 'No. Seri', 'Kondisi', 'Lokasi', 'Nilai'].map(h => (
-                  <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
-                ))}
-                {assets?.data?.some((a: any) => (user as any)?.id === a.created_by) && (
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Aksi</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {assets.map((asset: any, i: number) => {
-                const cond = CONDITION_CONFIG[asset.condition] || CONDITION_CONFIG.baik;
-                return (
-                  <motion.tr key={asset.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                    className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="font-semibold text-slate-800 text-sm">{asset.name}</div>
-                      {asset.notes && <div className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">{asset.notes}</div>}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{asset.category}</td>
-                    <td className="px-5 py-3.5 text-sm font-mono text-slate-500">{asset.serial_number || '-'}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${cond.bg} ${cond.text}`}>{cond.label}</span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{asset.location || '-'}</td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">{formatRupiah(asset.value)}</td>
-                    {(user as any)?.id === asset.created_by && (
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
+
+        {/* Rows */}
+        {isLoading ? (
+          <LoadingSpinner label="Loading assets…" />
+        ) : assets.length === 0 ? (
+          <EmptyState icon={Archive} title="No assets recorded" subtitle="Add your first physical asset to the inventory."
+            action={<button onClick={() => setCreateOpen(true)} className="text-sm text-brand font-semibold hover:underline">Add now</button>} />
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            {assets.map((asset: any) => {
+              const canEdit = (user as any)?.id === asset.created_by;
+              const custodian = asset.responsible_user?.full_name ?? asset.responsible_user_name ?? '';
+              const initials  = custodian ? getInitials(custodian) : '';
+              const lastName  = custodian.split(' ').slice(-1)[0] ?? '';
+
+              return (
+                <div key={asset.id}
+                  className="grid px-[15px] h-[38px] items-center border-b border-[#f2f0ec] hover:bg-[#faf9f7] transition-colors"
+                  style={{ gridTemplateColumns: '1fr 118px 140px 120px 140px 120px 60px' }}>
+
+                  {/* Asset name + category */}
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-semibold text-[#12283c] truncate leading-none">{asset.name}</div>
+                    {asset.category && (
+                      <div className="font-mono text-[10px] text-slate-400 truncate leading-none mt-px">{asset.category}</div>
+                    )}
+                  </div>
+
+                  {/* Serial */}
+                  <div className="font-mono text-[11px] text-slate-600 truncate">{asset.serial_number || '—'}</div>
+
+                  {/* Value */}
+                  <div className="font-mono text-[11.5px] font-medium text-[#12283c]">{formatRupiah(asset.value)}</div>
+
+                  {/* Condition */}
+                  <div><CondBadge condition={asset.condition} /></div>
+
+                  {/* Location */}
+                  <div className="text-[12px] text-slate-600 truncate">{asset.location || '—'}</div>
+
+                  {/* Custodian */}
+                  <div className="flex items-center gap-[7px]">
+                    {initials && (
+                      <div className="w-[22px] h-[22px] rounded-full bg-brand-soft text-brand flex items-center justify-content-center flex-shrink-0 flex items-center justify-center font-bold text-[9px]">
+                        {initials}
+                      </div>
+                    )}
+                    <span className="text-[11.5px] text-slate-600 truncate">{lastName || '—'}</span>
+                  </div>
+
+                  {/* History / actions */}
+                  <div className="flex items-center justify-end gap-2">
+                    {canEdit && (
+                      <>
                         <button onClick={() => setEditData(asset)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+                          className="text-[10.5px] font-medium text-brand underline hover:text-brand-light transition-colors">
                           Edit
                         </button>
-                        <button onClick={() => deleteMutation.mutate(asset.id)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
-                          Hapus
+                        <button onClick={() => setDeleteId(asset.id)}
+                          className="text-[10.5px] font-medium text-danger hover:text-red-700 transition-colors">
+                          Del
                         </button>
-                      </div>
-                    </td>
+                      </>
                     )}
-                  </motion.tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    {!canEdit && (
+                      <span className="text-[10.5px] font-medium text-brand underline cursor-pointer hover:text-brand-light">History</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Footer */}
+        {!isLoading && assets.length > 0 && (
+          <div className="h-[36px] flex-none flex items-center justify-between px-[15px] border-t border-[#eceae4] bg-[#faf9f7]">
+            <span className="text-[11px] text-[#8a8f98]">
+              Showing {assets.length} of {total} · every movement is logged
+            </span>
+          </div>
+        )}
+      </div>
     </AppLayout>
   );
 }

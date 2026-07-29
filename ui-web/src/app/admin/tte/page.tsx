@@ -40,8 +40,8 @@ export default function TteConfigPage() {
       if (form.TTE_API_KEY)  payload.TTE_API_KEY  = form.TTE_API_KEY;
       return api.put('/api/v1/tte-config', payload);
     },
-    onSuccess: () => toast.success('Konfigurasi TTE disimpan'),
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menyimpan'),
+    onSuccess: () => toast.success('e-Sign configuration saved'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
   });
 
   const testMutation = useMutation({
@@ -61,8 +61,8 @@ export default function TteConfigPage() {
             <Shield className="w-5 h-5 text-violet-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Konfigurasi TTE</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Pengaturan integrasi Tanda Tangan Elektronik</p>
+            <h1 className="text-2xl font-bold text-slate-900">e-Sign Configuration</h1>
+            <p className="text-sm text-slate-400 mt-0.5">Electronic signature integration settings</p>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export default function TteConfigPage() {
           <div className="space-y-4">
             {/* Credentials */}
             <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Kredensial API</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">API Credentials</div>
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Base URL</label>
@@ -90,7 +90,7 @@ export default function TteConfigPage() {
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Password <span className="text-slate-400 normal-case font-normal">(kosongkan jika tidak diubah)</span>
+                  Password <span className="text-slate-400 normal-case font-normal">(leave empty to keep unchanged)</span>
                 </label>
                 <div className="relative mt-1">
                   <input type={showPass ? 'text' : 'password'} value={form.TTE_PASSWORD} onChange={f('TTE_PASSWORD')}
@@ -104,7 +104,7 @@ export default function TteConfigPage() {
 
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  API Key <span className="text-slate-400 normal-case font-normal">(kosongkan jika tidak diubah)</span>
+                  API Key <span className="text-slate-400 normal-case font-normal">(leave empty to keep unchanged)</span>
                 </label>
                 <div className="relative mt-1">
                   <input type={showKey ? 'text' : 'password'} value={form.TTE_API_KEY} onChange={f('TTE_API_KEY')}
@@ -119,15 +119,15 @@ export default function TteConfigPage() {
               <button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.TTE_BASE_URL || !form.TTE_USERNAME}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-50 transition-all">
                 <Save className="w-4 h-4" />
-                {saveMutation.isPending ? 'Menyimpan...' : 'Simpan Konfigurasi'}
+                {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
               </button>
             </div>
 
             {/* Test koneksi */}
             <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Test Koneksi</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Connection Test</div>
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">NIK untuk test</label>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">NIK for testing</label>
                 <input value={testNik} onChange={e => setTestNik(e.target.value)} className={`mt-1 ${inputCls}`}
                   placeholder="16 digit NIK" maxLength={16} />
               </div>
@@ -136,7 +136,7 @@ export default function TteConfigPage() {
                 disabled={testMutation.isPending || !testNik}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-violet-200 text-violet-700 text-sm font-semibold hover:bg-violet-50 disabled:opacity-50 transition-all">
                 <TestTube className="w-4 h-4" />
-                {testMutation.isPending ? 'Menguji...' : 'Test Koneksi TTE'}
+                {testMutation.isPending ? 'Testing...' : 'Test e-Sign Connection'}
               </button>
 
               {testResult && (
@@ -146,7 +146,7 @@ export default function TteConfigPage() {
                       ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       : <XCircle className="w-4 h-4 text-red-500" />}
                     <span className={`text-sm font-semibold ${testResult.reachable ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {testResult.reachable && testResult.status < 400 ? 'Koneksi berhasil' : testResult.status === 401 ? 'Autentikasi gagal, periksa username/password/API key' : 'Koneksi gagal'}
+                      {testResult.reachable && testResult.status < 400 ? 'Connection successful' : testResult.status === 401 ? 'Authentication failed — check username/password/API key' : 'Connection failed'}
                     </span>
                     {testResult.status && <span className="text-xs text-slate-400 font-mono">HTTP {testResult.status}</span>}
                   </div>

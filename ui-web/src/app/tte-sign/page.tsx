@@ -13,14 +13,14 @@ import toast from 'react-hot-toast';
 
 function formatDate(d: string) {
   if (!d) return '-';
-  return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft:             { label: 'Draft',              color: 'bg-slate-100 text-slate-500' },
-  waiting_signature: { label: 'Menunggu TTD',       color: 'bg-amber-100 text-amber-700' },
-  signed:            { label: 'Selesai Ditandatangani', color: 'bg-emerald-100 text-emerald-700' },
-  distributed:       { label: 'Didistribusikan',    color: 'bg-violet-100 text-violet-700' },
+  waiting_signature: { label: 'Awaiting Signature', color: 'bg-amber-100 text-amber-700' },
+  signed:            { label: 'Fully Signed',        color: 'bg-emerald-100 text-emerald-700' },
+  distributed:       { label: 'Distributed',         color: 'bg-violet-100 text-violet-700' },
 };
 
 function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -45,8 +45,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   });
   const mutation = useMutation({
     mutationFn: () => {
-      if (!file) throw new Error('File wajib diisi');
-      if (file.size > 500 * 1024) throw { response: { data: { message: 'Maksimal 500 KB' } } };
+      if (!file) throw new Error('File is required');
+      if (file.size > 500 * 1024) throw { response: { data: { message: 'Maximum file size is 500 KB' } } };
       const fd = new FormData();
       fd.append('title', title);
       if (desc) fd.append('description', desc);
@@ -56,10 +56,10 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('Permintaan TTE dibuat!');
+      toast.success('e-Sign request created!');
       onClose(); setFile(null); setTitle(''); setDesc(''); setSignerIds([]);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat permintaan'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create request'),
   });
 
   if (!open) return null;
@@ -72,41 +72,41 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center">
               <FilePen className="w-4 h-4 text-violet-600" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Buat Permintaan TTE</h2>
+            <h2 className="text-lg font-bold text-slate-900">Create e-Sign Request</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl"><X className="w-4 h-4 text-slate-500" /></button>
         </div>
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Judul Dokumen *</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Document Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              placeholder="Masukkan judul dokumen" style={{color:"#94a3b8"}} />
+              placeholder="Enter document title" style={{color:"#94a3b8"}} />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi</label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2}
               className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-200 resize-none"
-              placeholder="Deskripsi singkat (opsional)" />
+              placeholder="Brief description (optional)" />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">File PDF * <span className="text-slate-400 font-normal">(maks. 500 KB)</span></label>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PDF File * <span className="text-slate-400 font-normal">(max. 500 KB)</span></label>
             <div onClick={() => fileRef.current?.click()}
               className={`mt-1 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors
                 ${file ? 'border-violet-300 bg-violet-50' : 'border-slate-200 hover:border-violet-300'}`}>
               <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
               <Upload className="w-5 h-5 text-slate-400 mx-auto mb-1" />
               {file ? <p className="text-sm font-medium text-violet-700">{file.name}</p>
-                : <p className="text-sm text-slate-400">Klik untuk upload PDF</p>}
+                : <p className="text-sm text-slate-400">Click to upload PDF</p>}
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Penandatangan Tambahan</label>
-            <p className="text-xs text-slate-400 mt-0.5">Anda otomatis menjadi penandatangan pertama (urutan 1)</p>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Additional Signatories</label>
+            <p className="text-xs text-slate-400 mt-0.5">You are automatically the first signatory (order 1)</p>
             <UserMultiSelect
               users={allUsers.filter((u: any) => u.id !== (user as any)?.id)}
               selected={signerIds}
@@ -118,7 +118,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
         <div className="px-6 pb-6">
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !title || !file}
             className="w-full py-2.5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition-colors">
-            {mutation.isPending ? 'Membuat...' : 'Buat Permintaan TTE'}
+            {mutation.isPending ? 'Creating...' : 'Create e-Sign Request'}
           </button>
         </div>
       </motion.div>
@@ -150,7 +150,7 @@ function UserMultiSelect({ selected, onChange, users, showOrder = true }: {
               </div>
             );
           })}
-          {users.length === 0 && <div className="px-3 py-4 text-sm text-slate-400 text-center">Tidak ada pengguna</div>}
+          {users.length === 0 && <div className="px-3 py-4 text-sm text-slate-400 text-center">No users available</div>}
         </div>
       </div>
       {selected.length > 0 && (
@@ -208,10 +208,10 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-detail', id] });
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('Dokumen berhasil ditandatangani!');
+      toast.success('Document signed successfully!');
       setShowSign(false); setPassphrase('');
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menandatangani'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to sign document'),
   });
 
   const distMutation = useMutation({
@@ -219,10 +219,10 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-detail', id] });
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('Dokumen berhasil didistribusikan!');
+      toast.success('Document distributed successfully!');
       setShowDist(false); setDistIds([]); setDistGroupIds([]);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal mendistribusikan'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to distribute document'),
   });
 
   const handleVerify = async () => {
@@ -234,7 +234,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
       fd.append('file', new File([blob], 'signed.pdf', { type: 'application/pdf' }));
       const vRes = await import('@/lib/api').then(m => m.default.post(`/api/v1/tte-sign-requests/${id}/verify`));
       setVerifyData(vRes.data?.data);
-    } catch { toast.error('Gagal verifikasi'); } finally { setVerifyLoading(false); }
+    } catch { toast.error('Verification failed'); } finally { setVerifyLoading(false); }
   };
 
   const handleDownload = async () => {
@@ -242,19 +242,19 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
       const res = await tteSignService.download(id);
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a = document.createElement('a'); a.href = url;
-      a.download = (detail?.title || 'dokumen') + '.pdf';
+      a.download = (detail?.title || 'document') + '.pdf';
       a.click(); URL.revokeObjectURL(url);
-    } catch { toast.error('Gagal download'); }
+    } catch { toast.error('Download failed'); }
   };
 
   const ACTION_LABELS: Record<string, string> = {
-    created:      'Dokumen dibuat',
-    signer_added: 'Penandatangan ditambahkan',
-    submitted:    'Dokumen diajukan',
-    signed:       'Ditandatangani',
-    all_signed:   'Semua penandatangan selesai',
-    rejected:     'Ditolak',
-    distributed:  'Didistribusikan',
+    created:      'Document created',
+    signer_added: 'Signatory added',
+    submitted:    'Document submitted',
+    signed:       'Signed',
+    all_signed:   'All signatories completed',
+    rejected:     'Rejected',
+    distributed:  'Distributed',
   };
 
   return (
@@ -283,7 +283,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
         ) : (
           <div className="p-6 space-y-4">
             <div className="flex gap-2 border-b border-slate-100">
-              {[{ key: 'info', label: 'Info & Penandatangan', icon: Users },
+              {[{ key: 'info', label: 'Info & Signatories', icon: Users },
                 { key: 'log',  label: 'Audit Trail',          icon: History }].map(t => (
                 <button key={t.key} onClick={() => setTab(t.key as any)}
                   className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border-b-2 transition-colors -mb-px
@@ -298,7 +298,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 {detail?.description && <p className="text-sm text-slate-500">{detail.description}</p>}
 
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Urutan Penandatangan</h3>
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Signatory Order</h3>
                   <div className="space-y-2">
                     {detail?.signers?.map((s: any, i: number) => (
                       <div key={s.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
@@ -319,7 +319,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
                 {detail?.distributions?.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Penerima Distribusi</h3>
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Distribution Recipients</h3>
                     <div className="space-y-1">
                       {detail.distributions.map((d: any, i: number) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
@@ -355,27 +355,27 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div className="flex gap-2 pt-2 border-t border-slate-100">
               <button onClick={handleDownload}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                <Download className="w-4 h-4" /> Unduh
+                <Download className="w-4 h-4" /> Download
               </button>
 
               {detail?.can_sign && !showSign && (
                 <button onClick={() => setShowSign(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700">
-                  <Lock className="w-4 h-4" /> Tandatangani
+                  <Lock className="w-4 h-4" /> Sign
                 </button>
               )}
 
               {detail?.can_distribute && !showDist && (
                 <button onClick={() => setShowDist(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
-                  <Send className="w-4 h-4" /> Distribusikan
+                  <Send className="w-4 h-4" /> Distribute
                 </button>
               )}
 
               {detail?.status === 'distributed' && (
                 <button onClick={() => setShowVerify(v => !v)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                  <Eye className="w-4 h-4" /> Verifikasi TTE
+                  <Eye className="w-4 h-4" /> Verify e-Sign
                 </button>
               )}
             </div>
@@ -385,7 +385,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 {!verifyData && (
                   <button onClick={handleVerify} disabled={verifyLoading}
                     className="w-full py-2 rounded-xl bg-slate-700 text-white text-sm font-semibold disabled:opacity-50">
-                    {verifyLoading ? 'Memverifikasi...' : 'Cek Tanda Tangan Digital'}
+                    {verifyLoading ? 'Verifying...' : 'Check Digital Signature'}
                   </button>
                 )}
                 {verifyData && (
@@ -394,7 +394,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${verifyData.conclusion === 'VALID' ? 'text-emerald-500' : 'text-red-500'}`} />
                       <div>
                         <div className={`text-sm font-semibold ${verifyData.conclusion === 'VALID' ? 'text-emerald-700' : 'text-red-700'}`}>
-                          {verifyData.conclusion === 'VALID' ? 'Dokumen Valid' : 'Dokumen Tidak Valid'}
+                          {verifyData.conclusion === 'VALID' ? 'Document Valid' : 'Document Invalid'}
                         </div>
                         <div className="text-xs text-slate-400">{verifyData.description}</div>
                       </div>
@@ -403,11 +403,11 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       <div key={i} className="p-3 bg-white rounded-xl border border-slate-100 text-sm">
                         <div className="font-semibold text-slate-800">{s.signerName}</div>
                         <div className="text-xs text-slate-400 mt-0.5">
-                          {s.signatureDate ? new Date(s.signatureDate).toLocaleString('id-ID') : '-'} · {s.signatureFormat}
+                          {s.signatureDate ? new Date(s.signatureDate).toLocaleString('en-GB') : '-'} · {s.signatureFormat}
                         </div>
                         <div className="flex gap-2 mt-1.5">
-                          {s.integrityValid && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-semibold">Integritas OK</span>}
-                          {s.certificateTrusted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">Sertifikat Terpercaya</span>}
+                          {s.integrityValid && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-semibold">Integrity OK</span>}
+                          {s.certificateTrusted && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 font-semibold">Certificate Trusted</span>}
                         </div>
                       </div>
                     ))}
@@ -419,25 +419,25 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
             {showSign && (
               <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 space-y-3">
-                <p className="text-sm font-semibold text-violet-800">Masukkan passphrase TTE Anda</p>
+                <p className="text-sm font-semibold text-violet-800">Enter your e-Sign passphrase</p>
                 <input type="password" value={passphrase} onChange={e => setPassphrase(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl border border-violet-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-300"
-                  placeholder="Passphrase TTE" />
+                  placeholder="e-Sign passphrase" />
                 <div className="flex gap-2">
                   <button onClick={() => signMutation.mutate()} disabled={signMutation.isPending || !passphrase}
                     className="flex-1 py-2 rounded-xl bg-violet-600 text-white text-sm font-semibold disabled:opacity-50">
-                    {signMutation.isPending ? 'Menandatangani...' : 'Konfirmasi Tanda Tangan'}
+                    {signMutation.isPending ? 'Signing...' : 'Confirm Signature'}
                   </button>
                   <button onClick={() => { setShowSign(false); setPassphrase(''); }}
-                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Batal</button>
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
                 </div>
               </div>
             )}
 
             {showDist && (
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-3">
-                <p className="text-sm font-semibold text-emerald-800">Pilih penerima distribusi</p>
-                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-2">Individu</p>
+                <p className="text-sm font-semibold text-emerald-800">Select distribution recipients</p>
+                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-2">Individual</p>
                  <UserMultiSelect
                    users={allUsers}
                    selected={distIds}
@@ -459,7 +459,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                                </div>
                                <div>
                                  <div className="text-sm font-medium text-slate-800">{g.name}</div>
-                                 <div className="text-xs text-slate-400">{g.member_count || 0} anggota</div>
+                                 <div className="text-xs text-slate-400">{g.member_count || 0} members</div>
                                </div>
                              </div>
                            );
@@ -484,10 +484,10 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 <div className="flex gap-2">
                   <button onClick={() => distMutation.mutate()} disabled={distMutation.isPending || distIds.length === 0}
                     className="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50">
-                    {distMutation.isPending ? 'Mendistribusikan...' : `Distribusikan ke ${distIds.length + distGroupIds.length} penerima`}
+                    {distMutation.isPending ? 'Distributing...' : `Distribute to ${distIds.length + distGroupIds.length} recipient${distIds.length + distGroupIds.length !== 1 ? 's' : ''}`}
                   </button>
                   <button onClick={() => { setShowDist(false); setDistIds([]); }}
-                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Batal</button>
+                    className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-600">Cancel</button>
                 </div>
               </div>
             )}
@@ -521,13 +521,13 @@ export default function TteSignPage() {
             <FilePen className="w-5 h-5 text-violet-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">TTE Distribusi</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Tanda tangan elektronik multi-penandatangan</p>
+            <h1 className="text-2xl font-bold text-slate-900">e-Sign Distribution</h1>
+            <p className="text-sm text-slate-400 mt-0.5">Multi-signatory electronic signature</p>
           </div>
         </div>
         <button onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-2 bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
-          <Plus className="w-4 h-4" /> Buat Permintaan TTE
+          <Plus className="w-4 h-4" /> New e-Sign Request
         </button>
       </div>
 
@@ -538,7 +538,7 @@ export default function TteSignPage() {
       ) : requests.length === 0 ? (
         <div className="text-center py-20">
           <FilePen className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <div className="text-slate-400 text-sm">Belum ada permintaan TTE</div>
+          <div className="text-slate-400 text-sm">No e-Sign requests yet</div>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -557,16 +557,16 @@ export default function TteSignPage() {
                       {STATUS_CONFIG[req.status]?.label}
                     </span>
                     {req.my_role === 'creator' && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Pembuat</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">Creator</span>
                     )}
                     {req.can_sign && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 animate-pulse">Giliran Anda!</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 animate-pulse">Your turn!</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-slate-400">{formatDate(req.created_at)}</span>
                     <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Users className="w-3 h-3" /> {req.signed_count}/{req.signer_count} tandatangan
+                      <Users className="w-3 h-3" /> {req.signed_count}/{req.signer_count} signed
                     </span>
                   </div>
                 </div>

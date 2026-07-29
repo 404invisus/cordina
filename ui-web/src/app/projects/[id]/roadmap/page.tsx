@@ -47,7 +47,7 @@ export default function RoadmapPage() {
   cursor.setDate(1);
   while (cursor <= rangeEnd) {
     monthLabels.push({
-      label: cursor.toLocaleString('id-ID', { month: 'short', year: '2-digit' }),
+      label: cursor.toLocaleString('en-GB', { month: 'short', year: '2-digit' }),
       left: pct(cursor),
     });
     cursor.setMonth(cursor.getMonth() + 1);
@@ -66,7 +66,7 @@ export default function RoadmapPage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Kembali ke Project
+          Back to Project
         </Link>
 
         <div className="flex items-center justify-between">
@@ -93,7 +93,7 @@ export default function RoadmapPage() {
             {showToday && (
               <div className="flex items-center gap-1.5 text-xs text-slate-500">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                <span>Hari ini</span>
+                <span>Today</span>
               </div>
             )}
           </div>
@@ -108,8 +108,8 @@ export default function RoadmapPage() {
               <path d="M18 9a9 9 0 01-9 9"/>
             </svg>
           </div>
-          <p className="text-sm font-semibold text-slate-400">Belum ada sprint</p>
-          <p className="text-xs text-slate-300 mt-1">Buat sprint untuk melihat roadmap</p>
+          <p className="text-sm font-semibold text-slate-400">No sprints yet</p>
+          <p className="text-xs text-slate-300 mt-1">Create a sprint to view the roadmap</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
@@ -142,7 +142,7 @@ export default function RoadmapPage() {
                   >
                     <div className="relative h-full">
                       <div className="absolute top-0 -translate-x-1/2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                        Hari ini
+                        Today
                       </div>
                       <div className="absolute top-6 bottom-0 left-0 w-px bg-red-400 border-l-2 border-dashed border-red-300" />
                     </div>

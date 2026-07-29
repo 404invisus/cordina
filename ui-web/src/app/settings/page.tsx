@@ -10,9 +10,9 @@ import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
 const TABS = [
-  { id: 'profile', label: 'Profil', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-  { id: 'notif',   label: 'Notifikasi', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
-  { id: 'security', label: 'Keamanan', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
+  { id: 'profile', label: 'Profile', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
+  { id: 'notif',   label: 'Notifications', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
+  { id: 'security', label: 'Security', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
 ];
 
 const AVATAR_GRADIENTS = [
@@ -28,19 +28,19 @@ function getInitials(name: string) {
 
 
 const NOTIF_TYPES = [
-  { key: 'task.assigned',          label: 'Task Ditugaskan',      desc: 'Saat task di-assign ke kamu' },
-  { key: 'task.commented',         label: 'Komentar Task',        desc: 'Saat ada komentar baru di task kamu' },
-  { key: 'sprint.started',         label: 'Sprint Dimulai',       desc: 'Saat sprint baru dimulai' },
-  { key: 'sprint.completed',       label: 'Sprint Selesai',       desc: 'Saat sprint selesai' },
-  { key: 'calendar.event_created', label: 'Agenda Baru',          desc: 'Saat ada agenda kegiatan baru' },
-  { key: 'calendar.event_assigned',   label: 'Dijadwalkan di Agenda',        desc: 'Saat kamu dijadwalkan dalam agenda' },
-  { key: 'calendar.deadline_reminder', label: 'Pengingat Agenda',              desc: 'Pengingat H-1 dan H-0 agenda' },
-  { key: 'tte.sign_requested',         label: 'Permintaan Tanda Tangan',       desc: 'Saat kamu diminta menandatangani dokumen TTE' },
-  { key: 'tte.all_signed',             label: 'Dokumen Selesai Ditandatangani',desc: 'Saat semua penandatangan selesai' },
-  { key: 'tte.distributed',            label: 'Dokumen Didistribusikan',       desc: 'Saat dokumen TTE dikirim ke kamu' },
-  { key: 'change_request.submitted',   label: 'CR Baru Diajukan',              desc: 'Saat ada CR baru yang perlu ditinjau' },
-  { key: 'change_request.approved',    label: 'CR Disetujui',                  desc: 'Saat CR kamu disetujui' },
-  { key: 'change_request.rejected',    label: 'CR Ditolak',                    desc: 'Saat CR kamu ditolak' },
+  { key: 'task.assigned',          label: 'Task Assigned',               desc: 'When a task is assigned to you' },
+  { key: 'task.commented',         label: 'Task Comment',                desc: 'When a new comment is added to your task' },
+  { key: 'sprint.started',         label: 'Sprint Started',              desc: 'When a new sprint begins' },
+  { key: 'sprint.completed',       label: 'Sprint Completed',            desc: 'When a sprint is completed' },
+  { key: 'calendar.event_created', label: 'New Event',                   desc: 'When a new calendar event is created' },
+  { key: 'calendar.event_assigned',   label: 'Added to Event',           desc: 'When you are added to a calendar event' },
+  { key: 'calendar.deadline_reminder', label: 'Event Reminder',          desc: 'Reminder 1 day and day-of for events' },
+  { key: 'tte.sign_requested',         label: 'Signature Request',       desc: 'When you are asked to sign an e-Sign document' },
+  { key: 'tte.all_signed',             label: 'Document Fully Signed',   desc: 'When all signatories have completed signing' },
+  { key: 'tte.distributed',            label: 'Document Distributed',    desc: 'When an e-Sign document is sent to you' },
+  { key: 'change_request.submitted',   label: 'New CR Submitted',        desc: 'When a new Change Request needs review' },
+  { key: 'change_request.approved',    label: 'CR Approved',             desc: 'When your Change Request is approved' },
+  { key: 'change_request.rejected',    label: 'CR Rejected',             desc: 'When your Change Request is rejected' },
 ];
 
 function NotifSettings() {
@@ -70,11 +70,11 @@ function NotifSettings() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-6">
-      <h3 className="font-bold text-slate-800 mb-1">Pengaturan Notifikasi</h3>
-      <p className="text-xs text-slate-400 mb-5">Pilih notifikasi yang ingin kamu terima</p>
+      <h3 className="font-bold text-slate-800 mb-1">Notification Settings</h3>
+      <p className="text-xs text-slate-400 mb-5">Choose which notifications you want to receive</p>
       <div className="space-y-1">
         <div className="grid grid-cols-3 gap-2 px-3 pb-2">
-          <div className="col-span-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Jenis</div>
+          <div className="col-span-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center">Telegram</div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center">In-App</div>
         </div>
@@ -103,10 +103,10 @@ function NotifSettings() {
 }
 
 const PW_RULES = [
-  { label: 'Minimal 12 karakter',        test: (v: string) => v.length >= 12 },
-  { label: 'Huruf besar dan kecil',      test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
-  { label: 'Minimal 1 angka',            test: (v: string) => /[0-9]/.test(v) },
-  { label: 'Minimal 1 simbol',           test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+  { label: 'At least 12 characters',     test: (v: string) => v.length >= 12 },
+  { label: 'Upper and lowercase letters', test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
+  { label: 'At least 1 number',          test: (v: string) => /[0-9]/.test(v) },
+  { label: 'At least 1 symbol',          test: (v: string) => /[^A-Za-z0-9]/.test(v) },
 ];
 
 function SecuritySettings() {
@@ -126,7 +126,7 @@ function SecuritySettings() {
       current_password: current, password: next, password_confirmation: confirm,
     }),
     onSuccess: () => {
-      toast.success('Password berhasil diubah. Silakan login ulang.');
+      toast.success('Password changed. Please sign in again.');
       setCurrent(''); setNext(''); setConfirm(''); setErrors({});
       setTimeout(() => {
         Cookies.remove('token'); Cookies.remove('user_roles');
@@ -136,7 +136,7 @@ function SecuritySettings() {
     },
     onError: (e: any) => {
       setErrors(e?.response?.data?.errors || {});
-      toast.error(e?.response?.data?.message || 'Gagal mengubah password');
+      toast.error(e?.response?.data?.message || 'Failed to change password');
     },
   });
 
@@ -154,18 +154,18 @@ function SecuritySettings() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-6 max-w-lg">
-      <h3 className="font-bold text-slate-800 mb-1">Ubah Password</h3>
-      <p className="text-xs text-slate-400 mb-5">Kamu akan diminta login ulang setelah password diubah</p>
+      <h3 className="font-bold text-slate-800 mb-1">Change Password</h3>
+      <p className="text-xs text-slate-400 mb-5">You will be signed out after changing your password</p>
 
       <div className="space-y-4">
-        {field('Password Saat Ini', current, setCurrent, 'current_password')}
-        {field('Password Baru', next, setNext, 'password')}
-        {field('Konfirmasi Password Baru', confirm, setConfirm, 'password_confirmation')}
+        {field('Current Password', current, setCurrent, 'current_password')}
+        {field('New Password', next, setNext, 'password')}
+        {field('Confirm New Password', confirm, setConfirm, 'password_confirmation')}
 
         <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
           <input type="checkbox" checked={show} onChange={e => setShow(e.target.checked)}
             className="rounded border-slate-300 text-[#284074] focus:ring-[#284074]/20" />
-          Tampilkan password
+          Show password
         </label>
 
         {next.length > 0 && (
@@ -183,7 +183,7 @@ function SecuritySettings() {
                 <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${matched ? 'bg-emerald-100' : 'bg-red-100'}`}>
                   {matched ? '\u2713' : '\u00d7'}
                 </span>
-                Konfirmasi password cocok
+                Passwords match
               </div>
             )}
           </div>
@@ -191,7 +191,7 @@ function SecuritySettings() {
 
         <button onClick={() => mutation.mutate()} disabled={!canSubmit || mutation.isPending}
           className="w-full px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3159] disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-          {mutation.isPending ? 'Menyimpan...' : 'Ubah Password'}
+          {mutation.isPending ? 'Saving...' : 'Change Password'}
         </button>
       </div>
     </div>
@@ -240,16 +240,16 @@ export default function SettingsPage() {
     },
     onSuccess: (res: any) => {
       updateUser({ nik, tte_specimen_url: res.data?.data?.tte_specimen_url || user?.tte_specimen_url });
-      toast.success('Data TTE disimpan!');
+      toast.success('e-Sign data saved!');
       setSpecimenFile(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menyimpan'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
   });
 
   const telegramMutation = useMutation({
     mutationFn: (id: string) => authService.setTelegram(id),
-    onSuccess: () => { updateUser({ telegram_chat_id: telegramId }); toast.success('Telegram Chat ID disimpan!'); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menyimpan'),
+    onSuccess: () => { updateUser({ telegram_chat_id: telegramId }); toast.success('Telegram Chat ID saved!'); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
   });
 
   return (
@@ -262,7 +262,7 @@ export default function SettingsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Kelola preferensi dan profil kamu</p>
+          <p className="text-sm text-slate-400 mt-0.5">Manage your preferences and profile</p>
         </div>
       </div>
 
@@ -304,15 +304,15 @@ export default function SettingsPage() {
                         ))}
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${user?.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${user?.is_active ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                          {user?.is_active ? 'Aktif' : 'Nonaktif'}
+                          {user?.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { label: 'Divisi', value: user?.division || '—', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-400"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-                      { label: 'Jabatan', value: user?.position || '—', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-400"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg> },
+                      { label: 'Division', value: user?.division || '—', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-400"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+                      { label: 'Position', value: user?.position || '—', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-400"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg> },
                     ].map(item => (
                       <div key={item.label} className="bg-slate-50 rounded-xl p-4 flex items-start gap-3">
                         <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0">{item.icon}</div>
@@ -327,8 +327,8 @@ export default function SettingsPage() {
 
                 <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
                   <div>
-                    <h3 className="font-bold text-slate-800 mb-1">Tanda Tangan Elektronik (TTE)</h3>
-                    <p className="text-xs text-slate-400">Data ini digunakan saat Anda ditunjuk sebagai penandatangan dokumen</p>
+                    <h3 className="font-bold text-slate-800 mb-1">Electronic Signature (e-Sign)</h3>
+                    <p className="text-xs text-slate-400">This information is used when you are designated as a document signatory</p>
                   </div>
 
                   <div>
@@ -341,27 +341,27 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Spesimen Tanda Tangan</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Signature Specimen</label>
                     {user?.tte_specimen_url && (
                       <div className="mb-3 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
                         <img
                           src={specimenBlobUrl ?? undefined}
-                          alt="Spesimen TTD"
+                          alt="Signature specimen"
                           className="h-12 object-contain rounded"
                           onError={e => (e.currentTarget.style.display = 'none')}
                         />
-                        <div className="text-xs text-slate-500">Spesimen tersimpan. Upload baru untuk mengganti.</div>
+                        <div className="text-xs text-slate-500">Specimen saved. Upload a new file to replace it.</div>
                       </div>
                     )}
                     <input type="file" accept="image/png,image/jpeg,image/jpg"
                       onChange={e => setSpecimenFile(e.target.files?.[0] || null)}
                       className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#284074]/8 file:text-[#284074] hover:file:bg-[#284074]/15 transition-all" />
-                    <p className="text-xs text-slate-400 mt-1.5">Format PNG/JPG, disarankan latar transparan</p>
+                    <p className="text-xs text-slate-400 mt-1.5">PNG/JPG format, transparent background recommended</p>
                   </div>
 
                   <button onClick={() => tteMutation.mutate()} disabled={tteMutation.isPending || (!nik && !specimenFile)}
                     className="px-5 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-50 transition-all">
-                    {tteMutation.isPending ? 'Menyimpan...' : 'Simpan Data TTE'}
+                    {tteMutation.isPending ? 'Saving...' : 'Save e-Sign Data'}
                   </button>
                 </div>
 
@@ -380,12 +380,12 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-800">Telegram Notifikasi</h3>
-                      <p className="text-xs text-slate-400">Terima notifikasi task secara real-time</p>
+                      <h3 className="font-bold text-slate-800">Telegram Notifications</h3>
+                      <p className="text-xs text-slate-400">Receive real-time task notifications</p>
                     </div>
                     {user?.telegram_chat_id && (
                       <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Terhubung
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Connected
                       </span>
                     )}
                   </div>
@@ -401,20 +401,20 @@ export default function SettingsPage() {
                           </svg>
                           <input value={telegramId} onChange={e => setTelegramId(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all font-mono"
-                            placeholder="Contoh: 123456789" />
+                            placeholder="e.g. 123456789" />
                         </div>
                         <button onClick={() => telegramMutation.mutate(telegramId)}
                           disabled={telegramMutation.isPending || !telegramId}
                           className="px-5 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] disabled:opacity-50 transition-all whitespace-nowrap">
-                          {telegramMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                          {telegramMutation.isPending ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     </div>
 
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                      <p className="text-xs font-semibold text-slate-600 mb-2">Cara mendapatkan Chat ID:</p>
+                      <p className="text-xs font-semibold text-slate-600 mb-2">How to get your Chat ID:</p>
                       <ol className="text-xs text-slate-500 space-y-1.5">
-                        {['Buka Telegram dan cari @BLPIDWorkloadBot', 'Kirim /start ke bot tersebut', 'Salin ID yang diberikan ke kolom di atas'].map((s, i) => (
+                        {['Open Telegram and search for @BLPIDWorkloadBot', 'Send /start to the bot', 'Copy the ID provided and paste it above'].map((s, i) => (
                           <li key={i} className="flex items-start gap-2">
                             <span className="w-4 h-4 rounded-full bg-[#284074]/10 text-[#284074] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
                             {s}
@@ -429,7 +429,7 @@ export default function SettingsPage() {
                           <circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/>
                         </svg>
                         <div className="text-xs text-emerald-700">
-                          Terhubung dengan Chat ID: <span className="font-mono font-bold">{user.telegram_chat_id}</span>
+                          Connected with Chat ID: <span className="font-mono font-bold">{user.telegram_chat_id}</span>
                         </div>
                       </div>
                     )}

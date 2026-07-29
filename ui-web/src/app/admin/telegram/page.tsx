@@ -29,7 +29,7 @@ export default function AdminTelegramPage() {
   const copy = (chatId: number) => {
     navigator.clipboard.writeText(String(chatId));
     setCopiedId(String(chatId));
-    toast.success('Chat ID disalin!');
+    toast.success('Chat ID copied!');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -37,9 +37,9 @@ export default function AdminTelegramPage() {
     setSavingId(userId);
     try {
       await api.patch(`/api/v1/admin/users/${userId}`, { telegram_chat_id: String(chatId) });
-      toast.success('Chat ID disimpan ke user!');
+      toast.success('Chat ID saved to user!');
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Gagal menyimpan');
+      toast.error(e?.response?.data?.message || 'Failed to save');
     } finally {
       setSavingId(null);
     }
@@ -58,7 +58,7 @@ export default function AdminTelegramPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Telegram Bot</h1>
-            <p className="text-sm text-slate-400 mt-0.5">{telegramUsers.length} chat terdaftar</p>
+            <p className="text-sm text-slate-400 mt-0.5">{telegramUsers.length} chat{telegramUsers.length !== 1 ? 's' : ''} registered</p>
           </div>
         </div>
         <button onClick={() => refetch()}
@@ -78,7 +78,7 @@ export default function AdminTelegramPage() {
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
               <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
                 <Hash className="w-4 h-4 text-slate-400" />
-                <h3 className="font-bold text-slate-800 text-sm">Grup ({groups.length})</h3>
+                <h3 className="font-bold text-slate-800 text-sm">Groups ({groups.length})</h3>
               </div>
               <div className="divide-y divide-slate-50">
                 {groups.map((u: any) => (
@@ -109,7 +109,7 @@ export default function AdminTelegramPage() {
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
               <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-slate-400" />
-                <h3 className="font-bold text-slate-800 text-sm">Chat Pribadi ({privates.length})</h3>
+                <h3 className="font-bold text-slate-800 text-sm">Private Chats ({privates.length})</h3>
               </div>
               <div className="divide-y divide-slate-50">
                 {privates.map((u: any) => {
@@ -123,7 +123,7 @@ export default function AdminTelegramPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-slate-800">{fullName || 'Tanpa Nama'}</span>
+                          <span className="text-sm font-semibold text-slate-800">{fullName || 'No name'}</span>
                           {u.username && <span className="text-xs text-slate-400">@{u.username}</span>}
                           {linkedUser && (
                             <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold">
@@ -138,7 +138,7 @@ export default function AdminTelegramPage() {
                           <select onChange={e => e.target.value && saveToUser(e.target.value, u.chat_id)}
                             disabled={savingId !== null}
                             className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 max-w-[140px]">
-                            <option value="">Hubungkan ke user...</option>
+                            <option value="">Link to user...</option>
                             {(appUsers as any[])
                               .filter((au: any) => !au.telegram_chat_id)
                               .map((au: any) => (
@@ -149,8 +149,8 @@ export default function AdminTelegramPage() {
                         <button onClick={() => copy(u.chat_id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                           {copiedId === String(u.chat_id)
-                            ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Disalin</>
-                            : <><Copy className="w-3.5 h-3.5" /> Salin ID</>}
+                            ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied</>
+                            : <><Copy className="w-3.5 h-3.5" /> Copy ID</>}
                         </button>
                       </div>
                     </motion.div>
@@ -163,8 +163,8 @@ export default function AdminTelegramPage() {
           {telegramUsers.length === 0 && (
             <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
               <MessageCircle className="w-10 h-10 mx-auto mb-3 text-slate-300" />
-              <p className="text-sm text-slate-400">Belum ada yang chat bot</p>
-              <p className="text-xs text-slate-300 mt-1">Minta anggota tim untuk chat bot Telegram terlebih dahulu</p>
+              <p className="text-sm text-slate-400">Nobody has messaged the bot yet</p>
+              <p className="text-xs text-slate-300 mt-1">Ask team members to message the Telegram bot first</p>
             </div>
           )}
         </div>

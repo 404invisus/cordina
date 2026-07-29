@@ -73,13 +73,13 @@ export default function AdminWorkloadPage() {
   const userWorkloads: any[] = summary || [];
 
   const handleExport = async () => {
-    if (!selectedProject) { toast.error('Pilih project terlebih dahulu'); return; }
+    if (!selectedProject) { toast.error('Please select a project first'); return; }
     setExporting(true);
     try {
       const res = await adminReportExportService.workload(selectedProject, selectedSprint || undefined);
-      await downloadBlob(res.data, `laporan_workload_${new Date().toISOString().slice(0,10)}.pdf`);
-      toast.success('Laporan berhasil diunduh');
-    } catch { toast.error('Gagal mengunduh laporan'); }
+      await downloadBlob(res.data, `workload_report_${new Date().toISOString().slice(0,10)}.pdf`);
+      toast.success('Report downloaded successfully');
+    } catch { toast.error('Failed to download report'); }
     finally { setExporting(false); }
   };
 
@@ -91,14 +91,14 @@ export default function AdminWorkloadPage() {
             <Activity className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Monitor Workload</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Pantau kapasitas dan beban kerja tim</p>
+            <h1 className="text-2xl font-bold text-slate-900">Workload Monitor</h1>
+            <p className="text-sm text-slate-400 mt-0.5">Monitor team capacity and workload</p>
           </div>
         </div>
         <button onClick={handleExport} disabled={exporting || !selectedProject}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors disabled:opacity-40">
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Ekspor PDF
+          Export PDF
         </button>
       </div>
 
@@ -107,7 +107,7 @@ export default function AdminWorkloadPage() {
           <select value={selectedProject}
             onChange={e => { setSelectedProject(e.target.value); setSelectedSprint(''); }}
             className="appearance-none pl-3 pr-8 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 bg-white min-w-[180px]">
-            <option value="">Pilih Project</option>
+            <option value="">Select Project</option>
             {(projects || []).map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
@@ -117,16 +117,16 @@ export default function AdminWorkloadPage() {
           <div className="relative">
             <select value={selectedSprint} onChange={e => setSelectedSprint(e.target.value)}
               className="appearance-none pl-3 pr-8 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 bg-white min-w-[200px]">
-              <option value="">Semua sprint{activeSprint ? ` (aktif: ${activeSprint.name})` : ''}</option>
+              <option value="">All sprints{activeSprint ? ` (active: ${activeSprint.name})` : ''}</option>
               {(sprints || []).map((s: any) => (
-                <option key={s.id} value={s.id}>{s.name}{s.status === 'active' ? ' (aktif)' : ''}</option>
+                <option key={s.id} value={s.id}>{s.name}{s.status === 'active' ? ' (active)' : ''}</option>
               ))}
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
           </div>
         )}
 
-        {!selectedProject && <p className="text-sm text-slate-400">Pilih project untuk memuat data workload</p>}
+        {!selectedProject && <p className="text-sm text-slate-400">Select a project to load workload data</p>}
       </div>
 
       {selectedProject && (
@@ -137,7 +137,7 @@ export default function AdminWorkloadPage() {
                 <TrendingUp className="w-4 h-4 text-[#284074]" />
                 <h3 className="font-bold text-slate-800 text-sm">Burndown Chart</h3>
                 <span className="text-xs text-slate-400 ml-auto">
-                  {selectedSprint ? 'Sprint terpilih' : activeSprint ? `Sprint aktif: ${activeSprint.name}` : 'Tidak ada sprint aktif'}
+                  {selectedSprint ? 'Selected sprint' : activeSprint ? `Active sprint: ${activeSprint.name}` : 'No active sprint'}
                 </span>
               </div>
               {burndown?.data?.length > 0 ? (
@@ -145,18 +145,18 @@ export default function AdminWorkloadPage() {
                   <LineChart data={burndown.data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false}
-                      tickFormatter={(d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} />
+                      tickFormatter={(d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: 12 }} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Line type="monotone" dataKey="ideal"     stroke="#94a3b8" strokeDasharray="5 3" dot={false} name="Ideal" strokeWidth={1.5} />
-                    <Line type="monotone" dataKey="remaining" stroke="#284074"               dot={false} name="Aktual" strokeWidth={2} />
+                    <Line type="monotone" dataKey="remaining" stroke="#284074"               dot={false} name="Actual" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[180px] text-slate-300">
                   <TrendingUp className="w-8 h-8 mb-2" />
-                  <p className="text-xs">{activeSprintId ? 'Belum ada data burndown' : 'Pilih sprint atau pastikan ada sprint aktif'}</p>
+                  <p className="text-xs">{activeSprintId ? 'No burndown data yet' : 'Select a sprint or ensure there is an active sprint'}</p>
                 </div>
               )}
             </div>
@@ -179,7 +179,7 @@ export default function AdminWorkloadPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center h-[180px] text-slate-300">
                   <BarChart2 className="w-8 h-8 mb-2" />
-                  <p className="text-xs">Belum ada data velocity</p>
+                  <p className="text-xs">No velocity data yet</p>
                 </div>
               )}
             </div>
@@ -188,8 +188,8 @@ export default function AdminWorkloadPage() {
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
               <Users className="w-4 h-4 text-slate-400" />
-              <h3 className="font-bold text-slate-800 text-sm">Workload per Anggota</h3>
-              {userWorkloads.length > 0 && <span className="ml-auto text-xs text-slate-400">{userWorkloads.length} anggota</span>}
+              <h3 className="font-bold text-slate-800 text-sm">Workload per Member</h3>
+              {userWorkloads.length > 0 && <span className="ml-auto text-xs text-slate-400">{userWorkloads.length} member{userWorkloads.length !== 1 ? 's' : ''}</span>}
             </div>
 
             {loadingSummary ? (
@@ -199,13 +199,13 @@ export default function AdminWorkloadPage() {
             ) : !activeSprintId ? (
               <div className="text-center py-16 text-slate-400">
                 <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Tidak ada sprint aktif pada project ini</p>
-                <p className="text-xs mt-1 text-slate-300">Pilih sprint secara manual dari filter di atas</p>
+                <p className="text-sm">No active sprint on this project</p>
+                <p className="text-xs mt-1 text-slate-300">Select a sprint manually from the filter above</p>
               </div>
             ) : userWorkloads.length === 0 ? (
               <div className="text-center py-16 text-slate-400">
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Tidak ada data workload</p>
+                <p className="text-sm">No workload data</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
@@ -236,7 +236,7 @@ export default function AdminWorkloadPage() {
                                 util > 90 ? 'bg-red-50 text-red-600' :
                                 util > 70 ? 'bg-amber-50 text-amber-600' :
                                 'bg-emerald-50 text-emerald-600'
-                              }`}>{util}% utilisasi</span>
+                              }`}>{util}% utilization</span>
                             </div>
                           </div>
                           <div className="flex gap-1.5 items-center">
@@ -248,9 +248,9 @@ export default function AdminWorkloadPage() {
                           <div className="flex gap-3 mt-2">
                             {[
                               { label: 'Total', value: u.task_count || 0, color: 'text-slate-500' },
-                              { label: 'Selesai', value: u.done_count || 0, color: 'text-emerald-600' },
-                              { label: 'Est. Jam', value: u.estimated_hours || 0, color: 'text-violet-600' },
-                              { label: 'Aktual', value: u.actual_hours || 0, color: 'text-amber-600' },
+                              { label: 'Done', value: u.done_count || 0, color: 'text-emerald-600' },
+                              { label: 'Est. Hours', value: u.estimated_hours || 0, color: 'text-violet-600' },
+                              { label: 'Actual', value: u.actual_hours || 0, color: 'text-amber-600' },
                             ].map(s => (
                               <div key={s.label} className="flex items-center gap-1">
                                 <span className={`text-[10px] ${s.color}`}>{s.label}</span>

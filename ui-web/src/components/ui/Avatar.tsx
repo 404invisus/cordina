@@ -7,7 +7,7 @@ const sizes = {
 };
 
 const colors = [
-  'from-[#284074] to-[#3d5a9e]',
+  'from-brand to-brand-light',
   'from-violet-500 to-purple-600',
   'from-emerald-500 to-teal-600',
   'from-orange-500 to-amber-600',

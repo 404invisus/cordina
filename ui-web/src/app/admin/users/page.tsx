@@ -70,15 +70,15 @@ function UserFormModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success(isEdit ? 'User diperbarui!' : 'User berhasil dibuat!');
+      toast.success(isEdit ? 'User updated' : 'User created successfully');
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const handleSubmit = () => {
     if (!form.full_name || !form.email || (!isEdit && !form.password)) {
-      toast.error('Lengkapi semua field wajib');
+      toast.error('Please complete all required fields');
       return;
     }
     const payload: any = { ...form };
@@ -96,8 +96,8 @@ function UserFormModal({
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
-            <h2 className="font-bold text-slate-900">{isEdit ? 'Edit User' : 'Tambah User Baru'}</h2>
-            <p className="text-xs text-slate-400 mt-0.5">{isEdit ? `Mengedit ${editUser.full_name}` : 'Buat akun pengguna baru'}</p>
+            <h2 className="font-bold text-slate-900">{isEdit ? 'Edit User' : 'Add New User'}</h2>
+            <p className="text-xs text-slate-400 mt-0.5">{isEdit ? `Editing ${editUser.full_name}` : 'Create a new user account'}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
             <X className="w-4 h-4 text-slate-400" />
@@ -107,10 +107,10 @@ function UserFormModal({
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Nama Lengkap *</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Full Name *</label>
               <input value={form.full_name} onChange={e => set('full_name', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-                placeholder="Nama lengkap" />
+                placeholder="Full name" />
             </div>
             <div className="col-span-2">
               <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Email *</label>
@@ -120,17 +120,17 @@ function UserFormModal({
             </div>
             <div className="col-span-2">
               <label className="text-xs font-semibold text-slate-500 mb-1.5 block">
-                Password {isEdit && <span className="font-normal text-slate-400">(kosongkan jika tidak diubah)</span>}
+                Password {isEdit && <span className="font-normal text-slate-400">(leave empty to keep unchanged)</span>}
               </label>
               <input type="password" value={form.password} onChange={e => set('password', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
-                placeholder={isEdit ? '••••••••' : 'Minimal 8 karakter'} />
+                placeholder={isEdit ? '••••••••' : 'Minimum 8 characters'} />
               {form.password && (
                 <div className="mt-2 space-y-1">
                   {[
-                    { ok: form.password.length >= 8, label: 'Minimal 8 karakter' },
-                    { ok: /[a-zA-Z]/.test(form.password), label: 'Mengandung huruf' },
-                    { ok: /[0-9]/.test(form.password), label: 'Mengandung angka' },
+                    { ok: form.password.length >= 8, label: 'At least 8 characters' },
+                    { ok: /[a-zA-Z]/.test(form.password), label: 'Contains a letter' },
+                    { ok: /[0-9]/.test(form.password), label: 'Contains a number' },
                   ].map((r, i) => (
                     <div key={i} className={`flex items-center gap-1.5 text-xs ${r.ok ? 'text-emerald-600' : 'text-slate-400'}`}>
                       <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 ${r.ok ? 'bg-emerald-100' : 'bg-slate-100'}`}>
@@ -155,13 +155,13 @@ function UserFormModal({
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Divisi</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Division</label>
               <input value={form.division} onChange={e => set('division', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
                 placeholder="Teknologi" />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Jabatan</label>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Position</label>
               <input value={form.position} onChange={e => set('position', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all"
                 placeholder="Software Engineer" />
@@ -172,11 +172,11 @@ function UserFormModal({
         <div className="px-6 pb-5 flex gap-3">
           <button onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-            Batal
+            Cancel
           </button>
           <button onClick={handleSubmit} disabled={mutation.isPending}
             className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors disabled:opacity-50">
-            {mutation.isPending ? 'Menyimpan...' : (isEdit ? 'Simpan Perubahan' : 'Buat User')}
+            {mutation.isPending ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create User')}
           </button>
         </div>
       </motion.div>
@@ -191,10 +191,10 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success('Role diperbarui!');
+      toast.success('Role updated!');
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   return (
@@ -205,7 +205,7 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="font-bold text-slate-900">Ubah Role</h2>
+            <h2 className="font-bold text-slate-900">Change Role</h2>
             <p className="text-xs text-slate-400">{user.full_name}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
@@ -253,12 +253,12 @@ function PermissionModal({ user, onClose }: any) {
     mutationFn: ({ permission, granted }: any) =>
       permissionService.setPermission(user.id, permission, granted),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }),
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const resetMutation = useMutation({
     mutationFn: () => permissionService.resetPermissions(user.id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }); toast.success('Permission direset ke default'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }); toast.success('Permission reset to default'); },
   });
 
   if (!user) return null;
@@ -268,34 +268,34 @@ function PermissionModal({ user, onClose }: any) {
   const extras = permData?.extra || [];
 
   const ALL_PERMISSIONS: Record<string, string> = {
-    'project.create':         'Membuat project baru',
-    'project.edit':           'Mengedit project',
-    'project.delete':         'Menghapus project',
-    'project.manage_members': 'Tambah/hapus anggota project',
-    'sprint.manage':          'Buat, mulai, selesaikan sprint',
-    'sprint.view':            'Lihat detail sprint dan backlog',
-    'task.create':            'Membuat task baru',
-    'task.edit_own':          'Edit task milik sendiri',
-    'task.edit_all':          'Edit task milik siapapun',
-    'task.assign':            'Assign task ke anggota',
-    'task.delete':            'Hapus task',
-    'task.log_time':          'Log waktu pengerjaan',
-    'cr.submit':              'Mengajukan Change Request',
-    'cr.approve':             'Menyetujui/menolak Change Request',
-    'calendar.view':          'Lihat kalender',
-    'calendar.create_own':    'Buat event untuk diri sendiri',
-    'calendar.manage':        'Buat/edit event untuk semua user',
-    'user.manage':            'Kelola user, role, dan privilege',
-    'report.view':            'Lihat laporan analitik',
-    'report.export':          'Export laporan ke file',
-    'attendance.clock':       'Clock-in/out absensi',
-    'attendance.view_own':    'Lihat absensi sendiri',
-    'attendance.view_all':    'Lihat absensi semua pegawai',
-    'asset.view':             'Lihat daftar aset',
-    'asset.manage':           'Tambah/edit/hapus aset',
-    'document.view':          'Lihat dokumen',
-    'document.manage':        'Tambah/edit/hapus dokumen',
-    'notification.manage':    'Kelola konfigurasi notifikasi Telegram',
+    'project.create':         'Create new projects',
+    'project.edit':           'Edit projects',
+    'project.delete':         'Delete projects',
+    'project.manage_members': 'Add/remove project members',
+    'sprint.manage':          'Create, start, and complete sprints',
+    'sprint.view':            'View sprint details and backlog',
+    'task.create':            'Create new tasks',
+    'task.edit_own':          'Edit own tasks',
+    'task.edit_all':          'Edit any task',
+    'task.assign':            'Assign tasks to members',
+    'task.delete':            'Delete tasks',
+    'task.log_time':          'Log time on tasks',
+    'cr.submit':              'Submit Change Requests',
+    'cr.approve':             'Approve/reject Change Requests',
+    'calendar.view':          'View calendar',
+    'calendar.create_own':    'Create events for self',
+    'calendar.manage':        'Create/edit events for all users',
+    'user.manage':            'Manage users, roles, and privileges',
+    'report.view':            'View analytics reports',
+    'report.export':          'Export reports to file',
+    'attendance.clock':       'Clock in/out attendance',
+    'attendance.view_own':    'View own attendance',
+    'attendance.view_all':    'View all employees\' attendance',
+    'asset.view':             'View asset list',
+    'asset.manage':           'Add/edit/delete assets',
+    'document.view':          'View documents',
+    'document.manage':        'Add/edit/delete documents',
+    'notification.manage':    'Manage Telegram notification settings',
   };
 
   return (
@@ -304,7 +304,7 @@ function PermissionModal({ user, onClose }: any) {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Kelola Privilege</h2>
+            <h2 className="text-lg font-bold text-slate-900">Manage Privileges</h2>
             <p className="text-sm text-slate-400 mt-0.5">{user.full_name} · <span className="capitalize">{user.roles?.[0]?.replace('_', ' ')}</span></p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl">
@@ -386,23 +386,23 @@ function ActionMenu({ user, onEdit, onRole, onToggle, onDelete, onPermission, on
       </button>
       <button onClick={() => { onRole(); onClose(); }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-        <Shield className="w-3.5 h-3.5" /> Ubah Role
+        <Shield className="w-3.5 h-3.5" /> Change Role
       </button>
       <button onClick={() => { onPermission(); onClose(); }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-violet-600 hover:bg-violet-50 transition-colors">
-        <Shield className="w-3.5 h-3.5" /> Kelola Privilege
+        <Shield className="w-3.5 h-3.5" /> Manage Privileges
       </button>
       <button onClick={() => { onToggle(); onClose(); }}
         className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
           user.is_active ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'
         }`}>
         {user.is_active ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-        {user.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+        {user.is_active ? 'Deactivate' : 'Activate'}
       </button>
       <div className="h-px bg-slate-100 mx-2" />
       <button onClick={() => { onDelete(); onClose(); }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
-        <Trash2 className="w-3.5 h-3.5" /> Hapus
+        <Trash2 className="w-3.5 h-3.5" /> Delete
       </button>
     </motion.div>
   );
@@ -422,8 +422,8 @@ export default function AdminUsersPage() {
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a'); a.href = url; a.download = 'laporan_pengguna.pdf'; a.click();
       URL.revokeObjectURL(url);
-      toast.success('Laporan berhasil diunduh');
-    } catch { toast.error('Gagal mengunduh laporan'); }
+      toast.success('Report downloaded successfully');
+    } catch { toast.error('Failed to download report'); }
     finally { setExporting(false); }
   };
   const [editUser, setEditUser]     = useState<any>(null);
@@ -451,9 +451,9 @@ export default function AdminUsersPage() {
     onSuccess: (_, u) => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success(u.is_active ? 'User dinonaktifkan' : 'User diaktifkan');
+      toast.success(u.is_active ? 'User deactivated' : 'User activated');
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const deleteMutation = useMutation({
@@ -461,10 +461,10 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success('User dihapus');
+      toast.success('User deleted');
       setDeleteUser(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   return (
@@ -476,25 +476,25 @@ export default function AdminUsersPage() {
             <Users className="w-5 h-5 text-[#284074]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Kelola User</h1>
-            <p className="text-sm text-slate-400 mt-0.5">{stats?.total_users || 0} pengguna terdaftar</p>
+            <h1 className="text-2xl font-bold text-slate-900">Manage Users</h1>
+            <p className="text-sm text-slate-400 mt-0.5">{stats?.total_users || 0} user{stats?.total_users !== 1 ? 's' : ''} registered</p>
           </div>
         </div>
         <button onClick={handleExport} disabled={exporting}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Ekspor PDF
+          Export PDF
         </button>
                 <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
-          <Plus className="w-4 h-4" /> Tambah User
+          <Plus className="w-4 h-4" /> Add User
         </button>
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total User" value={stats.total_users} color="text-slate-900" />
-          <StatCard label="Aktif" value={stats.active_users} sub={`${stats.inactive_users} nonaktif`} color="text-emerald-600" />
+          <StatCard label="Total Users" value={stats.total_users} color="text-slate-900" />
+          <StatCard label="Active" value={stats.active_users} sub={`${stats.inactive_users} inactive`} color="text-emerald-600" />
           {Object.entries(stats.by_role || {}).slice(0, 2).map(([role, count]: any) => (
             <StatCard key={role} label={ROLE_CONFIG[role]?.label || role} value={count} color={ROLE_CONFIG[role]?.color || 'text-slate-700'} />
           ))}
@@ -504,7 +504,7 @@ export default function AdminUsersPage() {
       <div className="flex gap-2 flex-wrap mb-5">
         <button onClick={() => setRoleFilter('')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${!roleFilter ? 'bg-[#284074] text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-300'}`}>
-          Semua
+          All
         </button>
         {ROLES.map(role => {
           const conf = ROLE_CONFIG[role];
@@ -527,7 +527,7 @@ export default function AdminUsersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all w-full"
-              placeholder="Cari nama atau email..." />
+              placeholder="Search by name or email..." />
           </div>
           {(search || roleFilter) && (
             <button onClick={() => { setSearch(''); setRoleFilter(''); }}
@@ -546,7 +546,7 @@ export default function AdminUsersPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                {['Pengguna', 'Email', 'Divisi / Jabatan', 'Role', 'Status', ''].map(h => (
+                {['User', 'Email', 'Division / Position', 'Role', 'Status', ''].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -586,7 +586,7 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-3.5">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${u.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                        {u.is_active ? 'Aktif' : 'Nonaktif'}
+                        {u.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 relative">
@@ -635,18 +635,18 @@ export default function AdminUsersPage() {
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">Hapus User?</h3>
+              <h3 className="font-bold text-slate-900 mb-1">Delete User?</h3>
               <p className="text-sm text-slate-500 mb-5">
-                <span className="font-semibold text-slate-700">{deleteUser.full_name}</span> akan dihapus permanen.
+                <span className="font-semibold text-slate-700">{deleteUser.full_name}</span> will be permanently deleted.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteUser(null)}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                  Batal
+                  Cancel
                 </button>
                 <button onClick={() => deleteMutation.mutate(deleteUser.id)} disabled={deleteMutation.isPending}
                   className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50">
-                  {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </motion.div>

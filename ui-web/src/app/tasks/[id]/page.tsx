@@ -97,18 +97,18 @@ export default function TaskDetailPage() {
 
   const assignMutation = useMutation({
     mutationFn: (assignee_ids: string[]) => taskService.update(id, { assignee_ids }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Task di-assign!'); setAssignOpen(false); setSelectedAssignees([]); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Task assigned!'); setAssignOpen(false); setSelectedAssignees([]); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to assign'),
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => taskService.update(id, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Status diperbarui!'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Status updated!'); },
   });
 
   const logTimeMutation = useMutation({
     mutationFn: (data: any) => taskService.logTime(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Waktu dicatat!'); setLogOpen(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Time logged!'); setLogOpen(false); },
   });
 
   const commentMutation = useMutation({
@@ -153,7 +153,7 @@ export default function TaskDetailPage() {
       <div className="mb-5">
         <Link href="/tasks" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-[#284074] transition-colors font-medium">
           <ChevronLeft className="w-4 h-4" />
-          Kembali ke Tasks
+          Back to Tasks
         </Link>
       </div>
 
@@ -182,7 +182,7 @@ export default function TaskDetailPage() {
                     </div>
                   </div>
                   <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-                    {task?.description || 'Tidak ada deskripsi untuk task ini.'}
+                    {task?.description || 'No description for this task.'}
                   </p>
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function TaskDetailPage() {
               {task?.estimated_hours > 0 && (
                 <div className="mb-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-slate-500">Progress Pengerjaan</span>
+                    <span className="text-xs font-semibold text-slate-500">Work Progress</span>
                     <span className="text-xs font-bold text-slate-700">{task.actual_hours || 0}h / {task.estimated_hours}h</span>
                   </div>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -210,7 +210,7 @@ export default function TaskDetailPage() {
 
               {canUpdateStatus && (
                 <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-50">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ubah status:</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Change status:</span>
                   {statuses.filter(s => s !== task?.status).map(s => {
                     const sc = STATUS_CONFIG[s];
                     return (
@@ -232,7 +232,7 @@ export default function TaskDetailPage() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-400">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                 </svg>
-                Komentar
+                Comments
                 <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{comments?.length || 0}</span>
               </h3>
             </div>
@@ -260,7 +260,7 @@ export default function TaskDetailPage() {
                 ))}
               </AnimatePresence>
               {(!comments || comments.length === 0) && (
-                <div className="text-center py-8 text-slate-300 text-sm">Belum ada komentar</div>
+                <div className="text-center py-8 text-slate-300 text-sm">No comments yet</div>
               )}
             </div>
 
@@ -293,7 +293,7 @@ export default function TaskDetailPage() {
                         </button>
                       ))}
                     {(users || []).filter((u: any) => u.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()) && u.id !== user?.id).length === 0 && (
-                      <div className="px-3 py-2 text-xs text-slate-400">User tidak ditemukan</div>
+                      <div className="px-3 py-2 text-xs text-slate-400">No users found</div>
                     )}
                   </div>
                 )}
@@ -335,7 +335,7 @@ export default function TaskDetailPage() {
                       }
                       if (e.key === 'Escape') setShowMentions(false);
                     }}
-                    placeholder="Tulis komentar... ketik @ untuk mention (Enter kirim, Shift+Enter baris baru)"
+                    placeholder="Write a comment... type @ to mention (Enter to send, Shift+Enter for new line)"
                     className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all resize-none"
                   />
                   <motion.button
@@ -354,7 +354,7 @@ export default function TaskDetailPage() {
 
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-100 p-5">
-            <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Detail Task</h3>
+            <h3 className="text-sm font-bold text-slate-700 mb-4 uppercase tracking-wider">Task Details</h3>
             <div className="space-y-3">
               {[
                 {
@@ -373,9 +373,9 @@ export default function TaskDetailPage() {
                     </span>
                   )
                 },
-                { label: 'Estimasi', value: <span className="text-sm font-mono font-semibold text-slate-700">{task?.estimated_hours || 0}h</span> },
-                { label: 'Aktual', value: <span className="text-sm font-mono font-semibold text-slate-700">{task?.actual_hours || 0}h</span> },
-                { label: 'Dibuat', value: <span className="text-sm text-slate-500">{task?.created_at ? timeAgo(task.created_at) : '—'}</span> },
+                { label: 'Estimated', value: <span className="text-sm font-mono font-semibold text-slate-700">{task?.estimated_hours || 0}h</span> },
+                { label: 'Actual', value: <span className="text-sm font-mono font-semibold text-slate-700">{task?.actual_hours || 0}h</span> },
+                { label: 'Created', value: <span className="text-sm text-slate-500">{task?.created_at ? timeAgo(task.created_at) : '—'}</span> },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{item.label}</span>
@@ -411,8 +411,8 @@ export default function TaskDetailPage() {
                       {canManage && (
                         <button onClick={() => {
                           taskService.removeAssignee(id, uid)
-                            .then(() => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Assignee dihapus'); })
-                            .catch(() => toast.error('Gagal hapus assignee'));
+                            .then(() => { qc.invalidateQueries({ queryKey: ['task', id] }); toast.success('Assignee removed'); })
+                            .catch(() => toast.error('Failed to remove assignee'));
                         }}
                           className="p-1 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
@@ -431,7 +431,7 @@ export default function TaskDetailPage() {
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                   </svg>
                 </div>
-                <p className="text-xs text-slate-400 font-medium">Belum ada assignee</p>
+                <p className="text-xs text-slate-400 font-medium">No assignees yet</p>
               </div>
             )}
 
@@ -445,7 +445,7 @@ export default function TaskDetailPage() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            Log Waktu
+            Log Time
           </motion.button>
         </div>
       </div>
@@ -456,7 +456,7 @@ export default function TaskDetailPage() {
           <div className="flex items-center justify-between p-5 border-b border-slate-100">
             <div>
               <h2 className="font-bold text-slate-900">Assign Task</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Pilih anggota tim untuk task ini</p>
+              <p className="text-xs text-slate-400 mt-0.5">Select team members for this task</p>
             </div>
             <button onClick={() => { setAssignOpen(false); setSelectedAssignees([]); }} className="p-2 hover:bg-slate-100 rounded-xl">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-slate-500"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -488,22 +488,22 @@ export default function TaskDetailPage() {
           <div className="flex gap-2 p-4 border-t border-slate-100">
             <button onClick={() => { setAssignOpen(false); setSelectedAssignees([]); }}
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-              Batal
+              Cancel
             </button>
             <button onClick={() => assignMutation.mutate(selectedAssignees)}
               disabled={assignMutation.isPending || selectedAssignees.length === 0}
               className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] disabled:opacity-50">
-              {assignMutation.isPending ? 'Menyimpan...' : `Simpan (${selectedAssignees.length})`}
+              {assignMutation.isPending ? 'Saving...' : `Save (${selectedAssignees.length})`}
             </button>
           </div>
         </div>
       </div>
       )}
 
-      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="Log Waktu" subtitle="Catat jam pengerjaan task ini" size="sm">
+      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="Log Time" subtitle="Record hours worked on this task" size="sm">
         <form onSubmit={handleLog(d => logTimeMutation.mutate(d))} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Jam Dikerjakan</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Hours Worked</label>
             <div className="relative">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
@@ -516,13 +516,13 @@ export default function TaskDetailPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Deskripsi</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</label>
             <textarea {...regLog('description')}
               className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all resize-none h-20"
-              placeholder="Apa yang dikerjakan..." />
+              placeholder="What was worked on..." />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tanggal</label>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Date</label>
             <div className="relative">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none">
@@ -537,14 +537,14 @@ export default function TaskDetailPage() {
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={() => setLogOpen(false)}
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-              Batal
+              Cancel
             </button>
             <button type="submit"
               className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] transition-colors flex items-center justify-center gap-2">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              Simpan
+              Save
             </button>
           </div>
         </form>

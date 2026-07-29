@@ -1,233 +1,372 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell } from 'lucide-react';
+import {
+  Bell, PenLine, Clock, CalendarDays, AtSign, CheckCircle,
+  BarChart2, FileWarning, CheckSquare, Mail, Send,
+} from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner, EmptyState } from '@/components/ui/EmptyState';
-import { notificationService } from '@/lib/api';
-import { timeAgo } from '@/lib/utils';
-import { useAuthStore } from '@/store/authStore';
-import { useState, useEffect } from 'react';
 import Modal from '@/components/ui/Modal';
+import { notificationService } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
-const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; bg: string; dot: string }> = {
-  'task.assigned': {
-    label: 'Task Assigned', bg: 'bg-blue-50', dot: 'bg-blue-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-blue-500"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
-  },
-  'task.commented': {
-    label: 'Komentar Baru', bg: 'bg-violet-50', dot: 'bg-violet-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-violet-500"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
-  },
-  'task.status_changed': {
-    label: 'Status Berubah', bg: 'bg-amber-50', dot: 'bg-amber-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-amber-500"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>,
-  },
-  'change_request.submitted': {
-    label: 'CR Diajukan', bg: 'bg-violet-50', dot: 'bg-violet-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-violet-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-  },
-  'change_request.approved': {
-    label: 'CR Disetujui', bg: 'bg-emerald-50', dot: 'bg-emerald-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500"><polyline points="20 6 9 17 4 12"/></svg>,
-  },
-  'change_request.rejected': {
-    label: 'CR Ditolak', bg: 'bg-red-50', dot: 'bg-red-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-red-500"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-  },
-  'sprint.started': {
-    label: 'Sprint Dimulai', bg: 'bg-emerald-50', dot: 'bg-emerald-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-emerald-500"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-  },
-  'sprint.completed': {
-    label: 'Sprint Selesai', bg: 'bg-green-50', dot: 'bg-green-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-green-500"><circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/></svg>,
-  },
-  'calendar.event_created': {
-    label: 'Agenda Baru', bg: 'bg-sky-50', dot: 'bg-sky-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-sky-500"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-  },
-  'calendar.event_assigned': {
-    label: 'Dijadwalkan', bg: 'bg-indigo-50', dot: 'bg-indigo-500',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-indigo-500"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>,
-  },
+/* ── Type config ─────────────────────────────────────────── */
+type NotifConfig = { label: string; Icon: React.ElementType; iconBg: string; iconColor: string; cta?: string; ctaPrimary?: boolean; needsAction?: boolean };
+
+const TYPE_CFG: Record<string, NotifConfig> = {
+  'tte.sign_requested':         { label: 'Signature requested',  Icon: PenLine,      iconBg: '#fbf3e0', iconColor: '#8a6209', cta: 'Sign now',    ctaPrimary: true,  needsAction: true },
+  'change_request.submitted':   { label: 'Approval needed',      Icon: Clock,        iconBg: '#fbf3e0', iconColor: '#8a6209', cta: 'Review',      ctaPrimary: true,  needsAction: true },
+  'calendar.event_assigned':    { label: 'Meeting invite',        Icon: CalendarDays, iconBg: '#eaf1f8', iconColor: '#14406a', cta: 'Open agenda'                                      },
+  'task.commented':             { label: 'Mention',               Icon: AtSign,       iconBg: '#fdeceb', iconColor: '#a3231c', cta: 'Reply'                                            },
+  'tte.signed':                 { label: 'Document signed',       Icon: CheckCircle,  iconBg: '#e9f4ee', iconColor: '#0f6144', cta: 'Download'                                         },
+  'sprint.completed':           { label: 'Sprint closed',         Icon: BarChart2,    iconBg: '#f1f0ed', iconColor: '#5c6470', cta: 'View report'                                      },
+  'document.expiring':          { label: 'Document expiring',     Icon: FileWarning,  iconBg: '#fbf3e0', iconColor: '#8a6209', cta: 'Open'                                             },
+  'task.assigned':              { label: 'Task assigned',         Icon: CheckSquare,  iconBg: '#eaf1f8', iconColor: '#14406a', cta: 'Open'                                             },
+  'change_request.approved':    { label: 'CR approved',           Icon: CheckCircle,  iconBg: '#e9f4ee', iconColor: '#0f6144', cta: 'View'                                             },
+  'change_request.rejected':    { label: 'CR rejected',           Icon: FileWarning,  iconBg: '#fdeceb', iconColor: '#a3231c', cta: 'View'                                             },
+  'sprint.started':             { label: 'Sprint started',        Icon: BarChart2,    iconBg: '#e9f4ee', iconColor: '#0f6144'                                                          },
+  'calendar.event_created':     { label: 'New event',             Icon: CalendarDays, iconBg: '#eaf1f8', iconColor: '#14406a', cta: 'Open'                                             },
+  'task.status_changed':        { label: 'Status changed',        Icon: CheckSquare,  iconBg: '#f1f0ed', iconColor: '#5c6470'                                                          },
 };
 
-const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
-  sent:    { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Terkirim' },
-  failed:  { bg: 'bg-red-50',     text: 'text-red-600',     label: 'Gagal' },
-  pending: { bg: 'bg-amber-50',   text: 'text-amber-600',   label: 'Pending' },
-  read:    { bg: 'bg-slate-100',  text: 'text-slate-500',   label: 'Dibaca' },
-};
+function getCfg(type: string): NotifConfig {
+  return TYPE_CFG[type] ?? { label: type, Icon: Bell, iconBg: '#f1f0ed', iconColor: '#5c6470' };
+}
+
+function fmtTime(iso: string) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function dayLabel(iso: string) {
+  if (!iso) return 'Earlier';
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return `TODAY · ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }).toUpperCase()}`;
+  if (d.toDateString() === yesterday.toDateString()) return `YESTERDAY · ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }).toUpperCase()}`;
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+}
+
+function groupByDay(notifications: any[]) {
+  const groups: { label: string; items: any[] }[] = [];
+  const seen: Record<string, number> = {};
+  for (const n of notifications) {
+    const d = new Date(n.created_at).toDateString();
+    if (seen[d] === undefined) {
+      seen[d] = groups.length;
+      groups.push({ label: dayLabel(n.created_at), items: [] });
+    }
+    groups[seen[d]].items.push(n);
+  }
+  return groups;
+}
+
+type Tab = 'needs_action' | 'unread' | 'all' | 'mentions';
+
+const PREF_GROUPS = [
+  { section: 'SIGNATURE & APPROVAL', items: ['Signature requested', 'CR needs my approval', 'CR decided'] },
+  { section: 'MY WORK',              items: ['Task assigned to me', 'Mentioned in a comment', 'Sprint started or closed'] },
+  { section: 'AGENDA',               items: ['Added to an event', 'Reminder day before'] },
+];
 
 export default function NotificationsPage() {
   const qc = useQueryClient();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const { user } = useAuthStore();
+  const [page, setPage]               = useState(1);
+  const [tab, setTab]                 = useState<Tab>('needs_action');
+  const [prefsOpen, setPrefsOpen]     = useState(false);
+  const { user }                      = useAuthStore();
 
   const { data: notifData, isLoading } = useQuery({
     queryKey: ['notifications', page],
     queryFn: () => notificationService.list(page).then(r => r.data.data),
   });
 
-  const notifications = notifData?.data || [];
-  const total = notifData?.total || 0;
-  const lastPage = notifData?.last_page || 1;
+  const notifications: any[] = notifData?.data || [];
+  const total                = notifData?.total || 0;
+  const lastPage             = notifData?.last_page || 1;
 
-  const markReadMutation = useMutation({
-    mutationFn: (id: string) => notificationService.markRead(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  const markAllMutation = useMutation({
+    mutationFn: () => notificationService.markAllRead(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notif-unread-count'] });
+    },
   });
 
-  useEffect(() => {
-    notificationService.markAllRead().then(() => {
-      qc.invalidateQueries({ queryKey: ['notif-unread-count'] });
-    }).catch(() => {});
-  }, []);
+  const unreadCount     = notifications.filter(n => n.status === 'sent').length;
+  const needsActionList = notifications.filter(n => getCfg(n.type).needsAction);
+  const mentionList     = notifications.filter(n => n.type === 'task.commented');
 
-  const unreadCount = notifications.filter((n: any) => n.status === 'sent').length || 0;
+  const filtered = tab === 'needs_action' ? needsActionList
+    : tab === 'unread'   ? notifications.filter(n => n.status === 'sent')
+    : tab === 'mentions' ? mentionList
+    : notifications;
+
+  const groups = groupByDay(filtered);
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'needs_action', label: 'Needs action' },
+    { id: 'unread',       label: 'Unread' },
+    { id: 'all',          label: 'All' },
+    { id: 'mentions',     label: 'Mentions' },
+  ];
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-gradient-to-br from-[#284074]/10 to-[#284074]/5 rounded-2xl flex items-center justify-center border border-[#284074]/10 relative">
-              <Bell className="w-5 h-5 text-[#284074]" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Notifikasi</h1>
-              <p className="text-sm text-slate-400 mt-0.5">{total} total notifikasi</p>
+      <PageHeader
+        section="INBOX"
+        title="Notifications"
+        subtitle={`${unreadCount} unread · ${needsActionList.length} need an action from you · nothing is marked read automatically`}
+        actions={
+          <>
+            <button
+              onClick={() => setPrefsOpen(true)}
+              className="h-[34px] flex items-center gap-[6px] px-[13px] border border-[#d9d6cf] rounded-[6px] bg-white text-[12px] font-semibold text-[#4b5563] hover:bg-[#f5f4f2] transition-colors"
+            >
+              Preferences
+            </button>
+            <button
+              onClick={() => markAllMutation.mutate()}
+              disabled={markAllMutation.isPending}
+              className="h-[34px] flex items-center gap-[6px] px-[13px] border border-[#d9d6cf] rounded-[6px] bg-white text-[12px] font-semibold text-[#4b5563] hover:bg-[#f5f4f2] transition-colors disabled:opacity-50"
+            >
+              Mark all as read
+            </button>
+          </>
+        }
+      />
+
+      <div className="flex gap-[14px]">
+        {/* ── Notification feed ──────────────────────────────── */}
+        <div className="flex-1 bg-white border border-[#e6e4df] rounded-[6px] flex flex-col overflow-hidden min-h-[500px]">
+          {/* Toolbar */}
+          <div className="flex items-center px-[15px] py-[9px] gap-[10px] border-b border-[#eceae4]">
+            <div className="flex gap-[5px]">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    'h-[26px] flex items-center px-[10px] rounded-[4px] text-[11.5px] transition-colors',
+                    tab === t.id ? 'bg-brand text-white font-semibold' : 'text-[#6b7280] font-medium hover:bg-[#f1f0ed]'
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
           </div>
-          <button onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-            </svg>
-            Pengaturan
-          </button>
-        </div>
-      </div>
 
-      {isLoading ? <LoadingSpinner /> : !notifications.length ? (
-        <EmptyState icon={Bell} title="Tidak ada notifikasi" subtitle="Notifikasi akan muncul saat ada update task, sprint, atau agenda" />
-      ) : (
-        <div className="space-y-2">
-          <AnimatePresence>
-            {notifications.map((n: any, i: number) => {
-              const typeConf = TYPE_CONFIG[n.type] || {
-                label: n.type, bg: 'bg-slate-50', dot: 'bg-slate-400',
-                icon: <Bell className="w-4 h-4 text-slate-400" />,
-              };
-              const statusConf = STATUS_CONFIG[n.status] || STATUS_CONFIG.pending;
-              const title = n.payload?.event_title || n.payload?.task_title || n.payload?.message || n.type;
-
-              return (
-                <motion.div key={n.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="bg-white rounded-2xl border border-slate-100 p-4 flex items-start gap-4 hover:border-slate-200 hover:shadow-sm transition-all"
-                >
-                  <div className={`w-10 h-10 rounded-xl ${typeConf.bg} flex items-center justify-center flex-shrink-0`}>
-                    {typeConf.icon}
+          {/* Notifications */}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-48"><LoadingSpinner /></div>
+          ) : !filtered.length ? (
+            <EmptyState icon={Bell} title="No notifications" subtitle={tab === 'needs_action' ? 'Nothing needs your action right now' : 'No notifications to show'} />
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              {groups.map(group => (
+                <div key={group.label}>
+                  <div className="h-[28px] flex items-center px-[15px] bg-[#faf9f7] border-b border-[#eceae4] font-mono text-[9.5px] font-semibold tracking-[0.12em] text-[#8a8f98]">
+                    {group.label}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{typeConf.label}</span>
-                          <span className={`w-1.5 h-1.5 rounded-full ${typeConf.dot}`} />
-                          <span className="text-xs text-slate-400 capitalize bg-slate-100 px-1.5 py-0.5 rounded-md">{n.channel}</span>
+                  {group.items.map((n, i) => {
+                    const cfg      = getCfg(n.type);
+                    const isAction = cfg.needsAction;
+                    const title    = n.payload?.event_title || n.payload?.task_title || n.payload?.message || n.type;
+                    const meta     = [
+                      n.payload?.document_number,
+                      n.payload?.task_code,
+                      n.payload?.body,
+                    ].filter(Boolean).join(' · ');
+
+                    return (
+                      <motion.div
+                        key={n.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: i * 0.03 }}
+                        className="flex gap-[11px] px-[15px] py-[11px] border-b border-[#f2f0ec] transition-colors hover:bg-[#fdfcfb]"
+                        style={isAction ? { boxShadow: 'inset 2px 0 0 #c9971b', background: '#fffdf6' } : {}}
+                      >
+                        <div
+                          className="w-[30px] h-[30px] flex-none rounded-[5px] flex items-center justify-center"
+                          style={{ background: cfg.iconBg }}
+                        >
+                          <cfg.Icon className="w-[15px] h-[15px]" style={{ color: cfg.iconColor }} strokeWidth={1.5} />
                         </div>
-                        <p className="text-sm font-semibold text-slate-800 leading-snug">{title}</p>
-                        {n.payload?.event_title && (
-                          <div className="mt-1.5 space-y-0.5">
-                            {n.payload?.start_date && (
-                              <p className="text-xs text-slate-500">
-                                📅 {n.payload.start_date}
-                                {n.payload?.start_time ? ' · ' + n.payload.start_time.slice(0,5) : n.payload?.all_day ? ' · Seharian' : ''}
-                              </p>
-                            )}
-                            {n.payload?.location && <p className="text-xs text-slate-500">🏛 {n.payload.location}</p>}
-                            {n.payload?.participants && <p className="text-xs text-slate-500">👥 {n.payload.participants}</p>}
+                        <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
+                          <div className="flex items-center gap-[8px]">
+                            <span className="text-[12.5px] font-semibold text-[#12283c]">{title}</span>
+                            <span className="font-mono text-[10px] text-[#a6a094]">{fmtTime(n.created_at)}</span>
                           </div>
-                        )}
-                        {n.payload?.task_title && !n.payload?.event_title && (
-                          <p className="text-xs text-slate-500 mt-1">Task: {n.payload.task_title}</p>
-                        )}
-                      </div>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${statusConf.bg} ${statusConf.text}`}>
-                        {statusConf.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-slate-400">{timeAgo(n.created_at)}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                          {meta && <span className="text-[11.5px] text-[#6b7280]">{meta}</span>}
+                        </div>
+                        <div className="flex items-center gap-[7px] flex-none">
+                          {cfg.cta && (
+                            <button
+                              className={cn(
+                                'h-[26px] flex items-center px-[10px] rounded-[5px] text-[11px] font-semibold',
+                                cfg.ctaPrimary
+                                  ? 'bg-accent text-[#12283c]'
+                                  : 'border border-[#d9d6cf] bg-white text-[#4b5563]'
+                              )}
+                            >
+                              {cfg.cta}
+                            </button>
+                          )}
+                          {n.status === 'sent' && (
+                            <span className="w-[7px] h-[7px] rounded-full bg-accent flex-none" />
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
 
-          {lastPage > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-3">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
-                ← Sebelumnya
-              </button>
-              <span className="text-sm text-slate-500 px-3">{page} / {lastPage}</span>
-              <button onClick={() => setPage(p => Math.min(lastPage, p + 1))} disabled={page === lastPage}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors">
-                Selanjutnya →
-              </button>
+          {/* Footer / pagination */}
+          {!isLoading && total > 0 && (
+            <div className="h-[36px] flex-none flex items-center justify-between px-[15px] border-t border-[#eceae4] bg-[#faf9f7]">
+              <span className="text-[11px] text-[#8a8f98]">
+                Showing {filtered.length} of {total} · grouped by day
+              </span>
+              {lastPage > 1 && (
+                <div className="flex items-center gap-[4px]">
+                  {[
+                    { label: '‹', action: () => setPage(p => Math.max(1, p - 1)), disabled: page === 1 },
+                    ...Array.from({ length: Math.min(3, lastPage) }, (_, i) => ({ label: String(i + 1), action: () => setPage(i + 1), disabled: false, active: page === i + 1 })),
+                    { label: '›', action: () => setPage(p => Math.min(lastPage, p + 1)), disabled: page === lastPage },
+                  ].map((btn, i) => (
+                    <button
+                      key={i}
+                      onClick={btn.action}
+                      disabled={btn.disabled}
+                      className={cn(
+                        'min-w-[22px] h-[22px] flex items-center justify-center px-[6px] rounded-[4px] font-mono text-[10.5px] font-semibold transition-colors',
+                        (btn as any).active
+                          ? 'bg-brand text-white'
+                          : 'border border-[#e2e0da] bg-white text-[#6b7280] disabled:opacity-40'
+                      )}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
 
-      <Modal open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Pengaturan Notifikasi" subtitle="Konfigurasi channel notifikasi kamu" size="sm">
+        {/* ── Right panel ───────────────────────────────────── */}
+        <div className="w-[280px] flex-none flex flex-col gap-[14px]">
+          {/* Delivery channels */}
+          <div className="bg-white border border-[#e6e4df] rounded-[6px]">
+            <div className="h-[40px] flex items-center px-[15px] border-b border-[#eceae4]">
+              <span className="text-[12.5px] font-semibold text-[#0d2b48]">Delivery channels</span>
+            </div>
+            <div className="px-[14px] py-[12px] flex flex-col gap-[11px]">
+              {/* In-app */}
+              <div className="flex items-center gap-[9px]">
+                <div className="w-[28px] h-[28px] rounded-[5px] bg-[#e9f4ee] flex items-center justify-center">
+                  <Mail className="w-[14px] h-[14px] text-[#137a52]" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[12px] font-semibold text-[#12283c]">In-app</div>
+                  <div className="text-[10.5px] text-[#8a8f98]">Always on</div>
+                </div>
+                <div className="w-[32px] h-[18px] rounded-full bg-[#137a52] p-[2px] flex justify-end">
+                  <div className="w-[14px] h-[14px] rounded-full bg-white" />
+                </div>
+              </div>
+
+              {/* Telegram */}
+              <div className="flex items-center gap-[9px]">
+                <div className="w-[28px] h-[28px] rounded-[5px] bg-[#eaf1f8] flex items-center justify-center">
+                  <Send className="w-[14px] h-[14px] text-brand" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-[12px] font-semibold text-[#12283c]">Telegram</div>
+                  <div className={cn('text-[10.5px]', user?.telegram_chat_id ? 'text-[#0f6144]' : 'text-[#8a8f98]')}>
+                    {user?.telegram_chat_id ? `Connected · ${user.telegram_chat_id}` : 'Not connected'}
+                  </div>
+                </div>
+                <div className={cn('w-[32px] h-[18px] rounded-full p-[2px]', user?.telegram_chat_id ? 'bg-[#137a52] flex justify-end' : 'bg-[#dfdcd5] flex justify-start')}>
+                  <div className="w-[14px] h-[14px] rounded-full bg-white" />
+                </div>
+              </div>
+
+              <button
+                onClick={() => setPrefsOpen(true)}
+                className="h-[30px] flex items-center justify-center border border-[#d9d6cf] rounded-[5px] text-[11.5px] font-semibold text-brand hover:bg-[#f5f4f2] transition-colors"
+              >
+                Send test notification
+              </button>
+            </div>
+          </div>
+
+          {/* Preferences panel */}
+          <div className="bg-white border border-[#e6e4df] rounded-[6px] flex-1">
+            <div className="h-[40px] flex items-center px-[15px] border-b border-[#eceae4] gap-[10px]">
+              <span className="text-[12.5px] font-semibold text-[#0d2b48]">What you get notified about</span>
+              <span className="ml-auto font-mono text-[9.5px] text-[#a6a094]">5 OF 14 ON</span>
+            </div>
+            <div className="px-[14px] py-[10px] flex flex-col gap-[12px]">
+              {PREF_GROUPS.map(g => (
+                <div key={g.section} className="flex flex-col gap-[7px]">
+                  <div className="font-mono text-[9px] font-medium tracking-[0.12em] text-[#8a8f98]">{g.section}</div>
+                  {g.items.map((item, j) => (
+                    <div key={item} className="flex items-center gap-[9px]">
+                      <span className="text-[11.5px] text-[#4b5563] flex-1">{item}</span>
+                      <div className={cn(
+                        'w-[28px] h-[16px] rounded-full p-[2px]',
+                        j < 2 ? 'bg-[#137a52] flex justify-end' : 'bg-[#dfdcd5] flex justify-start'
+                      )}>
+                        <div className="w-[12px] h-[12px] rounded-full bg-white" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Preferences Modal */}
+      <Modal open={prefsOpen} onClose={() => setPrefsOpen(false)} title="Notification Preferences" subtitle="Configure your notification channels" size="sm">
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-blue-500">
-                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.01 9.47c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.873.75z"/>
-                </svg>
+                <Send className="w-4 h-4 text-blue-500" />
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-700">Telegram</div>
-                <div className="text-xs text-slate-400">Notifikasi via bot Telegram</div>
+                <div className="text-xs text-slate-400">Notifications via Telegram bot</div>
               </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500">Chat ID</span>
-              <span className={`text-xs font-mono font-semibold px-2.5 py-1 rounded-lg ${user?.telegram_chat_id ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
-                {user?.telegram_chat_id || 'Belum diset'}
+              <span className={cn('text-xs font-mono font-semibold px-2.5 py-1 rounded-lg', user?.telegram_chat_id ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400')}>
+                {user?.telegram_chat_id || 'Not set'}
               </span>
             </div>
           </div>
           {!user?.telegram_chat_id && (
-            <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p className="text-xs text-amber-700 leading-relaxed">
-                Telegram Chat ID belum diset. Set melalui halaman <strong>Settings</strong> untuk mengaktifkan notifikasi.
-              </p>
-            </div>
+            <p className="text-xs text-[#8a6209] bg-[#fbf3e0] border border-[#c9971b]/30 rounded-[6px] p-3">
+              Telegram Chat ID not set. Configure it in <strong>Settings</strong> to enable Telegram notifications.
+            </p>
           )}
-          <button onClick={() => setSettingsOpen(false)}
-            className="w-full px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3060] transition-colors">
-            Tutup
+          <button onClick={() => setPrefsOpen(false)} className="w-full px-4 py-2.5 rounded-[6px] bg-brand text-white text-[12px] font-semibold hover:opacity-90 transition-opacity">
+            Close
           </button>
         </div>
       </Modal>

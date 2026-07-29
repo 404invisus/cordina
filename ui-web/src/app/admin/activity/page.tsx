@@ -8,18 +8,18 @@ import { adminActivityService, adminUserService } from '@/lib/api';
 
 function formatDate(d: string) {
   if (!d) return '-';
-  return new Date(d).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 const ACTION_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  login:             { label: 'Login',              icon: LogIn,       color: 'text-emerald-600 bg-emerald-50' },
-  logout:            { label: 'Logout',             icon: LogOut,      color: 'text-slate-600 bg-slate-100' },
-  login_failed:      { label: 'Login Gagal',        icon: AlertCircle, color: 'text-red-600 bg-red-50' },
-  'cr.created':      { label: 'Buat CR',            icon: FileText,    color: 'text-blue-600 bg-blue-50' },
-  'cr.signed':       { label: 'Tanda Tangan CR',    icon: PenLine,     color: 'text-violet-600 bg-violet-50' },
-  'tte.signed':      { label: 'TTE Dokumen',        icon: PenLine,     color: 'text-purple-600 bg-purple-50' },
-  'document.uploaded':{ label: 'Upload Dokumen',    icon: Upload,      color: 'text-amber-600 bg-amber-50' },
-  'asset.created':   { label: 'Tambah Aset',        icon: Package,     color: 'text-teal-600 bg-teal-50' },
+  login:             { label: 'Login',             icon: LogIn,       color: 'text-emerald-600 bg-emerald-50' },
+  logout:            { label: 'Logout',            icon: LogOut,      color: 'text-slate-600 bg-slate-100' },
+  login_failed:      { label: 'Login Failed',      icon: AlertCircle, color: 'text-red-600 bg-red-50' },
+  'cr.created':      { label: 'Create CR',         icon: FileText,    color: 'text-blue-600 bg-blue-50' },
+  'cr.signed':       { label: 'Sign CR',           icon: PenLine,     color: 'text-violet-600 bg-violet-50' },
+  'tte.signed':      { label: 'e-Sign Document',   icon: PenLine,     color: 'text-purple-600 bg-purple-50' },
+  'document.uploaded':{ label: 'Upload Document',  icon: Upload,      color: 'text-amber-600 bg-amber-50' },
+  'asset.created':   { label: 'Add Asset',         icon: Package,     color: 'text-teal-600 bg-teal-50' },
 };
 
 export default function AdminActivityPage() {
@@ -57,8 +57,8 @@ export default function AdminActivityPage() {
             <Activity className="w-5 h-5 text-slate-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Riwayat Aktivitas</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Log login dan aktivitas pengguna</p>
+            <h1 className="text-2xl font-bold text-slate-900">Activity Log</h1>
+            <p className="text-sm text-slate-400 mt-0.5">User login and activity history</p>
           </div>
         </div>
       </div>
@@ -69,34 +69,34 @@ export default function AdminActivityPage() {
             <Search className="w-4 h-4 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none text-slate-700 placeholder:text-slate-400"
-              placeholder="Cari nama, email, atau deskripsi..." />
+              placeholder="Search by name, email, or description..." />
           </div>
           <select value={action} onChange={e => setAction(e.target.value)}
             className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200">
-            <option value="">Semua Aksi</option>
+            <option value="">All Actions</option>
             {Object.entries(ACTION_CONFIG).map(([k, v]) => (
               <option key={k} value={k}>{v.label}</option>
             ))}
           </select>
           <select value={userId} onChange={e => setUserId(e.target.value)}
             className="px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200">
-            <option value="">Semua Pengguna</option>
+            <option value="">All Users</option>
             {(usersData || []).map((u: any) => (
               <option key={u.id} value={u.id}>{u.full_name}</option>
             ))}
           </select>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Periode:</span>
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Period:</span>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)}
             className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none" />
-          <span className="text-xs text-slate-400">s/d</span>
+          <span className="text-xs text-slate-400">to</span>
           <input type="date" value={to} onChange={e => setTo(e.target.value)}
             className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none" />
           {(from || to || action || userId || search) && (
             <button onClick={() => { setFrom(''); setTo(''); setAction(''); setUserId(''); setSearch(''); }}
               className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-500 hover:bg-slate-50">
-              Reset Filter
+              Clear filters
             </button>
           )}
         </div>
@@ -104,10 +104,10 @@ export default function AdminActivityPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Aktivitas', value: data?.total || 0, color: 'text-slate-700' },
-          { label: 'Login Hari Ini', value: logs.filter((l: any) => l.action === 'login' && new Date(l.created_at).toDateString() === new Date().toDateString()).length, color: 'text-emerald-600' },
-          { label: 'Login Gagal', value: logs.filter((l: any) => l.action === 'login_failed').length, color: 'text-red-600' },
-          { label: 'Dokumen Ditanda', value: logs.filter((l: any) => ['cr.signed','tte.signed'].includes(l.action)).length, color: 'text-violet-600' },
+          { label: 'Total Activity', value: data?.total || 0, color: 'text-slate-700' },
+          { label: 'Logins Today', value: logs.filter((l: any) => l.action === 'login' && new Date(l.created_at).toDateString() === new Date().toDateString()).length, color: 'text-emerald-600' },
+          { label: 'Failed Logins', value: logs.filter((l: any) => l.action === 'login_failed').length, color: 'text-red-600' },
+          { label: 'Documents Signed', value: logs.filter((l: any) => ['cr.signed','tte.signed'].includes(l.action)).length, color: 'text-violet-600' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-4">
             <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
@@ -121,13 +121,13 @@ export default function AdminActivityPage() {
           <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-20 text-slate-400 text-sm">Belum ada aktivitas</div>
+        <div className="text-center py-20 text-slate-400 text-sm">No activity yet</div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
-                {['Waktu', 'Pengguna', 'Aksi', 'Deskripsi', 'IP', 'Status'].map(h => (
+                {['Time', 'User', 'Action', 'Description', 'IP', 'Status'].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>

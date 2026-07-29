@@ -68,22 +68,22 @@ function AddBacklogToSprintModal({ open, onClose, sprintId, projectId }: { open:
       qc.invalidateQueries({ queryKey: ['sprints', projectId] });
       qc.invalidateQueries({ queryKey: ['all-stories-unassigned', projectId] });
       epics?.forEach((e: any) => qc.invalidateQueries({ queryKey: ['stories', e.id] }));
-      toast.success(`${selected.length} backlog ditambahkan ke sprint!`);
+      toast.success(`${selected.length} backlog(s) added to sprint!`);
       setSelected([]);
       onClose();
     },
-    onError: () => toast.error('Gagal menambahkan backlog'),
+    onError: () => toast.error('Failed to add backlog'),
   });
 
   const toggle = (id: string) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const PRIORITY_COLOR: Record<string, string> = { critical: 'text-red-600 bg-red-50', high: 'text-orange-600 bg-orange-50', medium: 'text-amber-600 bg-amber-50', low: 'text-emerald-600 bg-emerald-50' };
 
   return (
-    <Modal open={open} onClose={onClose} title="Pilih Backlog untuk Sprint">
+    <Modal open={open} onClose={onClose} title="Select Backlog for Sprint">
       <div className="space-y-3">
-        {isLoading && <div className="py-8 text-center text-sm text-slate-400">Memuat backlog...</div>}
+        {isLoading && <div className="py-8 text-center text-sm text-slate-400">Loading backlogs...</div>}
         {!isLoading && (!allStories || allStories.length === 0) && (
-          <div className="py-8 text-center text-sm text-slate-400">Tidak ada backlog yang belum masuk sprint</div>
+          <div className="py-8 text-center text-sm text-slate-400">No backlog items outside of a sprint</div>
         )}
         {allStories && allStories.length > 0 && (
           <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
@@ -106,12 +106,12 @@ function AddBacklogToSprintModal({ open, onClose, sprintId, projectId }: { open:
           </div>
         )}
         <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-          <span className="text-xs text-slate-400">{selected.length} backlog dipilih</span>
+          <span className="text-xs text-slate-400">{selected.length} selected</span>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
+            <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
             <button onClick={() => mutate()} disabled={isPending || selected.length === 0}
               className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#284074] text-white hover:bg-[#1e3260] transition-colors disabled:opacity-60 flex items-center gap-2">
-              {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : `Tambahkan (${selected.length})`}
+              {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : `Add (${selected.length})`}
             </button>
           </div>
         </div>
@@ -128,13 +128,13 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
 
   const startMutation = useMutation({
     mutationFn: () => sprintService.start(projectId, sprint.id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint dimulai!'); },
-    onError: () => toast.error('Gagal memulai sprint'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint started!'); },
+    onError: () => toast.error('Failed to start sprint'),
   });
   const completeMutation = useMutation({
     mutationFn: () => sprintService.complete(projectId, sprint.id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint selesai!'); },
-    onError: () => toast.error('Gagal menyelesaikan sprint'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint completed!'); },
+    onError: () => toast.error('Failed to complete sprint'),
   });
 
   return (
@@ -157,13 +157,13 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
           {sprint.status === 'planned' && (
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => startMutation.mutate()} disabled={startMutation.isPending}
               className="inline-flex items-center gap-1.5 text-xs bg-[#284074] text-white px-3.5 py-2 rounded-xl font-semibold hover:bg-[#1e3260] transition-all shadow-sm disabled:opacity-60">
-              <svg viewBox="0 0 24 24" fill="white" className="w-3 h-3"><polygon points="5 3 19 12 5 21 5 3"/></svg> Mulai Sprint
+              <svg viewBox="0 0 24 24" fill="white" className="w-3 h-3"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start Sprint
             </motion.button>
           )}
           {sprint.status === 'active' && (
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => completeMutation.mutate()} disabled={completeMutation.isPending}
               className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-semibold hover:bg-emerald-700 transition-all disabled:opacity-60">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg> Selesaikan
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg> Complete
             </motion.button>
           )}
           <Link href={`/projects/${projectId}/board?sprint_id=${sprint.id}`}
@@ -195,14 +195,14 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
   const { register, handleSubmit, reset } = useForm();
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => sprintService.create(projectId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint dibuat!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat sprint'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sprints', projectId] }); toast.success('Sprint created!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create sprint'),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Buat Sprint Baru">
+    <Modal open={open} onClose={onClose} title="Create New Sprint">
       <form onSubmit={handleSubmit(d => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nama Sprint</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Sprint Name</label>
           <FieldWrap focused={focused} name="name">
             <input {...register('name', { required: true })} onFocus={() => setFocused('name')} onBlur={() => setFocused(null)} className={fieldCls} placeholder="Sprint 1" />
           </FieldWrap>
@@ -210,28 +210,28 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">Sprint Goal</label>
           <FieldWrap focused={focused} name="goal">
-            <textarea {...register('goal')} onFocus={() => setFocused('goal')} onBlur={() => setFocused(null)} className={`${fieldCls} h-20 resize-none`} placeholder="Tujuan sprint ini..." />
+            <textarea {...register('goal')} onFocus={() => setFocused('goal')} onBlur={() => setFocused(null)} className={`${fieldCls} h-20 resize-none`} placeholder="Sprint goal..." />
           </FieldWrap>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Mulai</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Date</label>
             <FieldWrap focused={focused} name="start">
               <input {...register('start_date', { required: true })} type="date" onFocus={() => setFocused('start')} onBlur={() => setFocused(null)} className={fieldCls} />
             </FieldWrap>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Selesai</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">End Date</label>
             <FieldWrap focused={focused} name="end">
               <input {...register('end_date', { required: true })} type="date" onFocus={() => setFocused('end')} onBlur={() => setFocused(null)} className={fieldCls} />
             </FieldWrap>
           </div>
         </div>
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Batal</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Cancel</button>
           <motion.button type="submit" disabled={isPending} whileTap={{ scale: 0.98 }}
             className="flex-1 bg-[#284074] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 disabled:opacity-70">
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Buat Sprint'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Create Sprint'}
           </motion.button>
         </div>
       </form>
@@ -255,24 +255,24 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => storyService.create(epicId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['stories', epicId] }); toast.success('Backlog dibuat!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat backlog'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['stories', epicId] }); toast.success('Backlog created!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create backlog'),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Tambah Backlog Baru">
+    <Modal open={open} onClose={onClose} title="Add New Backlog">
       <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Judul Backlog</label>
-          <div className={fw('title')}><input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={inp} placeholder="Deskripsikan backlog secara singkat..." /></div>
-          {errors.title && <p className="text-xs text-red-500 mt-1">Judul wajib diisi</p>}
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Backlog Title</label>
+          <div className={fw('title')}><input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={inp} placeholder="Briefly describe the backlog..." /></div>
+          {errors.title && <p className="text-xs text-red-500 mt-1">Title is required</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Deskripsi</label>
-          <div className={fw('desc')}><textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${inp} h-20 resize-none`} placeholder="Detail tambahan tentang backlog ini..." /></div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
+          <div className={fw('desc')}><textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${inp} h-20 resize-none`} placeholder="Additional details about this backlog..." /></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Prioritas</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Priority</label>
             <div className={fw('priority')}><select {...register('priority')} onFocus={() => setFocused('priority')} onBlur={() => setFocused(null)} className={inp}>
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -281,7 +281,7 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
             </select></div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tipe</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Type</label>
             <div className={fw('type')}><select {...register('type')} onFocus={() => setFocused('type')} onBlur={() => setFocused(null)} className={inp}>
               <option value="story">Story</option>
               <option value="bug">Bug</option>
@@ -296,7 +296,7 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
             <div className={fw('points')}><input type="number" {...register('story_points')} onFocus={() => setFocused('points')} onBlur={() => setFocused(null)} className={inp} placeholder="0" min={1} max={100} /></div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Estimasi (Jam)</label>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Estimated (Hours)</label>
             <div className={fw('hours')}><input type="number" {...register('estimated_hours')} onFocus={() => setFocused('hours')} onBlur={() => setFocused(null)} className={inp} placeholder="0" min={1} /></div>
           </div>
         </div>
@@ -305,9 +305,9 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
             <div className={fw('due')}><input type="date" {...register('due_date')} onFocus={() => setFocused('due')} onBlur={() => setFocused(null)} className={inp} /></div>
           </div>
         <div className="flex justify-end gap-2 pt-1">
-          <button type="button" onClick={() => { reset(); onClose(); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Batal</button>
+          <button type="button" onClick={() => { reset(); onClose(); }} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
           <button type="submit" disabled={isPending} className="px-5 py-2 rounded-xl text-sm font-semibold bg-[#284074] text-white hover:bg-[#1e3260] transition-colors disabled:opacity-60 flex items-center gap-2">
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Tambah Backlog'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Add Backlog'}
           </button>
         </div>
       </form>
@@ -365,16 +365,16 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
               <span className="text-sm text-slate-700 flex-1">{s.title}</span>
               {s.story_points && <span className="text-xs font-semibold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-lg">{s.story_points} pts</span>}
               <span className={`text-xs px-2 py-0.5 rounded-lg font-semibold ${s.sprint_id ? 'bg-[#284074]/10 text-[#284074]' : 'bg-slate-200 text-slate-500'}`}>
-                {s.sprint_id ? 'Dalam sprint' : 'Backlog'}
+                {s.sprint_id ? 'In sprint' : 'Backlog'}
               </span>
             </div>
           )) : (
-            <p className="text-xs text-slate-400 text-center py-3">Belum ada backlog</p>
+            <p className="text-xs text-slate-400 text-center py-3">No backlog yet</p>
           )}
           {canManage && (
             <button onClick={onAddStory} className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border-2 border-dashed border-slate-200 hover:border-[#284074]/40 hover:bg-[#284074]/4 text-slate-400 hover:text-[#284074] text-xs font-semibold transition-all">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Tambah Backlog
+              Add Backlog
             </button>
           )}
         </div>
@@ -389,27 +389,27 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
   const { register, handleSubmit, reset } = useForm({ defaultValues: { title: '', description: '', color: '#284074', status: 'active', start_date: '', end_date: '' } });
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => epicService.create(projectId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['epics', projectId] }); toast.success('Epic dibuat!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal membuat epic'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['epics', projectId] }); toast.success('Epic created!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create epic'),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Buat Epic Baru">
+    <Modal open={open} onClose={onClose} title="Create New Epic">
       <form onSubmit={handleSubmit(d => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Judul Epic</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Epic Title</label>
           <FieldWrap focused={focused} name="title">
-            <input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={fieldCls} placeholder="Nama epic..." />
+            <input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={fieldCls} placeholder="Epic name..." />
           </FieldWrap>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Deskripsi</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
           <FieldWrap focused={focused} name="desc">
-            <textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${fieldCls} h-20 resize-none`} placeholder="Deskripsi epic..." />
+            <textarea {...register('description')} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${fieldCls} h-20 resize-none`} placeholder="Epic description..." />
           </FieldWrap>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Warna</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Color</label>
             <FieldWrap focused={focused} name="color">
               <div className="flex items-center gap-2 px-4 py-2">
                 <input {...register('color')} type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" />
@@ -430,23 +430,23 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Mulai</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Date</label>
             <FieldWrap focused={focused} name="start">
               <input {...register('start_date')} type="date" onFocus={() => setFocused('start')} onBlur={() => setFocused(null)} className={fieldCls} />
             </FieldWrap>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal Selesai</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">End Date</label>
             <FieldWrap focused={focused} name="end">
               <input {...register('end_date')} type="date" onFocus={() => setFocused('end')} onBlur={() => setFocused(null)} className={fieldCls} />
             </FieldWrap>
           </div>
         </div>
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Batal</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Cancel</button>
           <motion.button type="submit" disabled={isPending} whileTap={{ scale: 0.98 }}
             className="flex-1 bg-[#284074] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 disabled:opacity-70">
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Buat Epic'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Create Epic'}
           </motion.button>
         </div>
       </form>
@@ -474,24 +474,24 @@ function AddMemberModal({ open, onClose, projectId, existingMembers }: { open: b
 
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => projectService.addMember(projectId, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['members', projectId] }); toast.success('Member ditambahkan!'); reset(); onClose(); },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal menambahkan member'),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['members', projectId] }); toast.success('Member added!'); reset(); onClose(); },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to add member'),
   });
 
   return (
-    <Modal open={open} onClose={onClose} title="Tambah Member">
+    <Modal open={open} onClose={onClose} title="Add Member">
       <form onSubmit={handleSubmit(d => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cari User</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Search User</label>
           <div className="rounded-xl border-2 border-slate-200 hover:border-slate-300 transition-all">
             <input value={search} onChange={e => setSearch(e.target.value)} className={fieldCls} placeholder="Nama atau email..." />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Pilih User</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Select User</label>
           <FieldWrap focused={focused} name="user">
             <select {...register('user_id', { required: true })} onFocus={() => setFocused('user')} onBlur={() => setFocused(null)} className={fieldCls}>
-              {filtered.length === 0 && <option disabled>Tidak ada user tersedia</option>}
+              {filtered.length === 0 && <option disabled>No users available</option>}
               {filtered.map((u: any) => (
                 <option key={u.id} value={u.id}>{u.full_name} — {u.email}</option>
               ))}
@@ -499,7 +499,7 @@ function AddMemberModal({ open, onClose, projectId, existingMembers }: { open: b
           </FieldWrap>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Role dalam Project</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">Project Role</label>
           <FieldWrap focused={focused} name="role">
             <select {...register('role', { required: true })} onFocus={() => setFocused('role')} onBlur={() => setFocused(null)} className={fieldCls}>
               <option value="member">Member</option>
@@ -509,10 +509,10 @@ function AddMemberModal({ open, onClose, projectId, existingMembers }: { open: b
           </FieldWrap>
         </div>
         <div className="flex gap-3 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Batal</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all">Cancel</button>
           <motion.button type="submit" disabled={isPending} whileTap={{ scale: 0.98 }}
             className="flex-1 bg-[#284074] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 disabled:opacity-70">
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Tambah Member'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Add Member'}
           </motion.button>
         </div>
       </form>
@@ -570,16 +570,16 @@ export default function ProjectDetailPage() {
             </svg>
           </div>
           <h2 className="text-lg font-bold text-slate-800 mb-1.5">
-            {denied ? 'Akses Ditolak' : 'Project Tidak Ditemukan'}
+            {denied ? 'Access Denied' : 'Project Not Found'}
           </h2>
           <p className="text-sm text-slate-400 mb-6">
             {denied
-              ? 'Kamu bukan anggota project ini. Hubungi Project Manager jika merasa seharusnya punya akses.'
-              : 'Project yang kamu cari tidak tersedia atau sudah dihapus.'}
+              ? 'You are not a member of this project. Contact the Project Manager if you believe you should have access.'
+              : 'The project you are looking for is not available or has been deleted.'}
           </p>
           <Link href="/projects"
             className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all">
-            Kembali ke Projects
+            Back to Projects
           </Link>
         </div>
       </AppLayout>
@@ -594,7 +594,7 @@ export default function ProjectDetailPage() {
         <div>
           <Link href="/projects" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-[#284074] transition-colors mb-4">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
-            Kembali ke Projects
+            Back to Projects
           </Link>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -615,7 +615,7 @@ export default function ProjectDetailPage() {
               className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20 hover:-translate-y-0.5 flex-shrink-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4">
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </svg> Buka Board
+              </svg> Open Board
             </Link>
           </div>
         </div>
@@ -637,13 +637,13 @@ export default function ProjectDetailPage() {
               <div className="grid lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2 space-y-5">
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <h3 className="font-semibold text-slate-800 mb-4">Detail Project</h3>
+                    <h3 className="font-semibold text-slate-800 mb-4">Project Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { k: 'Divisi',  v: project?.division || '—' },
-                        { k: 'Status',  v: <StatusBadge status={project?.status} /> },
-                        { k: 'Mulai',   v: formatDate(project?.start_date) },
-                        { k: 'Selesai', v: formatDate(project?.end_date) },
+                        { k: 'Division', v: project?.division || '—' },
+                        { k: 'Status',   v: <StatusBadge status={project?.status} /> },
+                        { k: 'Start',    v: formatDate(project?.start_date) },
+                        { k: 'End',      v: formatDate(project?.end_date) },
                       ].map(({ k, v }) => (
                         <div key={k} className="bg-slate-50 rounded-xl px-4 py-3">
                           <div className="text-xs text-slate-400 mb-1">{k}</div>
@@ -654,9 +654,9 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-slate-800">Sprint Aktif</h3>
+                      <h3 className="font-semibold text-slate-800">Active Sprint</h3>
                       <Link href={`/projects/${id}/board`} className="text-xs font-semibold text-[#284074] flex items-center gap-1 hover:gap-2 transition-all">
-                        Buka Board <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        Open Board <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                       </Link>
                     </div>
                     {activeSprints.length > 0 ? (
@@ -664,31 +664,31 @@ export default function ProjectDetailPage() {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-10 text-slate-300">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 mb-2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        <span className="text-sm">Tidak ada sprint aktif</span>
+                        <span className="text-sm">No active sprint</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <h3 className="font-semibold text-slate-800 mb-3">Ringkasan</h3>
+                    <h3 className="font-semibold text-slate-800 mb-3">Summary</h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                        <span className="text-sm text-slate-500">Total Sprint</span>
+                        <span className="text-sm text-slate-500">Total Sprints</span>
                         <span className="text-sm font-bold text-slate-800">{sprints?.length || 0}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-slate-50">
-                        <span className="text-sm text-slate-500">Total Epic</span>
+                        <span className="text-sm text-slate-500">Total Epics</span>
                         <span className="text-sm font-bold text-slate-800">{epics?.length || 0}</span>
                       </div>
                       <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-slate-500">Total Member</span>
+                        <span className="text-sm text-slate-500">Total Members</span>
                         <span className="text-sm font-bold text-slate-800">{members?.length || 0}</span>
                       </div>
                     </div>
                   </div>
                   <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <h3 className="font-semibold text-slate-800 mb-3">Semua Sprint</h3>
+                    <h3 className="font-semibold text-slate-800 mb-3">All Sprints</h3>
                     <div className="space-y-2">
                       {sprints?.slice(0, 4).map((s: any) => (
                         <div key={s.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
@@ -696,7 +696,7 @@ export default function ProjectDetailPage() {
                           <StatusBadge status={s.status} />
                         </div>
                       ))}
-                      {(!sprints || sprints.length === 0) && <div className="text-xs text-slate-400 text-center py-3">Belum ada sprint</div>}
+                      {(!sprints || sprints.length === 0) && <div className="text-xs text-slate-400 text-center py-3">No sprints yet</div>}
                     </div>
                   </div>
                 </div>
@@ -709,7 +709,7 @@ export default function ProjectDetailPage() {
                   <div className="flex justify-end mb-4">
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCreateSprintOpen(true)}
                       className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20">
-                      + Buat Sprint
+                      + Create Sprint
                     </motion.button>
                   </div>
                 )}
@@ -718,8 +718,8 @@ export default function ProjectDetailPage() {
                   {(!sprints || sprints.length === 0) && (
                     <div className="bg-white rounded-2xl border border-slate-100 flex flex-col items-center justify-center py-16 text-slate-300">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                      <span className="text-sm font-medium">Belum ada sprint</span>
-                      {canManage && <button onClick={() => setCreateSprintOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Buat sprint pertama</button>}
+                      <span className="text-sm font-medium">No sprints yet</span>
+                      {canManage && <button onClick={() => setCreateSprintOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Create first sprint</button>}
                     </div>
                   )}
                 </div>
@@ -733,7 +733,7 @@ export default function ProjectDetailPage() {
                   <div className="flex justify-end mb-4">
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCreateEpicOpen(true)}
                       className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20">
-                      + Buat Epic
+                      + Create Epic
                     </motion.button>
                   </div>
                 )}
@@ -746,8 +746,8 @@ export default function ProjectDetailPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
                         <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
                       </svg>
-                      <span className="text-sm font-medium">Belum ada epic</span>
-                      {canAdmin && <button onClick={() => setCreateEpicOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Buat epic pertama</button>}
+                      <span className="text-sm font-medium">No epics yet</span>
+                      {canAdmin && <button onClick={() => setCreateEpicOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Create first epic</button>}
                     </div>
                   )}
                 </div>
@@ -762,7 +762,7 @@ export default function ProjectDetailPage() {
                   <div className="flex justify-end mb-4">
                     <motion.button whileTap={{ scale: 0.97 }} onClick={() => setAddMemberOpen(true)}
                       className="inline-flex items-center gap-2 bg-[#284074] text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20">
-                      + Tambah Member
+                      + Add Member
                     </motion.button>
                   </div>
                 )}
@@ -791,8 +791,8 @@ export default function ProjectDetailPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
                         <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                       </svg>
-                      <span className="text-sm font-medium">Belum ada anggota</span>
-                      {canAdmin && <button onClick={() => setAddMemberOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Tambah member pertama</button>}
+                      <span className="text-sm font-medium">No members yet</span>
+                      {canAdmin && <button onClick={() => setAddMemberOpen(true)} className="mt-3 text-xs text-[#284074] font-semibold hover:underline">+ Add first member</button>}
                     </div>
                   )}
                 </div>
@@ -807,11 +807,11 @@ export default function ProjectDetailPage() {
                     <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                   </svg>
                 </div>
-                <h3 className="font-semibold text-slate-700 mb-1">Buka Kanban Board</h3>
-                <p className="text-sm text-slate-400 mb-5">Kelola task dengan drag and drop</p>
+                <h3 className="font-semibold text-slate-700 mb-1">Open Kanban Board</h3>
+                <p className="text-sm text-slate-400 mb-5">Manage tasks with drag and drop</p>
                 <Link href={`/projects/${id}/board`}
                   className="inline-flex items-center gap-2 bg-[#284074] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#1e3260] transition-all shadow-lg shadow-[#284074]/20">
-                  Buka Board
+                  Open Board
                 </Link>
               </div>
             )}

@@ -64,8 +64,8 @@ export function BurndownChart({ data, workloadData }: { data: any; workloadData?
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
-          <p className="text-sm">Belum ada estimasi jam</p>
-          <p className="text-xs mt-1">Tambahkan estimasi jam pada task untuk melihat burndown</p>
+          <p className="text-sm">No estimated hours yet</p>
+          <p className="text-xs mt-1">Add estimated hours to tasks to view the burndown chart</p>
         </div>
       </div>
     );

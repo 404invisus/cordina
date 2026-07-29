@@ -14,10 +14,10 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  active:    { label: 'Aktif',    color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
-  inactive:  { label: 'Nonaktif', color: 'text-slate-500',   bg: 'bg-slate-100',  dot: 'bg-slate-400' },
-  completed: { label: 'Selesai',  color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
-  archived:  { label: 'Arsip',    color: 'text-amber-700',   bg: 'bg-amber-50',   dot: 'bg-amber-500' },
+  active:    { label: 'Active',    color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500' },
+  inactive:  { label: 'Inactive',  color: 'text-slate-500',   bg: 'bg-slate-100',  dot: 'bg-slate-400' },
+  completed: { label: 'Completed', color: 'text-blue-700',    bg: 'bg-blue-50',    dot: 'bg-blue-500' },
+  archived:  { label: 'Archived',  color: 'text-amber-700',   bg: 'bg-amber-50',   dot: 'bg-amber-500' },
 };
 
 const TASK_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -96,13 +96,13 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
               <div className="bg-slate-50 rounded-xl p-3">
                 <div className="text-xs text-slate-400 mb-0.5">Mulai</div>
                 <div className="text-sm font-semibold text-slate-700">
-                  {project.start_date ? new Date(project.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                  {project.start_date ? new Date(project.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                 </div>
               </div>
               <div className="bg-slate-50 rounded-xl p-3">
                 <div className="text-xs text-slate-400 mb-0.5">Selesai</div>
                 <div className="text-sm font-semibold text-slate-700">
-                  {project.end_date ? new Date(project.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                  {project.end_date ? new Date(project.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                 </div>
               </div>
             </div>
@@ -128,7 +128,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 
             {members && members.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Anggota ({members.length})</div>
+                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Members ({members.length})</div>
                 <div className="space-y-2">
                   {members.map((m: any) => (
                     <div key={m.id} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-lg">
@@ -167,15 +167,15 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-projects'] });
       qc.invalidateQueries({ queryKey: ['admin-project-stats'] });
-      toast.success('Project diperbarui!');
+      toast.success('Project updated!');
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   const handleSubmit = () => {
     if (!form.name.trim()) {
-      toast.error('Nama project wajib diisi');
+      toast.error('Project name is required');
       return;
     }
     mutation.mutate(form);
@@ -190,7 +190,7 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="font-bold text-slate-900">Edit Project</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Ubah informasi project</p>
+            <p className="text-xs text-slate-400 mt-0.5">Update project information</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
             <X className="w-4 h-4 text-slate-400" />
@@ -214,7 +214,7 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
             <div className="relative">
               <select value={form.status} onChange={e => set('status', e.target.value)}
                 className="w-full appearance-none px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all pr-8">
-                <option value="active">Aktif</option>
+                <option value="active">Active</option>
                 <option value="inactive">Nonaktif</option>
                 <option value="completed">Selesai</option>
                 <option value="archived">Arsip</option>
@@ -237,11 +237,11 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
         <div className="px-6 pb-5 flex gap-3">
           <button onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
-            Batal
+            Cancel
           </button>
           <button onClick={handleSubmit} disabled={mutation.isPending}
             className="flex-1 px-4 py-2.5 rounded-xl bg-[#284074] text-white text-sm font-semibold hover:bg-[#1e3260] transition-colors disabled:opacity-50">
-            {mutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {mutation.isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </motion.div>
@@ -259,8 +259,8 @@ export default function AdminProjectsPage() {
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a'); a.href = url; a.download = 'laporan_project.pdf'; a.click();
       URL.revokeObjectURL(url);
-      toast.success('Laporan berhasil diunduh');
-    } catch { toast.error('Gagal mengunduh laporan'); }
+      toast.success('Report downloaded successfully');
+    } catch { toast.error('Failed to download report'); }
     finally { setExporting(false); }
   };
   const [search, setSearch]           = useState('');
@@ -287,10 +287,10 @@ export default function AdminProjectsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-projects'] });
       qc.invalidateQueries({ queryKey: ['admin-project-stats'] });
-      toast.success('Project dihapus');
+      toast.success('Project deleted');
       setDeleteProject(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Gagal'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
   });
 
   return (
@@ -301,14 +301,14 @@ export default function AdminProjectsPage() {
             <FolderOpen className="w-5 h-5 text-violet-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Kelola Project</h1>
-            <p className="text-sm text-slate-400 mt-0.5">{stats?.total_projects || 0} project terdaftar</p>
+            <h1 className="text-2xl font-bold text-slate-900">Manage Projects</h1>
+            <p className="text-sm text-slate-400 mt-0.5">{stats?.total_projects || 0} projects registered</p>
           </div>
         </div>
         <button onClick={handleExport} disabled={exporting}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-40">
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Ekspor PDF
+          Export PDF
         </button>
       </div>
 
@@ -322,7 +322,7 @@ export default function AdminProjectsPage() {
       )}
 
       <div className="flex gap-2 flex-wrap mb-5">
-        {[{ value: '', label: 'Semua' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))].map(({ value, label }) => (
+        {[{ value: '', label: 'All' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))].map(({ value, label }) => (
           <button key={value} onClick={() => setStatusFilter(value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               statusFilter === value
@@ -340,7 +340,7 @@ export default function AdminProjectsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#284074]/20 focus:border-[#284074] transition-all w-full"
-              placeholder="Cari project..." />
+              placeholder="Search projects..." />
           </div>
           <span className="ml-auto text-xs text-slate-400">{projects.length} project</span>
         </div>
@@ -352,7 +352,7 @@ export default function AdminProjectsPage() {
         ) : projects.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Tidak ada project</p>
+            <p className="text-sm">No projects</p>
           </div>
         ) : (
           <table className="w-full">
@@ -389,9 +389,9 @@ export default function AdminProjectsPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-slate-500">
-                        {p.start_date ? new Date(p.start_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—'}
+                        {p.start_date ? new Date(p.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
                         {' — '}
-                        {p.end_date ? new Date(p.end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        {p.end_date ? new Date(p.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1 text-sm text-slate-600">
@@ -423,7 +423,7 @@ export default function AdminProjectsPage() {
                                   className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-20">
                                   <button onClick={() => { setViewProject(p.id); setOpenMenu(null); }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
-                                    <Eye className="w-3.5 h-3.5" /> Lihat Detail
+                                    <Eye className="w-3.5 h-3.5" /> View Details
                                   </button>
                                   <button onClick={() => { setEditProject(p); setOpenMenu(null); }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
@@ -432,7 +432,7 @@ export default function AdminProjectsPage() {
                                   <div className="h-px bg-slate-100 mx-2" />
                                   <button onClick={() => { setDeleteProject(p); setOpenMenu(null); }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                                    <Trash2 className="w-3.5 h-3.5" /> Hapus
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
                                   </button>
                                 </motion.div>
                               )}
@@ -467,18 +467,18 @@ export default function AdminProjectsPage() {
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
-              <h3 className="font-bold text-slate-900 mb-1">Hapus Project?</h3>
+              <h3 className="font-bold text-slate-900 mb-1">Delete Project?</h3>
               <p className="text-sm text-slate-500 mb-5">
-                <span className="font-semibold text-slate-700">{deleteProject.name}</span> dan semua data terkait akan dihapus permanen.
+                <span className="font-semibold text-slate-700">{deleteProject.name}</span> and all related data will be permanently deleted.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteProject(null)}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-                  Batal
+                  Cancel
                 </button>
                 <button onClick={() => deleteMutation.mutate(deleteProject.id)} disabled={deleteMutation.isPending}
                   className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50">
-                  {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </motion.div>
