@@ -22,8 +22,8 @@ class StorageController extends Controller
     {
         $request->validate([
             'file'       => 'required|file|max:20480|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,png,jpg,jpeg,gif,webp,zip,rar,txt,csv',
-            'entity_id'  => 'nullable|string',
-            'entity_type'=> 'nullable|string',
+            'entity_id'  => 'nullable|string|alpha_dash|max:64',
+            'entity_type'=> 'nullable|string|alpha_dash|max:64',
         ]);
 
         $result = $this->service->store(

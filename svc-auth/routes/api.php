@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-    Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login',    [AuthController::class, 'login']);
 
     Route::middleware('jwt.auth')->group(function () {
@@ -45,8 +44,10 @@ Route::prefix('v1')->group(function () {
         Route::put('/admin/user-groups/{id}',    [\App\Http\Controllers\Admin\UserGroupController::class, 'update']);
         Route::delete('/admin/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'destroy']);
     });
-    Route::get('/admin/activity',                    [\App\Http\Controllers\Admin\AdminActivityController::class, 'index']);
-    Route::get('/admin/activity/users/{userId}/login', [\App\Http\Controllers\Admin\AdminActivityController::class, 'loginHistory']);
+    Route::middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
+        Route::get('/admin/activity',                     [\App\Http\Controllers\Admin\AdminActivityController::class, 'index']);
+        Route::get('/admin/activity/users/{userId}/login', [\App\Http\Controllers\Admin\AdminActivityController::class, 'loginHistory']);
+    });
     Route::apiResource('users', UserController::class);
         Route::post('/users/{id}/roles',    [UserController::class, 'assignRole']);
 

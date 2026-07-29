@@ -10,18 +10,27 @@ use Illuminate\Support\Str;
 
 class CrAttachmentController extends Controller
 {
-    // GET /v1/change-requests/{id}/attachments
-    public function index(string $crId, Request $request): JsonResponse
+    // Shared access rule for reading/writing a CR's attachments: the requester,
+    // an approver on the chain, or an admin-ish role. Keep this in one place so
+    // index/store/download can't drift out of sync with each other again.
+    private function assertCrAccess(ChangeRequest $cr, ?string $userId, array $roles): void
     {
-        $cr     = ChangeRequest::with('approvals')->findOrFail($crId);
-        $userId = $request->attributes->get('jwt_user_id');
-        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
         abort_if(
             $cr->requester_id !== $userId
                 && !$cr->approvals->contains('approver_id', $userId)
                 && empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'administrator'])),
             403, 'Forbidden'
         );
+    }
+
+    // GET /v1/change-requests/{id}/attachments
+    public function index(string $crId, Request $request): JsonResponse
+    {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($crId);
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        $this->assertCrAccess($cr, $userId, $roles);
+
         $attachments = DB::table('cr_attachments')
             ->where('cr_id', $crId)
             ->orderBy('created_at', 'desc')
@@ -32,8 +41,10 @@ class CrAttachmentController extends Controller
     // POST /v1/change-requests/{id}/attachments
     public function store(string $crId, Request $request): JsonResponse
     {
-        $cr     = ChangeRequest::findOrFail($crId);
+        $cr     = ChangeRequest::with('approvals')->findOrFail($crId);
         $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        $this->assertCrAccess($cr, $userId, $roles);
 
         abort_if($cr->status === 'approved', 422, 'Tidak bisa menambah lampiran pada CR yang sudah disetujui');
 
@@ -77,6 +88,11 @@ class CrAttachmentController extends Controller
     // GET /v1/change-requests/{id}/attachments/{attachId}/download
     public function download(string $crId, string $attachId, Request $request): mixed
     {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($crId);
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        $this->assertCrAccess($cr, $userId, $roles);
+
         $attachment = DB::table('cr_attachments')
             ->where('id', $attachId)
             ->where('cr_id', $crId)

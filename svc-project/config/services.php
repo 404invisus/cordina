@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'jwt_secret' => env('JWT_SECRET'),
     'auth' => [
         'url' => env('AUTH_SERVICE_URL', 'http://svc-auth'),
     ],

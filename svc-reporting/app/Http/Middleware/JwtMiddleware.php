@@ -19,11 +19,24 @@ class JwtMiddleware
             if (count($parts) !== 3) {
                 throw new \Exception('Invalid token format');
             }
+            [$headerB64, $payloadB64, $sigB64] = $parts;
 
-            $payload = json_decode(
-                base64_decode(str_pad(strtr($parts[1], '-_', '+/'), strlen($parts[1]) % 4, '=', STR_PAD_RIGHT)),
-                true
-            );
+            $header = json_decode($this->b64urlDecode($headerB64), true);
+            if (!$header || ($header['alg'] ?? null) !== 'HS256') {
+                throw new \Exception('Unsupported token algorithm');
+            }
+
+            $secret = config('services.jwt_secret');
+            if (!$secret) {
+                throw new \Exception('JWT secret not configured');
+            }
+
+            $expectedSig = $this->b64urlEncode(hash_hmac('sha256', "{$headerB64}.{$payloadB64}", $secret, true));
+            if (!hash_equals($expectedSig, $sigB64)) {
+                throw new \Exception('Invalid token signature');
+            }
+
+            $payload = json_decode($this->b64urlDecode($payloadB64), true);
 
             if (!$payload) throw new \Exception('Invalid token payload');
 
@@ -41,5 +54,15 @@ class JwtMiddleware
         }
 
         return $next($request);
+    }
+
+    private function b64urlDecode(string $data): string
+    {
+        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', (4 - strlen($data) % 4) % 4));
+    }
+
+    private function b64urlEncode(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

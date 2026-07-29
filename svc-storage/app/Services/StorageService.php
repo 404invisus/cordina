@@ -34,6 +34,7 @@ class StorageService
     public function download(string $id, string $userId): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $file = DB::table('attachments')->where('id', $id)->firstOrFail();
+        abort_if($file->user_id !== $userId, 403, 'Anda tidak punya akses ke file ini');
         abort_if(!Storage::disk('local')->exists($file->file_path), 404, 'File not found');
         return response()->download(Storage::disk('local')->path($file->file_path), $file->file_name);
     }
@@ -41,6 +42,7 @@ class StorageService
     public function delete(string $id, string $userId): void
     {
         $file = DB::table('attachments')->where('id', $id)->firstOrFail();
+        abort_if($file->user_id !== $userId, 403, 'Hanya pengunggah yang bisa menghapus file');
         Storage::disk('local')->delete($file->file_path);
         DB::table('attachments')->where('id', $id)->delete();
     }
