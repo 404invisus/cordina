@@ -1,19 +1,23 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/components/Providers";
-import { Toaster } from "react-hot-toast";
+import type { Metadata } from 'next';
+import { IBM_Plex_Mono } from 'next/font/google';
+import './globals.css';
+import { Providers } from '@/components/Providers';
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
+// SF Pro is Apple's proprietary system font — it can't be self-hosted or
+// loaded via next/font/google. The system-font stack in globals.css
+// (--font-sans / --font-display) renders as real SF Pro on Mac/iOS and
+// falls back gracefully elsewhere, which is the standard way to "use" it.
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-plex-mono',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: "ConnectOne: Integrated Internal Work Management",
-  description: "Integrated internal work management platform for productive teams",
-  icons: { icon: "/logo-only-black.png" },
+  title: 'ConnectOne: Integrated Internal Work Management',
+  description: 'Integrated internal work management platform for productive teams',
+  icons: { icon: '/logo-only-black.png' },
 };
 
 export default function RootLayout({
@@ -22,32 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={jakarta.variable}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="id" className={plexMono.variable}>
       <body className="antialiased font-sans" suppressHydrationWarning>
-        <Providers>
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: '14px',
-                borderRadius: '10px',
-              },
-              success: {
-                iconTheme: { primary: '#284074', secondary: '#fff' },
-              },
-            }}
-          />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

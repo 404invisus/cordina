@@ -15,22 +15,25 @@ interface StatCardProps {
   index?: number;
 }
 
-const colorMap: Record<string, {
-  iconBg: string; iconColor: string; bar: string; subtitleColor: string;
-}> = {
-  default: { iconBg: 'bg-brand-soft',    iconColor: 'text-brand',      bar: 'bg-brand',       subtitleColor: 'text-slate-500'  },
-  blue:    { iconBg: 'bg-brand-soft',    iconColor: 'text-brand',      bar: 'bg-brand',       subtitleColor: 'text-slate-500'  },
-  brand:   { iconBg: 'bg-brand-soft',    iconColor: 'text-brand',      bar: 'bg-brand',       subtitleColor: 'text-slate-500'  },
-  green:   { iconBg: 'bg-success-soft',  iconColor: 'text-success',    bar: 'bg-success',     subtitleColor: 'text-slate-500'  },
-  orange:  { iconBg: 'bg-accent-soft',   iconColor: 'text-accent',     bar: 'bg-accent',      subtitleColor: 'text-accent-dim' },
-  purple:  { iconBg: 'bg-violet-50',     iconColor: 'text-violet-600', bar: 'bg-violet-500',  subtitleColor: 'text-slate-500'  },
-  red:     { iconBg: 'bg-danger-soft',   iconColor: 'text-danger',     bar: 'bg-danger',      subtitleColor: 'text-danger'     },
+const colorMap: Record<
+  string,
+  {
+    iconBg: string;
+    iconColor: string;
+    bar: string;
+    subtitleColor: string;
+  }
+> = {
+  default: { iconBg: 'bg-info-soft', iconColor: 'text-navy-700', bar: 'bg-navy-700', subtitleColor: 'text-text-tertiary' },
+  blue: { iconBg: 'bg-info-soft', iconColor: 'text-navy-700', bar: 'bg-navy-700', subtitleColor: 'text-text-tertiary' },
+  brand: { iconBg: 'bg-info-soft', iconColor: 'text-navy-700', bar: 'bg-navy-700', subtitleColor: 'text-text-tertiary' },
+  green: { iconBg: 'bg-success-soft', iconColor: 'text-success', bar: 'bg-success', subtitleColor: 'text-text-tertiary' },
+  orange: { iconBg: 'bg-gold-soft', iconColor: 'text-gold-500', bar: 'bg-gold-500', subtitleColor: 'text-gold-700' },
+  purple: { iconBg: 'bg-navy-700/8', iconColor: 'text-navy-700', bar: 'bg-navy-700', subtitleColor: 'text-text-tertiary' },
+  red: { iconBg: 'bg-danger-soft', iconColor: 'text-danger', bar: 'bg-danger', subtitleColor: 'text-danger' },
 };
 
-export default function StatCard({
-  title, value, subtitle, icon: Icon,
-  progress, trend, color = 'default', index = 0,
-}: StatCardProps) {
+export default function StatCard({ title, value, subtitle, icon: Icon, progress, trend, color = 'default', index = 0 }: StatCardProps) {
   const c = colorMap[color] ?? colorMap.default;
   const barWidth = progress !== undefined ? Math.max(1, Math.min(100, progress)) : 100;
   const isUp = trend && trend.value >= 0;
@@ -40,13 +43,11 @@ export default function StatCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07, type: 'spring', stiffness: 220, damping: 22 }}
-      className="bg-white border border-[#e6e4df] rounded-[6px] px-[14px] py-3 flex flex-col gap-2"
+      className="bg-white border border-border rounded-[6px] px-[14px] py-3 flex flex-col gap-2"
     >
       {/* Title + icon */}
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10.5px] font-semibold tracking-[0.03em] text-slate-500 uppercase leading-none">
-          {title}
-        </div>
+        <div className="text-[10.5px] font-semibold tracking-[0.03em] text-text-tertiary uppercase leading-none">{title}</div>
         <div className={cn('w-7 h-7 rounded-[5px] flex items-center justify-center flex-shrink-0', c.iconBg)}>
           <Icon className={cn('w-3.5 h-3.5', c.iconColor)} />
         </div>
@@ -54,27 +55,23 @@ export default function StatCard({
 
       {/* Value + subtitle */}
       <div className="flex items-baseline gap-[7px]">
-        <span className="font-display font-semibold leading-none text-[25px] text-[#0d2b48] tabular-nums">
-          {value}
-        </span>
-        {subtitle && (
-          <span className={cn('text-[11px] font-semibold leading-none', c.subtitleColor)}>
-            {subtitle}
-          </span>
-        )}
+        <span className="font-display font-semibold leading-none text-[25px] text-navy-900 tabular-nums">{value}</span>
+        {subtitle && <span className={cn('text-[11px] font-semibold leading-none', c.subtitleColor)}>{subtitle}</span>}
       </div>
 
       {/* Progress bar */}
-      <div className="h-[3px] rounded-full bg-[#eceae4] overflow-hidden">
+      <div className="h-[3px] rounded-full bg-border-subtle overflow-hidden">
         <div className={cn('h-full rounded-full', c.bar)} style={{ width: `${barWidth}%` }} />
       </div>
 
       {/* Trend badge (optional, backward compat) */}
       {trend && (
-        <div className={cn(
-          'flex items-center gap-1 text-[10px] font-semibold self-start px-2 py-0.5 rounded',
-          isUp ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'
-        )}>
+        <div
+          className={cn(
+            'flex items-center gap-1 text-[10px] font-semibold self-start px-2 py-0.5 rounded',
+            isUp ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger',
+          )}
+        >
           {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
           {Math.abs(trend.value)}% {trend.label}
         </div>

@@ -1,28 +1,37 @@
 import { cn } from '@/lib/utils';
+import { STATUS_MAP, type StatusTone } from '@/lib/status';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'outline';
-
-const variants: Record<BadgeVariant, string> = {
-  default: 'bg-slate-100 text-slate-600',
-  success: 'bg-success-soft text-emerald-700',
-  warning: 'bg-warning-soft text-amber-700',
-  danger:  'bg-danger-soft text-red-700',
-  info:    'bg-info-soft text-blue-700',
-  purple:  'bg-violet-50 text-violet-700',
-  outline: 'bg-white border border-slate-200 text-slate-600',
-};
-
-export default function Badge({ children, variant = 'default', className }: {
+/**
+ * One badge shape for every status/category across the app — dot + pill.
+ * Colors always resolve through STATUS_MAP; never a per-module variant.
+ */
+export default function Badge({
+  tone = 'neutral',
+  children,
+  className,
+}: {
+  tone?: StatusTone;
   children: React.ReactNode;
-  variant?: BadgeVariant;
   className?: string;
 }) {
+  const t = STATUS_MAP[tone];
   return (
-    <span className={cn(
-      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold',
-      variants[variant],
-      className
-    )}>
+    <span className={cn('inline-flex items-center gap-[5px] h-5 px-2 rounded-[3px] text-[10.5px] font-semibold', t.bg, t.text, className)}>
+      <span className={cn('w-[5px] h-[5px] rounded-full flex-none', t.dot)} />
+      {children}
+    </span>
+  );
+}
+
+/** Category/type tag — same pill shape, no dot (e.g. "Contract", "Sheet", "PDF"). */
+export function TagBadge({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center h-5 px-2 rounded-[3px] text-[10.5px] font-semibold bg-neutral-soft text-neutral-text',
+        className,
+      )}
+    >
       {children}
     </span>
   );

@@ -42,45 +42,39 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div
-      className="min-h-screen bg-[#f4f2ee] text-[#0d1f2d]"
-      style={{ fontFamily: '"Source Sans 3", "Source Sans Pro", system-ui, sans-serif' }}
-    >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+3:wght@400;500;600&display=swap');
-        .font-display { font-family: 'Playfair Display', Georgia, serif; }
-      `}</style>
-
-      <nav className={`fixed top-0 inset-x-0 z-50 transition-colors duration-200 ${
-        scrolled ? 'bg-[#f4f2ee]/95 backdrop-blur-sm border-b border-[#083858]/10' : ''
-      }`}>
+    <div className="min-h-screen bg-bg-page text-navy-900 font-sans">
+      <nav
+        className={`fixed top-0 inset-x-0 z-50 transition-colors duration-200 ${
+          scrolled ? 'bg-bg-page/95 backdrop-blur-sm border-b border-navy-700/10' : ''
+        }`}
+      >
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img
-              src={scrolled ? "/logo-only-black.png" : "/logo-only-white.png"}
+              src={scrolled ? '/logo-only-black.png' : '/logo-only-white.png'}
               alt="ConnectOne"
               width={20}
               height={20}
               className="object-contain"
             />
-            <span className={`font-semibold text-sm tracking-tight ${scrolled ? 'text-[#083858]' : 'text-white'}`}>ConnectOne</span>
+            <span className={`font-semibold text-sm tracking-tight ${scrolled ? 'text-navy-700' : 'text-white'}`}>ConnectOne</span>
           </div>
           <Link
             href="/login"
-            className="text-sm font-medium text-[#083858] border border-[#083858]/25 px-4 py-1.5 rounded-sm hover:bg-[#083858] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#3fa3d0] transition-all duration-150"
+            className="text-sm font-medium text-navy-700 border border-navy-700/25 px-4 py-1.5 rounded-sm hover:bg-navy-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-azure-400 transition-all duration-150"
           >
             Sign in
           </Link>
         </div>
       </nav>
 
-      <section className="bg-[#083858] pt-28 pb-20 px-6 relative overflow-hidden">
+      <section className="bg-navy-700 pt-28 pb-20 px-6 relative overflow-hidden">
         <div className="max-w-5xl mx-auto lg:pl-10">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-[#3fa3d0] text-xs font-semibold tracking-[0.18em] uppercase mb-7"
+            className="text-azure-400 text-xs font-semibold tracking-[0.18em] uppercase mb-7"
           >
             Balai Layanan Penghubung Identitas Digital
           </motion.p>
@@ -92,29 +86,25 @@ export default function LandingPage() {
             className="font-display text-white leading-[1.08] tracking-tight mb-7"
             style={{ fontSize: 'clamp(2.4rem, 5.5vw, 4.2rem)' }}
           >
-            Everything your team needs,<br />
-            <span className="text-[#d4a31d]">in one system.</span>
+            Everything your team needs,
+            <br />
+            <span className="text-gold-500">in one system.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="text-[#e8e4dc]/65 text-base leading-relaxed max-w-lg mb-10"
+            className="text-border-subtle/65 text-base leading-relaxed max-w-lg mb-10"
           >
-            ConnectOne brings together activity scheduling, project management,
-            change approval workflows, and asset management into a single
-            platform.
+            ConnectOne brings together activity scheduling, project management, change approval workflows, and asset management into a
+            single platform.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150"
+              className="inline-flex items-center gap-2 bg-white text-navy-700 px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-bg-page focus:outline-none focus:ring-2 focus:ring-azure-400 transition-colors duration-150"
             >
               Open ConnectOne
             </Link>
@@ -122,12 +112,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <div className="h-0.5 bg-[#d4a31d]" />
+      <div className="h-0.5 bg-gold-500" />
 
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-baseline justify-between pb-4 border-b border-[#083858]/12 mb-2">
-            <h2 className="font-display text-[#083858] text-xl">What's available</h2>
+          <div className="flex items-baseline justify-between pb-4 border-b border-navy-700/12 mb-2">
+            <h2 className="font-display text-navy-700 text-xl">What's available</h2>
           </div>
 
           {MODULES.map((m, i) => (
@@ -137,40 +127,38 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-30px' }}
               transition={{ delay: i * 0.06 }}
-              className="grid grid-cols-[32px_1fr] md:grid-cols-[32px_200px_1fr] gap-x-6 py-5 border-b border-[#083858]/8 group"
+              className="grid grid-cols-[32px_1fr] md:grid-cols-[32px_200px_1fr] gap-x-6 py-5 border-b border-navy-700/8 group"
             >
-              <span className="text-[#d4a31d] font-mono text-xs font-semibold pt-0.5">{m.n}</span>
-              <p className="font-semibold text-[#083858] text-sm leading-snug">{m.title}</p>
-              <p className="col-start-2 md:col-start-3 text-sm text-[#0d1f2d]/55 leading-relaxed mt-1 md:mt-0">{m.body}</p>
+              <span className="text-gold-500 font-mono text-xs font-semibold pt-0.5">{m.n}</span>
+              <p className="font-semibold text-navy-700 text-sm leading-snug">{m.title}</p>
+              <p className="col-start-2 md:col-start-3 text-sm text-navy-900/55 leading-relaxed mt-1 md:mt-0">{m.body}</p>
             </motion.div>
           ))}
         </div>
       </section>
 
-      <section className="bg-[#083858] py-16 px-6">
+      <section className="bg-navy-700 py-16 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
             <h2 className="font-display text-white text-2xl mb-1">Your account is ready.</h2>
-            <p className="text-[#e8e4dc]/50 text-sm">Contact your administrator if you don't have access yet.</p>
+            <p className="text-border-subtle/50 text-sm">Contact your administrator if you don't have access yet.</p>
           </div>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 bg-[#d4a31d] text-[#083858] px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-[#c4941a] focus:outline-none focus:ring-2 focus:ring-[#d4a31d]/60 transition-colors duration-150 flex-shrink-0"
+            className="inline-flex items-center gap-2 bg-white text-navy-700 px-6 py-2.5 text-sm font-semibold rounded-sm hover:bg-bg-page focus:outline-none focus:ring-2 focus:ring-azure-400 transition-colors duration-150 flex-shrink-0"
           >
             Sign in to ConnectOne
           </Link>
         </div>
       </section>
 
-      <footer className="bg-[#06293f] py-7 px-6">
+      <footer className="bg-navy-900 py-7 px-6">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <img src="/logo-only-white.png" alt="" width={16} height={16} className="object-contain opacity-50" />
             <span className="text-white/35 text-xs font-medium">ConnectOne</span>
           </div>
-          <p className="text-white/25 text-xs">
-            Balai Layanan Penghubung Identitas Digital &middot; BSSN &middot; 2026
-          </p>
+          <p className="text-white/25 text-xs">Balai Layanan Penghubung Identitas Digital &middot; BSSN &middot; 2026</p>
         </div>
       </footer>
     </div>

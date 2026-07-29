@@ -19,7 +19,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-8 h-8 border-2 border-[#284074]/20 border-t-[#284074] rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-navy-700/20 border-t-navy-700 rounded-full animate-spin" />
     </div>
   );
 }
