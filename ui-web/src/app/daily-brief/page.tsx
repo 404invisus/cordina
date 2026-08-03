@@ -331,7 +331,7 @@ export default function DailyBriefPage() {
                         className="flex items-center gap-[9px] hover:opacity-70 transition-opacity"
                       >
                         <span className="font-mono text-[10px] text-text-meta w-[42px] flex-none">
-                          {e.all_day ? 'All day' : (e.start_time?.slice(0, 5) ?? '—')}
+                          {e.all_day ? 'All day' : (e.start_time?.slice(0, 5) ?? '-')}
                         </span>
                         <span className="text-[12px] text-navy-800 font-medium truncate flex-1 min-w-0">{e.title}</span>
                       </Link>
@@ -366,7 +366,7 @@ export default function DailyBriefPage() {
                       <div className="flex-1 min-w-0">
                         <div className="text-[11.5px] font-semibold text-navy-800 truncate">{cr.title}</div>
                         <div className="text-[10.5px] text-neutral">
-                          Step {cr.current_step ?? 0}/{cr.total_steps ?? '—'}
+                          Step {cr.current_step ?? 0}/{cr.total_steps ?? '-'}
                         </div>
                       </div>
                     </Link>

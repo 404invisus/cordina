@@ -58,7 +58,7 @@ function initials(name: string) {
 }
 
 function fmtDate(iso: string) {
-  if (!iso) return '—';
+  if (!iso) return '-';
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }

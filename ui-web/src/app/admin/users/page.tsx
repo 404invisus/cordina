@@ -785,7 +785,7 @@ export default function AdminUsersPage() {
               width: 'minmax(0,1.6fr)',
               render: (u) => (
                 <div>
-                  <div className="text-text-secondary">{u.division || '—'}</div>
+                  <div className="text-text-secondary">{u.division || '-'}</div>
                   {u.position && <div className="text-xs text-text-placeholder mt-0.5">{u.position}</div>}
                 </div>
               ),

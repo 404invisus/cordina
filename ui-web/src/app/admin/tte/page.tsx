@@ -185,7 +185,7 @@ export default function TteConfigPage() {
                       {testResult.reachable && testResult.status < 400
                         ? 'Connection successful'
                         : testResult.status === 401
-                          ? 'Authentication failed — check username/password/API key'
+                          ? 'Authentication failed - check username/password/API key'
                           : 'Connection failed'}
                     </span>
                     {testResult.status && <span className="text-xs text-text-placeholder font-mono">HTTP {testResult.status}</span>}

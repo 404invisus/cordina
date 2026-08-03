@@ -287,7 +287,7 @@ export default function ReportsPage() {
             <div className="flex-1 bg-white border border-border rounded-[6px] flex flex-col overflow-hidden min-w-0">
               <div className="h-[34px] flex-none flex items-center justify-between px-[14px] border-b border-border-subtle bg-surface-2">
                 <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-neutral">
-                  LIVE PREVIEW — EXACTLY WHAT THE PDF CONTAINS
+                  LIVE PREVIEW: EXACTLY WHAT THE PDF CONTAINS
                 </span>
                 <span className="font-mono text-[10px] text-text-meta">A4 · PORTRAIT</span>
               </div>
@@ -459,7 +459,7 @@ export default function ReportsPage() {
                 {tab === 'time' && timeReport && (
                   <div>
                     <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[8px]">
-                      TIME LOG — {timeReport.length} entries
+                      TIME LOG - {timeReport.length} entries
                     </div>
                     {/* Table header */}
                     <div

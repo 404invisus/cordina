@@ -220,7 +220,7 @@ function SidebarContent({
           </div>
           <div className="flex flex-col gap-px min-w-0">
             <span className="font-bold text-[13.5px] text-white tracking-[-0.01em] truncate">ConnectOne</span>
-            <span className="font-mono text-[8.5px] font-medium tracking-[0.12em] text-white/50 truncate">BLPID · BSSN</span>
+            <span className="font-mono text-[8.5px] font-medium tracking-[0.12em] text-white/50 truncate">BLPID</span>
           </div>
         </div>
       </div>

@@ -125,7 +125,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
                 <div className="text-sm font-semibold text-text-secondary">
                   {project.end_date
                     ? new Date(project.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                    : '—'}
+                    : '-'}
                 </div>
               </div>
             </div>
@@ -494,21 +494,21 @@ export default function AdminProjectsPage() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-text-tertiary">
                         {p.start_date ? new Date(p.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
-                        {' — '}
+                        {' - '}
                         {p.end_date
                           ? new Date(p.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                          : '—'}
+                          : '-'}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1 text-sm text-text-secondary">
                           <Users className="w-3.5 h-3.5 text-text-placeholder" />
-                          {p.members_count ?? '—'}
+                          {p.members_count ?? '-'}
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1 text-sm text-text-secondary">
                           <CheckSquare className="w-3.5 h-3.5 text-text-placeholder" />
-                          {p.tasks_count ?? '—'}
+                          {p.tasks_count ?? '-'}
                         </div>
                       </td>
                       <td className="px-5 py-3.5">

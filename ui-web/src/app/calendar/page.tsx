@@ -166,7 +166,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
                       .join('')
                       .toUpperCase() || 'GR'}
                   </div>
-                  <span className="text-[12px] font-medium text-navy-800 flex-1 truncate">{p.group_name || p.full_name || '—'}</span>
+                  <span className="text-[12px] font-medium text-navy-800 flex-1 truncate">{p.group_name || p.full_name || '-'}</span>
                   <span
                     className="font-mono text-[9.5px]"
                     style={{

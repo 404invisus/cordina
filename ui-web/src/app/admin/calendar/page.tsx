@@ -411,7 +411,7 @@ function EventDrawer({ event, onClose, onDelete, onEdit }: any) {
           return String(event.start_date);
         }
       })()
-    : '—';
+    : '-';
   const timeStr = event.all_day
     ? 'All day'
     : [event.start_time?.slice(0, 5), event.end_time?.slice(0, 5)].filter(Boolean).join(' — ') || '—';

@@ -22,7 +22,7 @@ const CONDITION: Record<string, { label: string; bg: string; text: string; dot: 
 const ASSET_CATEGORIES = ['Hardware', 'Software', 'Furniture', 'Vehicle', 'Network', 'Other'];
 
 function formatRupiah(val: any) {
-  if (!val) return '—';
+  if (!val) return '-';
   return 'Rp ' + Number(val).toLocaleString('id-ID');
 }
 
@@ -114,7 +114,7 @@ function AssetModal({ open, onClose, editData }: { open: boolean; onClose: () =>
           ASSET_CATEGORIES.map((c) => ({ value: c, label: c })),
         )}
         {inp('serial_number', 'Serial Number', 'text', 'e.g. HSM-2024-011')}
-        {inp('location', 'Location', 'text', 'e.g. Data centre — rack B3')}
+        {inp('location', 'Location', 'text', 'e.g. Data centre - rack B3')}
         {inp('acquired_at', 'Acquisition Date', 'date')}
         {inp('value', 'Acquisition Value (Rp)', 'number', '1240000000')}
         {sel('condition', 'Condition', [
@@ -354,7 +354,7 @@ export default function AssetsPage() {
                   </div>
 
                   {/* Serial */}
-                  <div className="font-mono text-[11px] text-text-secondary truncate">{asset.serial_number || '—'}</div>
+                  <div className="font-mono text-[11px] text-text-secondary truncate">{asset.serial_number || '-'}</div>
 
                   {/* Value */}
                   <div className="font-mono text-[11.5px] font-medium text-navy-800">{formatRupiah(asset.value)}</div>
@@ -365,7 +365,7 @@ export default function AssetsPage() {
                   </div>
 
                   {/* Location */}
-                  <div className="text-[12px] text-text-secondary truncate">{asset.location || '—'}</div>
+                  <div className="text-[12px] text-text-secondary truncate">{asset.location || '-'}</div>
 
                   {/* Custodian */}
                   <div className="flex items-center gap-[7px]">
@@ -374,7 +374,7 @@ export default function AssetsPage() {
                         {initials}
                       </div>
                     )}
-                    <span className="text-[11.5px] text-text-secondary truncate">{lastName || '—'}</span>
+                    <span className="text-[11.5px] text-text-secondary truncate">{lastName || '-'}</span>
                   </div>
 
                   {/* History / actions */}
