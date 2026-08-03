@@ -418,7 +418,7 @@ class ChangeRequestController extends Controller
                 'file'       => new \CURLFile($tmpPdf, 'application/pdf', 'cr_' . $cr->id . '.pdf'),
                 'nik'        => $nik,
                 'passphrase' => $request->passphrase,
-                'appearance' => 'INVISIBLE',
+                'tampilan'   => 'INVISIBLE',
             ],
             CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $esignKey],
             CURLOPT_RETURNTRANSFER => true,

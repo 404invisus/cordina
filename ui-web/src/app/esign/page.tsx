@@ -25,8 +25,8 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     mutationFn: () => {
       const fd = new FormData();
       fd.append('file', file!);
-      if (file && file.size > 500 * 1024) {
-        throw { response: { data: { message: 'File size too large. Maximum 500 KB per document for e-signing.' } } };
+      if (file && file.size > 20 * 1024 * 1024) {
+        throw { response: { data: { message: 'File size too large. Maximum 20 MB per document for e-signing.' } } };
       }
       fd.append('passphrase', passphrase);
       fd.append('tampilan', 'INVISIBLE');
@@ -95,7 +95,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <div>
                   <Upload className="w-[18px] h-[18px] text-text-meta mx-auto mb-[6px]" />
                   <div className="text-[12px] text-text-placeholder">Click to upload a PDF</div>
-                  <div className="text-[10px] text-text-meta mt-1">Max 500 KB</div>
+                  <div className="text-[10px] text-text-meta mt-1">Max 20 MB</div>
                 </div>
               )}
             </div>
@@ -108,7 +108,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full h-[34px] px-[10px] border border-border-button rounded-[6px] text-[12px] text-navy-800 focus:outline-none focus:border-navy-700"
-              placeholder="Optional — defaults to file name"
+              placeholder="Optional, defaults to file name"
             />
           </div>
 

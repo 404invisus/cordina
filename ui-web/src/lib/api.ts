@@ -233,7 +233,10 @@ export const documentService = {
   list: (params?: any) => api.get('/api/v1/documents', { params }),
   create: (formData: FormData) => api.post('/api/v1/documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   show: (id: string) => api.get(`/api/v1/documents/${id}`),
-  update: (id: string, formData: FormData) => api.put(`/api/v1/documents/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id: string, formData: FormData) => {
+    formData.append('_method', 'PUT');
+    return api.post(`/api/v1/documents/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
   download: (id: string) => api.get(`/api/v1/documents/${id}/download`, { responseType: 'blob' }),
   delete: (id: string) => api.delete(`/api/v1/documents/${id}`),
 };

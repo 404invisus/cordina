@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -116,6 +116,19 @@ function DocModal({ open, onClose, editData }: { open: boolean; onClose: () => v
     description: editData?.description ?? '',
   });
   const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      title: editData?.title ?? '',
+      category: editData?.category ?? '',
+      doc_number: editData?.doc_number ?? '',
+      issued_at: editData?.issued_at?.slice(0, 10) ?? '',
+      expires_at: editData?.expires_at?.slice(0, 10) ?? '',
+      description: editData?.description ?? '',
+    });
+    setFile(null);
+  }, [open, editData]);
 
   const mutation = useMutation({
     mutationFn: (fd: FormData) => (editData ? documentService.update(editData.id, fd) : documentService.create(fd)),
@@ -458,7 +471,7 @@ export default function DocumentsPage() {
               const canEdit = (user as any)?.id === doc.created_by;
               const validUntil = doc.expires_at
                 ? new Date(doc.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-                : '—';
+                : '-';
               const s = docStatus(doc);
               const dateColor = s === 'expired' ? 'text-danger' : s === 'expiring' ? 'text-gold-700' : 'text-text-secondary';
 

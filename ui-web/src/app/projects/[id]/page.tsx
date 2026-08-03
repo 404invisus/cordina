@@ -242,6 +242,19 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               Complete
             </motion.button>
           )}
+          {sprint.status !== 'completed' && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setAddBacklogOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs border-2 border-border text-text-secondary px-3.5 py-2 rounded-[6px] font-semibold hover:border-navy-700 hover:text-navy-700 transition-all"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>{' '}
+              Add Backlog
+            </motion.button>
+          )}
           <Link
             href={`/projects/${projectId}/board?sprint_id=${sprint.id}`}
             className="inline-flex items-center gap-1.5 text-xs border-2 border-border text-text-secondary px-3.5 py-2 rounded-[6px] font-semibold hover:border-navy-700 hover:text-navy-700 transition-all"
@@ -793,7 +806,7 @@ function AddMemberModal({
               {filtered.length === 0 && <option disabled>No users available</option>}
               {filtered.map((u: any) => (
                 <option key={u.id} value={u.id}>
-                  {u.full_name} — {u.email}
+                  {u.full_name} - {u.email}
                 </option>
               ))}
             </select>

@@ -23,8 +23,9 @@ class AuthService
     public function login(array $credentials): ?string
     {
         return auth()->attempt([
-            'email'    => $credentials['email'],
-            'password' => $credentials['password'],
+            'email'     => $credentials['email'],
+            'password'  => $credentials['password'],
+            'is_active' => true,
         ]) ?: null;
     }
 }

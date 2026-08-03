@@ -13,7 +13,10 @@ RUN cp .env.example .env && php artisan key:generate
 
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-COPY ../docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+
+RUN printf 'upload_max_filesize = 25M\npost_max_size = 30M\n' \
+    > /usr/local/etc/php/conf.d/uploads.ini
 
 EXPOSE 80
 CMD ["sh", "-c", "php artisan migrate --force && php-fpm -D && nginx -g 'daemon off;'"]

@@ -58,7 +58,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const mutation = useMutation({
     mutationFn: () => {
       if (!file) throw new Error('File is required');
-      if (file.size > 500 * 1024) throw { response: { data: { message: 'Maximum file size is 500 KB' } } };
+      if (file.size > 20 * 1024 * 1024) throw { response: { data: { message: 'Maximum file size is 20 MB' } } };
       const fd = new FormData();
       fd.append('title', title);
       if (desc) fd.append('description', desc);
@@ -123,7 +123,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
           <div>
             <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-              PDF File * <span className="text-text-placeholder font-normal">(max. 500 KB)</span>
+              PDF File * <span className="text-text-placeholder font-normal">(max. 20 MB)</span>
             </label>
             <div
               onClick={() => fileRef.current?.click()}
@@ -408,8 +408,13 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     <div className="space-y-1">
                       {detail.distributions.map((d: any, i: number) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-2 bg-surface-2 rounded-[6px]">
-                          <Share2 className="w-3.5 h-3.5 text-navy-700/60" />
-                          <span className="text-sm text-text-secondary">{d.user?.full_name || '-'}</span>
+                          {d.type === 'group'
+                            ? <Users className="w-3.5 h-3.5 text-navy-700/60" />
+                            : <Share2 className="w-3.5 h-3.5 text-navy-700/60" />}
+                          <span className="text-sm text-text-secondary">{d.name || d.user?.full_name || '-'}</span>
+                          {d.type === 'group' && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] bg-navy-700/10 text-navy-700">Group</span>
+                          )}
                           <span className="text-xs text-text-placeholder ml-auto">{formatDate(d.distributed_at)}</span>
                         </div>
                       ))}

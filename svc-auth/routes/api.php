@@ -13,7 +13,7 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/auth/login',    [AuthController::class, 'login']);
 
-    Route::middleware('jwt.auth')->group(function () {
+    Route::middleware(['jwt.auth', \App\Http\Middleware\EnsureActiveUser::class])->group(function () {
         Route::get('/permissions/definitions',           [PermissionController::class, 'definitions']);
         Route::get('/permissions/users/{userId}',        [PermissionController::class, 'userPermissions']);
         Route::post('/permissions/users/{userId}',       [PermissionController::class, 'setPermission']);
@@ -32,7 +32,7 @@ Route::prefix('v1')->group(function () {
         });
 
 
-    Route::middleware('jwt.auth')->group(function () {
+    Route::middleware(['jwt.auth', \App\Http\Middleware\EnsureActiveUser::class])->group(function () {
         Route::get('/user-groups',      [\App\Http\Controllers\Admin\UserGroupController::class, 'index']);
         Route::get('/user-groups/{id}', [\App\Http\Controllers\Admin\UserGroupController::class, 'show']);
     });
@@ -136,6 +136,13 @@ Route::prefix('v1')->group(function () {
             $users = User::withTrashed()->whereIn('id', $request->ids)
                 ->get(['id', 'full_name', 'email', 'telegram_chat_id', 'division', 'is_active']);
             return response()->json(['data' => $users]);
+        });
+
+        Route::get('/users/{id}/group-ids', function (string $id) {
+            $ids = \Illuminate\Support\Facades\DB::table('user_group_members')
+                ->where('user_id', $id)
+                ->pluck('group_id');
+            return response()->json(['data' => $ids]);
         });
 
         Route::get('/user-groups/{id}', function (string $id) {

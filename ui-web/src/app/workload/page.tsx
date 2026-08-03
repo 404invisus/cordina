@@ -48,6 +48,7 @@ export default function WorkloadPage() {
   const { hasRole } = useAuthStore();
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSprint, setSelectedSprint] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
   const canViewAll = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
 
   const { data: projects } = useQuery({
@@ -80,7 +81,8 @@ export default function WorkloadPage() {
     enabled: !!selectedProject,
   });
 
-  const data: any[] = canViewAll ? summary || [] : mySummary ? [mySummary] : [];
+  const allRows: any[] = canViewAll ? summary || [] : mySummary ? [mySummary] : [];
+  const data: any[] = selectedMember ? allRows.filter((r) => r.user_id === selectedMember) : allRows;
 
   const selectedSprintObj = sprints?.find((s: any) => s.id === selectedSprint);
   const selectedProjectObj = projects?.find((p: any) => p.id === selectedProject);
@@ -112,6 +114,7 @@ export default function WorkloadPage() {
                 onChange={(e) => {
                   setSelectedProject(e.target.value);
                   setSelectedSprint('');
+                  setSelectedMember('');
                 }}
                 className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none"
               >
@@ -129,7 +132,10 @@ export default function WorkloadPage() {
             <div className="relative">
               <select
                 value={selectedSprint}
-                onChange={(e) => setSelectedSprint(e.target.value)}
+                onChange={(e) => {
+                  setSelectedSprint(e.target.value);
+                  setSelectedMember('');
+                }}
                 disabled={!selectedProject}
                 className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -142,6 +148,26 @@ export default function WorkloadPage() {
               </select>
               <ChevronDown className="absolute right-[8px] top-1/2 -translate-y-1/2 w-3 h-3 text-text-placeholder pointer-events-none" />
             </div>
+
+            {/* Member selector */}
+            {canViewAll && (
+              <div className="relative">
+                <select
+                  value={selectedMember}
+                  onChange={(e) => setSelectedMember(e.target.value)}
+                  disabled={!selectedSprint || allRows.length === 0}
+                  className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">{selectedSprint ? 'All Members ▾' : 'Member ▾'}</option>
+                  {allRows.map((r: any) => (
+                    <option key={r.user_id} value={r.user_id}>
+                      {r.full_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-[8px] top-1/2 -translate-y-1/2 w-3 h-3 text-text-placeholder pointer-events-none" />
+              </div>
+            )}
 
             <button className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
               Export PDF
@@ -218,7 +244,7 @@ export default function WorkloadPage() {
               {/* Burndown */}
               <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden" style={{ height: 300 }}>
                 <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                  <span className="text-[12.5px] font-semibold text-navy-900">Burndown — {selectedSprintObj?.name || 'Sprint'}</span>
+                  <span className="text-[12.5px] font-semibold text-navy-900">Burndown - {selectedSprintObj?.name || 'Sprint'}</span>
                   <div className="ml-auto flex items-center gap-[10px] text-[10px] text-neutral font-mono">
                     <span className="flex items-center gap-[4px]">
                       <span className="inline-block w-3 h-[2px] bg-navy-700" />

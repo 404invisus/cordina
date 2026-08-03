@@ -10,6 +10,36 @@ use Illuminate\Support\Str;
 
 class TteSignRequestController extends Controller
 {
+    private array $groupIdMemo = [];
+
+    private function userGroupIds(string $userId): array
+    {
+        if (isset($this->groupIdMemo[$userId])) return $this->groupIdMemo[$userId];
+
+        $ids = [];
+        try {
+            $resp = Http::timeout(5)->get("{$this->authUrl()}/api/v1/internal/users/{$userId}/group-ids");
+            if ($resp->successful()) $ids = $resp->json('data') ?? [];
+        } catch (\Throwable) {}
+
+        return $this->groupIdMemo[$userId] = array_values(
+            array_filter($ids, fn($v) => is_string($v) && $v !== '')
+        );
+    }
+
+    private function isRecipient(string $signRequestId, string $userId): bool
+    {
+        $groupIds = $this->userGroupIds($userId);
+
+        return DB::table('tte_sign_request_distributions')
+            ->where('sign_request_id', $signRequestId)
+            ->where(function ($w) use ($userId, $groupIds) {
+                $w->where('user_id', $userId);
+                if ($groupIds) $w->orWhereIn('group_id', $groupIds);
+            })
+            ->exists();
+    }
+
     private function authUrl(): string
     {
         return rtrim(config('services.auth.url', 'http://svc-auth'), '/');
@@ -45,6 +75,7 @@ class TteSignRequestController extends Controller
 
     private function resolveUsers(array $ids): array
     {
+        $ids = array_values(array_unique(array_filter($ids, fn($v) => is_string($v) && $v !== '')));
         if (empty($ids)) return [];
         try {
             $resp = Http::timeout(5)->post("{$this->authUrl()}/api/v1/internal/users/batch", ['ids' => $ids]);
@@ -58,7 +89,7 @@ class TteSignRequestController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'file'        => 'required|file|mimes:pdf|max:512',
+            'file'        => 'required|file|mimes:pdf|max:20480',
             'signer_ids'  => 'required|array|min:1|max:10',
             'signer_ids.*'=> 'uuid',
         ]);
@@ -131,8 +162,16 @@ class TteSignRequestController extends Controller
         $userId = $request->attributes->get('jwt_user_id');
 
         // Dokumen yang dibuat user ATAU user adalah signer ATAU user adalah penerima distribusi
+        $groupIds = $this->userGroupIds($userId);
+        $distIds  = DB::table('tte_sign_request_distributions')
+            ->where(function ($w) use ($userId, $groupIds) {
+                $w->where('user_id', $userId);
+                if ($groupIds) $w->orWhereIn('group_id', $groupIds);
+            })
+            ->pluck('sign_request_id');
+
         $reqIds = DB::table('tte_sign_request_signers')->where('user_id', $userId)->pluck('sign_request_id')
-            ->merge(DB::table('tte_sign_request_distributions')->where('user_id', $userId)->pluck('sign_request_id'))
+            ->merge($distIds)
             ->unique()->values()->toArray();
 
         $ownReqs = DB::table('tte_sign_requests')->where('creator_id', $userId)->pluck('id')->toArray();
@@ -188,7 +227,7 @@ class TteSignRequestController extends Controller
 
         // Cek akses: creator, signer, atau penerima distribusi
         $isSigner = DB::table('tte_sign_request_signers')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
-        $isDist   = DB::table('tte_sign_request_distributions')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
+        $isDist   = $this->isRecipient($id, $userId);
         abort_if($req->creator_id !== $userId && !$isSigner && !$isDist, 403, 'Tidak punya akses ke dokumen ini');
 
         $signers = DB::table('tte_sign_request_signers')
@@ -210,7 +249,7 @@ class TteSignRequestController extends Controller
         $distributions = DB::table('tte_sign_request_distributions')
             ->where('sign_request_id', $id)
             ->get();
-        $distUserIds = $distributions->pluck('user_id')->toArray();
+        $distUserIds = $distributions->pluck('user_id')->filter()->unique()->values()->toArray();
         $distUsers   = $this->resolveUsers($distUserIds);
 
         $currentOrder = $signers->where('status', 'pending')->min('order');
@@ -242,8 +281,17 @@ class TteSignRequestController extends Controller
                 'note'       => $l->note,
                 'created_at' => $l->created_at,
             ]),
-            'distributions' => $distributions->map(fn($d) => [
-                'user'           => $distUsers[$d->user_id] ?? ['full_name' => 'Unknown'],
+            'distributions' => $distributions->map(fn($d) => $d->group_id ? [
+                'type'           => 'group',
+                'name'           => $d->group_name ?: 'Grup',
+                'user'           => null,
+                'group'          => ['id' => $d->group_id, 'name' => $d->group_name],
+                'distributed_at' => $d->distributed_at,
+            ] : [
+                'type'           => 'user',
+                'name'           => $distUsers[$d->user_id]['full_name'] ?? 'Unknown',
+                'user'           => $distUsers[$d->user_id] ?? ['id' => $d->user_id, 'full_name' => 'Unknown'],
+                'group'          => null,
                 'distributed_at' => $d->distributed_at,
             ]),
         ]]);
@@ -308,7 +356,7 @@ class TteSignRequestController extends Controller
                 'file'       => new \CURLFile($tmpPdf, 'application/pdf', 'document.pdf'),
                 'nik'        => $nik,
                 'passphrase' => $request->passphrase,
-                'appearance' => 'INVISIBLE',
+                'tampilan'   => 'INVISIBLE',
             ],
             CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $esignKey],
             CURLOPT_RETURNTRANSFER => true,
@@ -472,7 +520,7 @@ class TteSignRequestController extends Controller
         abort_if(!$req, 404, 'Dokumen tidak ditemukan');
 
         $isSigner = DB::table('tte_sign_request_signers')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
-        $isDist   = DB::table('tte_sign_request_distributions')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
+        $isDist   = $this->isRecipient($id, $userId);
         abort_if($req->creator_id !== $userId && !$isSigner && !$isDist, 403, 'Tidak punya akses');
 
         $attachId   = $req->signed_attachment_id ?? $req->original_attachment_id;
@@ -511,7 +559,7 @@ class TteSignRequestController extends Controller
         abort_if(!$req, 404, 'Dokumen tidak ditemukan');
 
         $isSigner = DB::table('tte_sign_request_signers')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
-        $isDist   = DB::table('tte_sign_request_distributions')->where('sign_request_id', $id)->where('user_id', $userId)->exists();
+        $isDist   = $this->isRecipient($id, $userId);
         abort_if($req->creator_id !== $userId && !$isSigner && !$isDist, 403, 'Tidak punya akses');
 
         $attachId   = $req->signed_attachment_id ?? $req->original_attachment_id;

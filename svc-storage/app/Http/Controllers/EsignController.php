@@ -95,7 +95,7 @@ class EsignController extends Controller
                     'file'       => new \CURLFile($tmpPdf, 'application/pdf', 'document.pdf'),
                     'nik'        => $nik,
                     'passphrase' => $request->passphrase,
-                    'appearance' => 'INVISIBLE',
+                    'tampilan'   => 'INVISIBLE',
                 ],
                 CURLOPT_HTTPHEADER     => ['X-API-Key: ' . $esignKey],
                 CURLOPT_RETURNTRANSFER => true,
@@ -163,7 +163,7 @@ class EsignController extends Controller
     public function saveSigned(Request $request): JsonResponse
     {
         $request->validate([
-            'file'      => 'required|file|mimes:pdf|max:20480',
+            'file'      => 'required|file|mimes:pdf|max:25600',
             'tampilan'  => 'required|in:VISIBLE,INVISIBLE',
             'title'     => 'nullable|string|max:255',
         ]);
