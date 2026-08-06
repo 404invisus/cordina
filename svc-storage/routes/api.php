@@ -19,11 +19,19 @@ Route::prefix('v1')->middleware('internal')->group(function () {
 });
 
 Route::prefix('v1')->middleware('jwt.auth')->group(function () {
-    // File storage (existing)
+    // File storage
     Route::get('/storage',               [StorageController::class, 'index']);
+    Route::get('/storage/shared',        [StorageController::class, 'shared']);
+    Route::get('/storage/usage',         [StorageController::class, 'usage']);
     Route::post('/storage/upload',       [StorageController::class, 'upload']);
+    Route::patch('/storage/{id}',        [StorageController::class, 'update']);
     Route::get('/storage/{id}/download', [StorageController::class, 'download']);
     Route::delete('/storage/{id}',       [StorageController::class, 'destroy']);
+
+    // Storage folders
+    Route::post('/storage/folders',        [StorageController::class, 'storeFolder']);
+    Route::patch('/storage/folders/{id}',  [StorageController::class, 'updateFolder']);
+    Route::delete('/storage/folders/{id}', [StorageController::class, 'destroyFolder']);
 
     // Assets
     Route::get('/assets',         [AssetController::class, 'index']);

@@ -204,9 +204,19 @@ export const notificationService = {
 
 export const storageService = {
   upload: (formData: FormData) => api.post('/api/v1/storage/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  list: () => api.get('/api/v1/storage'),
+  list: (folderId?: string | null) => api.get('/api/v1/storage', { params: folderId ? { folder_id: folderId } : {} }),
+  usage: () => api.get('/api/v1/storage/usage'),
+  shared: (folderId?: string | null) => api.get('/api/v1/storage/shared', { params: folderId ? { folder_id: folderId } : {} }),
   download: (fileId: string) => api.get(`/api/v1/storage/${fileId}/download`, { responseType: 'blob' }),
   delete: (fileId: string) => api.delete(`/api/v1/storage/${fileId}`),
+  updateFile: (fileId: string, data: { file_name?: string; folder_id?: string | null; visibility?: string | null }) =>
+    api.patch(`/api/v1/storage/${fileId}`, data),
+  createFolder: (data: { name: string; parent_id?: string | null; visibility?: string | null }) =>
+    api.post('/api/v1/storage/folders', data),
+  updateFolder: (folderId: string, data: { name?: string; parent_id?: string | null; visibility?: string | null }) =>
+    api.patch(`/api/v1/storage/folders/${folderId}`, data),
+  deleteFolder: (folderId: string, force = false) =>
+    api.delete(`/api/v1/storage/folders/${folderId}`, { params: force ? { force: 1 } : {} }),
 };
 
 export default api;
