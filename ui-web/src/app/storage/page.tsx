@@ -275,6 +275,14 @@ export default function StoragePage() {
   const files: any[] = data?.files || [];
   const breadcrumb: any[] = data?.breadcrumb || [];
 
+  // Internal folders are collaborative: anyone signed in can upload/create subfolders
+  // inside them. "My Storage" root and any folder you own are always writable; in the
+  // Shared tab, being inside a folder at all means it's internal (and thus writable) —
+  // there's just no single target to write into at the aggregated shared root.
+  const canWriteHere = tab === 'mine' || folderId !== null;
+  const isOwnFolder = (f: any) => f.owner_id === currentUserId;
+  const isOwnFile = (f: any) => f.user_id === currentUserId;
+
   const invalidate = () => qc.invalidateQueries({ queryKey: ['storage'] });
 
   const doUpload = async (file: File) => {
@@ -303,7 +311,7 @@ export default function StoragePage() {
   const handlePanelDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    if (tab !== 'mine') return;
+    if (!canWriteHere) return;
     const f = e.dataTransfer.files?.[0];
     if (f) doUpload(f);
   };
@@ -418,13 +426,11 @@ export default function StoragePage() {
   };
 
   const handleRowDragStart = (e: React.DragEvent, kind: 'file' | 'folder', id: string) => {
-    if (tab !== 'mine') return;
     e.dataTransfer.setData(DRAG_MIME, JSON.stringify({ kind, id }));
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleFolderRowDrop = (e: React.DragEvent, targetFolder: any) => {
-    if (tab !== 'mine') return;
     if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
     e.preventDefault();
     e.stopPropagation();
@@ -448,7 +454,7 @@ export default function StoragePage() {
   const usedPct = Math.min(100, (usedGB / QUOTA_GB) * 100);
   const usedDisplay = usedGB < 0.01 ? `${(usedBytes / 1024 / 1024).toFixed(1)} MB` : `${usedGB.toFixed(1)} GB`;
 
-  const gridCols = tab === 'mine' ? '1fr 150px 150px 100px 80px' : '1fr 150px 140px 100px 80px';
+  const gridCols = '1fr 150px 140px 100px 80px';
 
   return (
     <AppLayout>
@@ -459,7 +465,7 @@ export default function StoragePage() {
         title={t('title')}
         subtitle={t('subtitle')}
         actions={
-          tab === 'mine' ? (
+          canWriteHere ? (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setNewFolderOpen(true)}
@@ -545,7 +551,7 @@ export default function StoragePage() {
             dragOver && 'border-gold-500 bg-gold-soft',
           )}
           onDragOver={(e) => {
-            if (tab !== 'mine') return;
+            if (!canWriteHere) return;
             e.preventDefault();
             if (!e.dataTransfer.types.includes(DRAG_MIME)) setDragOver(true);
           }}
@@ -567,8 +573,7 @@ export default function StoragePage() {
           <div className="grid px-[15px] h-[30px] items-center border-b border-border-subtle bg-surface-2" style={{ gridTemplateColumns: gridCols }}>
             <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('colName')}</div>
             <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('colVisibility')}</div>
-            {tab === 'shared' && <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('colOwner')}</div>}
-            {tab === 'mine' && <div />}
+            <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('colOwner')}</div>
             <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('colDate')}</div>
             <div />
           </div>
@@ -586,91 +591,92 @@ export default function StoragePage() {
               />
             ) : (
               <AnimatePresence>
-                {filteredFolders.map((folder, i) => (
-                  <motion.div
-                    key={folder.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                    draggable={tab === 'mine'}
-                    onDragStart={(e: any) => handleRowDragStart(e, 'folder', folder.id)}
-                    onDragOver={(e) => {
-                      if (tab !== 'mine' || !e.dataTransfer.types.includes(DRAG_MIME)) return;
-                      e.preventDefault();
-                      setDragOverFolderId(folder.id);
-                    }}
-                    onDragLeave={() => setDragOverFolderId((cur) => (cur === folder.id ? null : cur))}
-                    onDrop={(e) => handleFolderRowDrop(e, folder)}
-                    onClick={() => setFolderId(folder.id)}
-                    className={cn(
-                      'grid px-[15px] h-[38px] items-center border-b border-border-subtle group hover:bg-surface-2 transition-colors cursor-pointer',
-                      dragOverFolderId === folder.id && 'bg-gold-soft',
-                    )}
-                    style={{ gridTemplateColumns: gridCols }}
-                  >
-                    <div className="flex items-center gap-[10px] min-w-0">
-                      <div className="w-[26px] h-[26px] flex-none rounded-[5px] flex items-center justify-center bg-navy-700/10">
-                        <Folder className="w-[14px] h-[14px] text-navy-700" strokeWidth={1.5} />
-                      </div>
-                      <div className="text-[12.5px] font-semibold text-navy-800 truncate">{folder.name}</div>
-                    </div>
-
-                    <div onClick={(e) => e.stopPropagation()}>
-                      {tab === 'mine' ? (
-                        <VisibilitySelect
-                          value={folder.visibility}
-                          onChange={(v) => updateFolderVisibility.mutate({ id: folder.id, visibility: v })}
-                          t={t}
-                        />
-                      ) : (
-                        <VisibilityBadge effective={folder.effective_visibility} t={t} />
+                {filteredFolders.map((folder, i) => {
+                  const own = isOwnFolder(folder);
+                  return (
+                    <motion.div
+                      key={folder.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.02 }}
+                      draggable={own}
+                      onDragStart={(e: any) => handleRowDragStart(e, 'folder', folder.id)}
+                      onDragOver={(e) => {
+                        if (!e.dataTransfer.types.includes(DRAG_MIME)) return;
+                        e.preventDefault();
+                        setDragOverFolderId(folder.id);
+                      }}
+                      onDragLeave={() => setDragOverFolderId((cur) => (cur === folder.id ? null : cur))}
+                      onDrop={(e) => handleFolderRowDrop(e, folder)}
+                      onClick={() => setFolderId(folder.id)}
+                      className={cn(
+                        'grid px-[15px] h-[38px] items-center border-b border-border-subtle group hover:bg-surface-2 transition-colors cursor-pointer',
+                        dragOverFolderId === folder.id && 'bg-gold-soft',
                       )}
-                    </div>
+                      style={{ gridTemplateColumns: gridCols }}
+                    >
+                      <div className="flex items-center gap-[10px] min-w-0">
+                        <div className="w-[26px] h-[26px] flex-none rounded-[5px] flex items-center justify-center bg-navy-700/10">
+                          <Folder className="w-[14px] h-[14px] text-navy-700" strokeWidth={1.5} />
+                        </div>
+                        <div className="text-[12.5px] font-semibold text-navy-800 truncate">{folder.name}</div>
+                      </div>
 
-                    {tab === 'shared' && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {own ? (
+                          <VisibilitySelect
+                            value={folder.visibility}
+                            onChange={(v) => updateFolderVisibility.mutate({ id: folder.id, visibility: v })}
+                            t={t}
+                          />
+                        ) : (
+                          <VisibilityBadge effective={folder.effective_visibility} t={t} />
+                        )}
+                      </div>
+
                       <div className="font-mono text-[11px] text-text-secondary truncate">
-                        {folder.owner_id === currentUserId ? t('byYou') : folder.owner_name || '—'}
+                        {own ? t('byYou') : folder.owner_name || '—'}
                       </div>
-                    )}
-                    {tab === 'mine' && <div />}
 
-                    <div className="font-mono text-[11px] text-text-secondary">{formatDate(folder.created_at, locale)}</div>
+                      <div className="font-mono text-[11px] text-text-secondary">{formatDate(folder.created_at, locale)}</div>
 
-                    <div className="flex justify-end items-center gap-[2px]" onClick={(e) => e.stopPropagation()}>
-                      {tab === 'mine' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setRenameTarget({ kind: 'folder', id: folder.id, name: folder.name });
-                              setRenameValue(folder.name);
-                            }}
-                            className="p-1 text-neutral hover:text-navy-700 transition-colors opacity-0 group-hover:opacity-100"
-                            title={t('common.edit')}
-                          >
-                            <Pencil className="w-[13px] h-[13px]" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget({ kind: 'folder', id: folder.id, name: folder.name })}
-                            className="p-1 text-neutral hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="w-[13px] h-[13px]" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex justify-end items-center gap-[2px]" onClick={(e) => e.stopPropagation()}>
+                        {own && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setRenameTarget({ kind: 'folder', id: folder.id, name: folder.name });
+                                setRenameValue(folder.name);
+                              }}
+                              className="p-1 text-neutral hover:text-navy-700 transition-colors opacity-0 group-hover:opacity-100"
+                              title={t('common.edit')}
+                            >
+                              <Pencil className="w-[13px] h-[13px]" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget({ kind: 'folder', id: folder.id, name: folder.name })}
+                              className="p-1 text-neutral hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 className="w-[13px] h-[13px]" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
 
                 {filteredFiles.map((f, i) => {
                   const { labelKey, iconBg, iconColor, Icon } = getFileTypeInfo(f.mime_type);
+                  const own = isOwnFile(f);
                   return (
                     <motion.div
                       key={f.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: (filteredFolders.length + i) * 0.02 }}
-                      draggable={tab === 'mine'}
+                      draggable={own}
                       onDragStart={(e: any) => handleRowDragStart(e, 'file', f.id)}
                       className="grid px-[15px] h-[38px] items-center border-b border-border-subtle group hover:bg-surface-2 transition-colors"
                       style={{ gridTemplateColumns: gridCols }}
@@ -688,7 +694,7 @@ export default function StoragePage() {
                       </div>
 
                       <div>
-                        {tab === 'mine' ? (
+                        {own ? (
                           <VisibilitySelect
                             value={f.visibility}
                             onChange={(v) => updateFileVisibility.mutate({ id: f.id, visibility: v })}
@@ -699,12 +705,9 @@ export default function StoragePage() {
                         )}
                       </div>
 
-                      {tab === 'shared' && (
-                        <div className="font-mono text-[11px] text-text-secondary truncate">
-                          {f.user_id === currentUserId ? t('byYou') : f.owner_name || '—'}
-                        </div>
-                      )}
-                      {tab === 'mine' && <div />}
+                      <div className="font-mono text-[11px] text-text-secondary truncate">
+                        {own ? t('byYou') : f.owner_name || '—'}
+                      </div>
 
                       <div className="font-mono text-[11px] text-text-secondary">{formatDate(f.created_at, locale)}</div>
 
@@ -716,7 +719,7 @@ export default function StoragePage() {
                         >
                           <Download className="w-[13px] h-[13px]" />
                         </button>
-                        {tab === 'mine' && (
+                        {own && (
                           <>
                             <button
                               onClick={() => {

@@ -41,12 +41,29 @@ class StorageService
         return $effectiveVisibility === 'internal';
     }
 
+    /** Used when BROWSING "My Storage" — that tree is strictly your own. */
     private function assertOwnFolder(?string $folderId, string $userId): ?object
     {
         if ($folderId === null) return null;
         $folder = DB::table('folders')->where('id', $folderId)->first();
         abort_if(!$folder, 404, 'Folder tidak ditemukan');
         abort_if($folder->owner_id !== $userId, 403, 'Anda tidak punya akses ke folder ini');
+        return $folder;
+    }
+
+    /**
+     * Used when PLACING a new/moved item into a folder (upload, create subfolder, move).
+     * Your own folders are always writable; other people's folders are writable too as
+     * long as the folder's effective visibility is 'internal' — internal folders are
+     * collaborative, anyone signed in can contribute to them.
+     */
+    private function assertCanWriteInto(?string $folderId, string $userId): ?object
+    {
+        if ($folderId === null) return null;
+        $folder = DB::table('folders')->where('id', $folderId)->first();
+        abort_if(!$folder, 404, 'Folder tidak ditemukan');
+        $canWrite = $folder->owner_id === $userId || $this->effectiveFolderVisibility($folderId) === 'internal';
+        abort_if(!$canWrite, 403, 'Anda tidak punya akses tulis ke folder ini');
         return $folder;
     }
 
@@ -68,25 +85,20 @@ class StorageService
     {
         $this->assertOwnFolder($folderId, $userId);
 
-        $folders = DB::table('folders')
-            ->where('owner_id', $userId)
-            ->where(function ($q) use ($folderId) {
-                $folderId === null ? $q->whereNull('parent_id') : $q->where('parent_id', $folderId);
-            })
-            ->orderBy('name')
-            ->get();
-
-        $files = DB::table('attachments')
-            ->where('user_id', $userId)
-            ->where(function ($q) use ($folderId) {
-                $folderId === null ? $q->whereNull('folder_id') : $q->where('folder_id', $folderId);
-            })
-            ->orderByDesc('created_at')
-            ->get();
+        // Root is strictly personal (only your own top-level items). Inside a folder
+        // you own, show everything in it — internal folders are collaborative, so
+        // other people's contributions belong there too and you should see them.
+        if ($folderId === null) {
+            $folders = DB::table('folders')->where('owner_id', $userId)->whereNull('parent_id')->orderBy('name')->get();
+            $files   = DB::table('attachments')->where('user_id', $userId)->whereNull('folder_id')->orderByDesc('created_at')->get();
+        } else {
+            $folders = DB::table('folders')->where('parent_id', $folderId)->orderBy('name')->get();
+            $files   = DB::table('attachments')->where('folder_id', $folderId)->orderByDesc('created_at')->get();
+        }
 
         return [
-            'folders'    => $folders->map(fn($f) => $this->presentFolder($f))->all(),
-            'files'      => $files->map(fn($f) => $this->presentFile($f))->all(),
+            'folders'    => $this->presentSharedFolders($folders),
+            'files'      => $this->presentSharedFiles($files),
             'breadcrumb' => $this->breadcrumb($folderId),
         ];
     }
@@ -228,7 +240,7 @@ class StorageService
 
     public function createFolder(string $name, ?string $parentId, ?string $visibility, string $userId): array
     {
-        $this->assertOwnFolder($parentId, $userId);
+        $this->assertCanWriteInto($parentId, $userId);
         abort_if($visibility !== null && !in_array($visibility, self::VISIBILITIES, true), 422, 'Visibilitas tidak valid');
 
         $record = [
@@ -267,7 +279,7 @@ class StorageService
         if (array_key_exists('parent_id', $fields)) {
             $newParentId = $fields['parent_id'];
             if ($newParentId !== null) {
-                $this->assertOwnFolder($newParentId, $userId);
+                $this->assertCanWriteInto($newParentId, $userId);
                 abort_if($this->wouldCreateCycle($id, $newParentId), 422, 'Tidak bisa memindahkan folder ke dalam dirinya sendiri');
             }
             $update['parent_id'] = $newParentId;
@@ -337,7 +349,7 @@ class StorageService
 
     public function store(UploadedFile $file, ?string $folderId, ?string $visibility, string $userId): array
     {
-        $this->assertOwnFolder($folderId, $userId);
+        $this->assertCanWriteInto($folderId, $userId);
         abort_if($visibility !== null && !in_array($visibility, self::VISIBILITIES, true), 422, 'Visibilitas tidak valid');
 
         $ext      = $file->getClientOriginalExtension();
@@ -385,7 +397,7 @@ class StorageService
         }
 
         if (array_key_exists('folder_id', $fields)) {
-            $this->assertOwnFolder($fields['folder_id'], $userId);
+            $this->assertCanWriteInto($fields['folder_id'], $userId);
             $update['folder_id'] = $fields['folder_id'];
         }
 
