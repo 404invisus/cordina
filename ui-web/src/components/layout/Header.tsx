@@ -6,6 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Search, Bell, ChevronDown, Shield, Settings, LogOut } from 'lucide-react';
 import { getInitials, getRoleLabel } from '@/lib/utils';
 import { formatDateLong } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+
+const dict = {
+  en: { searchPlaceholder: 'Search' },
+  id: { searchPlaceholder: 'Cari' },
+};
 
 export default function Header({
   user,
@@ -21,6 +28,8 @@ export default function Header({
   onLogout: () => void;
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const { locale, setLocale } = useLocale();
+  const t = useT(dict);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -37,7 +46,7 @@ export default function Header({
         <Menu className="w-5 h-5 text-text-tertiary" />
       </button>
 
-      <div className="text-[12px] font-medium text-text-tertiary hidden sm:block">{formatDateLong(new Date())}</div>
+      <div className="text-[12px] font-medium text-text-tertiary hidden sm:block">{formatDateLong(new Date(), locale)}</div>
 
       <div className="ml-auto flex items-center gap-[13px]">
         {/* Search */}
@@ -46,8 +55,20 @@ export default function Header({
           className="hidden sm:flex items-center gap-2 h-[30px] px-3 border border-border-input rounded-[6px] w-[210px] text-text-placeholder text-[12px] hover:border-border-button transition-colors"
         >
           <Search className="w-3 h-3 flex-shrink-0" />
-          <span>Search</span>
+          <span>{t('searchPlaceholder')}</span>
         </Link>
+
+        {/* Language switcher */}
+        <SegmentedControl
+          options={[
+            { value: 'en', label: 'EN' },
+            { value: 'id', label: 'ID' },
+          ]}
+          value={locale}
+          onChange={setLocale}
+        />
+
+        <div className="w-px h-5 bg-border flex-shrink-0" />
 
         {/* Bell */}
         <Link href="/notifications" className="relative flex-shrink-0">
@@ -94,7 +115,7 @@ export default function Header({
                 <div className="px-4 py-2 border-b border-border-subtle">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-info-text bg-info-soft px-2.5 py-1 rounded-[4px]">
                     <Shield className="w-3 h-3" />
-                    {getRoleLabel(role)}
+                    {getRoleLabel(role, locale)}
                   </span>
                 </div>
                 <div className="py-1">
@@ -104,14 +125,14 @@ export default function Header({
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2 transition-colors"
                   >
                     <Settings className="w-4 h-4 text-text-placeholder" />
-                    Settings
+                    {t('common.settings')}
                   </Link>
                   <button
                     onClick={onLogout}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-danger-soft transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
-                    Sign Out
+                    {t('common.signOut')}
                   </button>
                 </div>
               </motion.div>

@@ -27,30 +27,321 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { formatDateTime as formatDate } from '@/lib/format';
+import { useT, useLocale } from '@/lib/i18n';
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; icon: any }> = {
-  draft: { label: 'Draft', bg: 'bg-border-subtle', text: 'text-text-secondary', icon: FileEdit },
-  submitted: { label: 'Diajukan', bg: 'bg-info-soft', text: 'text-info-text', icon: Clock },
-  approved: { label: 'Disetujui', bg: 'bg-success-soft', text: 'text-success-text', icon: CheckCircle2 },
-  rejected: { label: 'Ditolak', bg: 'bg-danger-soft', text: 'text-danger-text', icon: AlertTriangle },
-  implemented: { label: 'Implemented', bg: 'bg-navy-700/8', text: 'text-navy-700', icon: Pen },
+const dict = {
+  en: {
+    statusDraftLabel: 'Draft',
+    statusSubmittedLabel: 'Diajukan',
+    statusApprovedLabel: 'Disetujui',
+    statusRejectedLabel: 'Ditolak',
+    statusImplementedLabel: 'Implemented',
+    priorityLow: 'Low',
+    priorityMedium: 'Medium',
+    priorityHigh: 'High',
+    priorityCritical: 'Critical',
+    tabAll: 'All',
+    tabAwaitingMe: 'Awaiting me',
+    tabInFlight: 'In flight',
+    tabSubmittedByMe: 'Submitted by me',
+    tabClosed: 'Closed',
+    noUsersFound: 'No users found',
+    crCreatedLabel: 'CR Dibuat',
+    signerLabelPrefix: 'Penandatangan: {name}',
+    reviewerLabelPrefix: 'Penilai {order}: {name}',
+    waitingBadge: 'Menunggu',
+    editCRTitle: 'Edit Change Request',
+    createCRTitle: 'Create Change Request',
+    basicInformation: 'Basic Information',
+    titleLabel: 'Title',
+    priorityLabel: 'Priority',
+    changeTypeLabel: 'Change Type',
+    changeTypeNormal: 'Normal',
+    changeTypeStandard: 'Standard',
+    changeTypeEmergency: 'Emergency',
+    plannedChangeDateLabel: 'Planned Change Date',
+    changeTitlePlaceholder: 'Change title',
+    changeInformation: 'Change Information',
+    proposedChangeLabel: 'Proposed Change',
+    proposedChangePlaceholder: 'What will be changed?',
+    changeDetailsLabel: 'Change Details',
+    changeDetailsPlaceholder: 'Step-by-step details of the change',
+    backgroundReasonLabel: 'Background / Reason',
+    backgroundReasonPlaceholder: 'Why is this change necessary?',
+    serviceDependenciesLabel: 'Service Dependencies',
+    serviceDependenciesPlaceholder: 'Related services',
+    affectedSystemsLabel: 'Affected Information Systems',
+    affectedSystemsPlaceholder: 'Information systems impacted',
+    riskAnalysis: 'Risk Analysis',
+    changeRiskAnalysisLabel: 'Change Risk Analysis',
+    changeRiskAnalysisPlaceholder: 'Risks that may occur',
+    riskMitigationLabel: 'Risk Mitigation Steps',
+    riskMitigationPlaceholder: 'Steps to reduce risk',
+    riskIfNotPerformedLabel: 'Risk if Change is Not Performed',
+    riskIfNotPerformedPlaceholder: 'Impact if not performed',
+    failureHandlingLabel: 'Failure Handling Steps',
+    failureHandlingPlaceholder: 'Rollback plan in case of failure',
+    personnel: 'Personnel',
+    implementersLabel: 'Implementers',
+    reviewersLabel: 'Reviewers * (order matches selection)',
+    signatoryLabel: 'Signatory * (1 person, signs via e-Sign)',
+    selectSignatoryOption: '-- Select signatory --',
+    supportingAttachments: 'Supporting Attachments',
+    addAttachmentLabel: 'Add Attachment',
+    filesUploadedAfterCreate: 'Files will be uploaded after the CR is created',
+    selectAtLeastOneReviewer: 'Select at least 1 reviewer',
+    selectASignatory: 'Select a signatory',
+    crUpdated: 'CR updated',
+    crCreatedSuccess: 'CR created successfully',
+    failedToSave: 'Failed to save',
+    saving: 'Saving...',
+    rejectCRTitle: 'Reject Change Request',
+    rejectionNotePlaceholder: 'Rejection note (required)',
+    processing: 'Processing...',
+    rejectCRButton: 'Reject CR',
+    crRejected: 'CR rejected',
+    failedGeneric: 'Failed',
+    signDocumentTitle: 'Sign Document',
+    signingAsLabel: 'Signing as:',
+    eSignPassphraseLabel: 'e-Sign Passphrase',
+    eSignPassphrasePlaceholder: 'Enter your e-Sign passphrase',
+    passphraseNotice: 'Passphrase is not stored in the system. The document will be signed electronically using a certificate issued by BSrE.',
+    signing: 'Signing...',
+    signButton: 'Sign',
+    documentSignedSuccess: 'Document signed successfully!',
+    failedToSignDocument: 'Failed to sign document',
+    actionCreated: 'CR Dibuat',
+    actionSubmitted: 'CR Diajukan',
+    actionReviewed: 'Ditinjau',
+    actionApproved: 'Disetujui',
+    actionRejected: 'Ditolak',
+    actionImplemented: 'Diimplementasikan',
+    actionSigned: 'Ditandatangani (TTE)',
+    actionAttachmentAdded: 'Lampiran Ditambahkan',
+    actionAttachmentDeleted: 'Lampiran Dihapus',
+    loadingLog: 'Loading log...',
+    activityHistory: 'Riwayat Aktivitas',
+    byActor: 'oleh {name}',
+    systemActor: 'sistem',
+    attachmentsCountLabel: 'Attachments ({count})',
+    uploading: 'Uploading...',
+    uploadButton: 'Upload',
+    loadingAttachments: 'Loading attachments...',
+    noAttachmentsYet: 'No attachments yet',
+    deleteAttachmentConfirm: 'Delete this attachment?',
+    attachmentUploaded: 'Attachment uploaded',
+    failedToUpload: 'Failed to upload',
+    crMarkedImplemented: 'CR marked as implemented',
+    attachmentDeleted: 'Attachment deleted',
+    failedToDelete: 'Failed to delete',
+    downloadFailed: 'Download failed',
+    yourTurnToSign: 'Your turn to sign this CR document',
+    yourTurnToReview: 'Your turn to review this CR',
+    downloadSignedDocument: 'Download Signed Document',
+    failedToDownloadDocument: 'Failed to download document',
+    hideProgress: 'Hide progress',
+    viewProgress: 'View progress',
+    editButton: 'Edit',
+    submitting: 'Submitting...',
+    submitButton: 'Submit',
+    deleteCRConfirm: 'Delete this CR?',
+    deleteButton: 'Delete',
+    markAsImplemented: 'Mark as Implemented',
+    approveButton: 'Approve',
+    rejectButton: 'Reject',
+    signActionButton: 'Sign',
+    crSubmitted: 'CR submitted',
+    failedToSubmit: 'Failed to submit',
+    crApproved: 'CR approved',
+    failedToApprove: 'Failed to approve',
+    crDeleted: 'CR deleted',
+    stepXOfY: 'Step {current}/{total}',
+    stepsCount: '{total} step',
+    sectionGovernance: 'GOVERNANCE',
+    changeManagementTitle: 'Change Management',
+    requestsSubtitle: '{count} request{s} · {inFlight} in flight · {awaiting} awaiting you',
+    newRequestButton: 'New request',
+    awaitingApprovalSingle: '{title} ',
+    awaitingApprovalMultiple: '{count} requests ',
+    awaitingYourApproval: 'awaiting your approval',
+    actionRequired: 'Action required',
+    resultsCount: '{count} result{s}',
+    noChangeRequestsTitle: 'No change requests',
+    noRequestsAwaitingMe: 'No requests awaiting your action',
+    noRequestsInFlight: 'No requests currently in flight',
+    noRequestsSubmittedByMe: 'You have not submitted any requests',
+    noClosedRequests: 'No closed requests',
+    noChangeRequestsYet: 'No change requests yet',
+  },
+  id: {
+    statusDraftLabel: 'Draf',
+    statusSubmittedLabel: 'Diajukan',
+    statusApprovedLabel: 'Disetujui',
+    statusRejectedLabel: 'Ditolak',
+    statusImplementedLabel: 'Diimplementasikan',
+    priorityLow: 'Rendah',
+    priorityMedium: 'Sedang',
+    priorityHigh: 'Tinggi',
+    priorityCritical: 'Kritis',
+    tabAll: 'Semua',
+    tabAwaitingMe: 'Menunggu saya',
+    tabInFlight: 'Sedang berjalan',
+    tabSubmittedByMe: 'Diajukan oleh saya',
+    tabClosed: 'Selesai',
+    noUsersFound: 'Pengguna tidak ditemukan',
+    crCreatedLabel: 'CR Dibuat',
+    signerLabelPrefix: 'Penandatangan: {name}',
+    reviewerLabelPrefix: 'Penilai {order}: {name}',
+    waitingBadge: 'Menunggu',
+    editCRTitle: 'Ubah Permintaan Perubahan',
+    createCRTitle: 'Buat Permintaan Perubahan',
+    basicInformation: 'Informasi Dasar',
+    titleLabel: 'Judul',
+    priorityLabel: 'Prioritas',
+    changeTypeLabel: 'Jenis Perubahan',
+    changeTypeNormal: 'Normal',
+    changeTypeStandard: 'Standar',
+    changeTypeEmergency: 'Darurat',
+    plannedChangeDateLabel: 'Tanggal Perubahan yang Direncanakan',
+    changeTitlePlaceholder: 'Judul perubahan',
+    changeInformation: 'Informasi Perubahan',
+    proposedChangeLabel: 'Perubahan yang Diusulkan',
+    proposedChangePlaceholder: 'Apa yang akan diubah?',
+    changeDetailsLabel: 'Rincian Perubahan',
+    changeDetailsPlaceholder: 'Rincian perubahan langkah demi langkah',
+    backgroundReasonLabel: 'Latar Belakang / Alasan',
+    backgroundReasonPlaceholder: 'Mengapa perubahan ini diperlukan?',
+    serviceDependenciesLabel: 'Dependensi Layanan',
+    serviceDependenciesPlaceholder: 'Layanan terkait',
+    affectedSystemsLabel: 'Sistem Informasi Terdampak',
+    affectedSystemsPlaceholder: 'Sistem informasi yang terdampak',
+    riskAnalysis: 'Analisis Risiko',
+    changeRiskAnalysisLabel: 'Analisis Risiko Perubahan',
+    changeRiskAnalysisPlaceholder: 'Risiko yang mungkin terjadi',
+    riskMitigationLabel: 'Langkah Mitigasi Risiko',
+    riskMitigationPlaceholder: 'Langkah untuk mengurangi risiko',
+    riskIfNotPerformedLabel: 'Risiko jika Perubahan Tidak Dilakukan',
+    riskIfNotPerformedPlaceholder: 'Dampak jika tidak dilakukan',
+    failureHandlingLabel: 'Langkah Penanganan Kegagalan',
+    failureHandlingPlaceholder: 'Rencana pemulihan jika terjadi kegagalan',
+    personnel: 'Personel',
+    implementersLabel: 'Pelaksana',
+    reviewersLabel: 'Penilai * (urutan sesuai pilihan)',
+    signatoryLabel: 'Penandatangan * (1 orang, menandatangani melalui e-Sign)',
+    selectSignatoryOption: '-- Pilih penandatangan --',
+    supportingAttachments: 'Lampiran Pendukung',
+    addAttachmentLabel: 'Tambah Lampiran',
+    filesUploadedAfterCreate: 'Berkas akan diunggah setelah CR dibuat',
+    selectAtLeastOneReviewer: 'Pilih minimal 1 penilai',
+    selectASignatory: 'Pilih seorang penandatangan',
+    crUpdated: 'CR diperbarui',
+    crCreatedSuccess: 'CR berhasil dibuat',
+    failedToSave: 'Gagal menyimpan',
+    saving: 'Menyimpan...',
+    rejectCRTitle: 'Tolak Permintaan Perubahan',
+    rejectionNotePlaceholder: 'Catatan penolakan (wajib)',
+    processing: 'Memproses...',
+    rejectCRButton: 'Tolak CR',
+    crRejected: 'CR ditolak',
+    failedGeneric: 'Gagal',
+    signDocumentTitle: 'Tandatangani Dokumen',
+    signingAsLabel: 'Menandatangani sebagai:',
+    eSignPassphraseLabel: 'Kata Sandi e-Sign',
+    eSignPassphrasePlaceholder: 'Masukkan kata sandi e-Sign Anda',
+    passphraseNotice:
+      'Kata sandi tidak disimpan dalam sistem. Dokumen akan ditandatangani secara elektronik menggunakan sertifikat yang diterbitkan oleh BSrE.',
+    signing: 'Menandatangani...',
+    signButton: 'Tandatangani',
+    documentSignedSuccess: 'Dokumen berhasil ditandatangani!',
+    failedToSignDocument: 'Gagal menandatangani dokumen',
+    actionCreated: 'CR Dibuat',
+    actionSubmitted: 'CR Diajukan',
+    actionReviewed: 'Ditinjau',
+    actionApproved: 'Disetujui',
+    actionRejected: 'Ditolak',
+    actionImplemented: 'Diimplementasikan',
+    actionSigned: 'Ditandatangani (TTE)',
+    actionAttachmentAdded: 'Lampiran Ditambahkan',
+    actionAttachmentDeleted: 'Lampiran Dihapus',
+    loadingLog: 'Memuat log...',
+    activityHistory: 'Riwayat Aktivitas',
+    byActor: 'oleh {name}',
+    systemActor: 'sistem',
+    attachmentsCountLabel: 'Lampiran ({count})',
+    uploading: 'Mengunggah...',
+    uploadButton: 'Unggah',
+    loadingAttachments: 'Memuat lampiran...',
+    noAttachmentsYet: 'Belum ada lampiran',
+    deleteAttachmentConfirm: 'Hapus lampiran ini?',
+    attachmentUploaded: 'Lampiran diunggah',
+    failedToUpload: 'Gagal mengunggah',
+    crMarkedImplemented: 'CR ditandai sebagai diimplementasikan',
+    attachmentDeleted: 'Lampiran dihapus',
+    failedToDelete: 'Gagal menghapus',
+    downloadFailed: 'Gagal mengunduh',
+    yourTurnToSign: 'Giliran Anda menandatangani dokumen CR ini',
+    yourTurnToReview: 'Giliran Anda meninjau CR ini',
+    downloadSignedDocument: 'Unduh Dokumen yang Ditandatangani',
+    failedToDownloadDocument: 'Gagal mengunduh dokumen',
+    hideProgress: 'Sembunyikan progres',
+    viewProgress: 'Lihat progres',
+    editButton: 'Ubah',
+    submitting: 'Mengirimkan...',
+    submitButton: 'Kirim',
+    deleteCRConfirm: 'Hapus CR ini?',
+    deleteButton: 'Hapus',
+    markAsImplemented: 'Tandai sebagai Diimplementasikan',
+    approveButton: 'Setujui',
+    rejectButton: 'Tolak',
+    signActionButton: 'Tandatangani',
+    crSubmitted: 'CR diajukan',
+    failedToSubmit: 'Gagal mengajukan',
+    crApproved: 'CR disetujui',
+    failedToApprove: 'Gagal menyetujui',
+    crDeleted: 'CR dihapus',
+    stepXOfY: 'Langkah {current}/{total}',
+    stepsCount: '{total} langkah',
+    sectionGovernance: 'TATA KELOLA',
+    changeManagementTitle: 'Manajemen Perubahan',
+    requestsSubtitle: '{count} permintaan · {inFlight} sedang berjalan · {awaiting} menunggu Anda',
+    newRequestButton: 'Permintaan baru',
+    awaitingApprovalSingle: '{title} ',
+    awaitingApprovalMultiple: '{count} permintaan ',
+    awaitingYourApproval: 'menunggu persetujuan Anda',
+    actionRequired: 'Perlu tindakan',
+    resultsCount: '{count} hasil',
+    noChangeRequestsTitle: 'Tidak ada permintaan perubahan',
+    noRequestsAwaitingMe: 'Tidak ada permintaan yang menunggu tindakan Anda',
+    noRequestsInFlight: 'Tidak ada permintaan yang sedang berjalan',
+    noRequestsSubmittedByMe: 'Anda belum mengajukan permintaan apa pun',
+    noClosedRequests: 'Tidak ada permintaan yang selesai',
+    noChangeRequestsYet: 'Belum ada permintaan perubahan',
+  },
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  low: { label: 'Low', bg: 'bg-border-subtle', text: 'text-text-tertiary' },
-  medium: { label: 'Medium', bg: 'bg-info-soft', text: 'text-info-text' },
-  high: { label: 'High', bg: 'bg-amber-50', text: 'text-amber-600' },
-  critical: { label: 'Critical', bg: 'bg-danger-soft', text: 'text-danger-text' },
+const STATUS_CONFIG: Record<string, { labelKey: string; bg: string; text: string; icon: any }> = {
+  draft: { labelKey: 'statusDraftLabel', bg: 'bg-border-subtle', text: 'text-text-secondary', icon: FileEdit },
+  submitted: { labelKey: 'statusSubmittedLabel', bg: 'bg-info-soft', text: 'text-info-text', icon: Clock },
+  approved: { labelKey: 'statusApprovedLabel', bg: 'bg-success-soft', text: 'text-success-text', icon: CheckCircle2 },
+  rejected: { labelKey: 'statusRejectedLabel', bg: 'bg-danger-soft', text: 'text-danger-text', icon: AlertTriangle },
+  implemented: { labelKey: 'statusImplementedLabel', bg: 'bg-navy-700/8', text: 'text-navy-700', icon: Pen },
+};
+
+const PRIORITY_CONFIG: Record<string, { labelKey: string; bg: string; text: string }> = {
+  low: { labelKey: 'priorityLow', bg: 'bg-border-subtle', text: 'text-text-tertiary' },
+  medium: { labelKey: 'priorityMedium', bg: 'bg-info-soft', text: 'text-info-text' },
+  high: { labelKey: 'priorityHigh', bg: 'bg-amber-50', text: 'text-amber-600' },
+  critical: { labelKey: 'priorityCritical', bg: 'bg-danger-soft', text: 'text-danger-text' },
 };
 
 type TabFilter = 'all' | 'awaiting_me' | 'in_flight' | 'submitted_by_me' | 'closed';
 
-const TABS: { id: TabFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'awaiting_me', label: 'Awaiting me' },
-  { id: 'in_flight', label: 'In flight' },
-  { id: 'submitted_by_me', label: 'Submitted by me' },
-  { id: 'closed', label: 'Closed' },
+const TABS: { id: TabFilter; labelKey: string }[] = [
+  { id: 'all', labelKey: 'tabAll' },
+  { id: 'awaiting_me', labelKey: 'tabAwaitingMe' },
+  { id: 'in_flight', labelKey: 'tabInFlight' },
+  { id: 'submitted_by_me', labelKey: 'tabSubmittedByMe' },
+  { id: 'closed', labelKey: 'tabClosed' },
 ];
 
 function isMyTurnFn(cr: any, userId: string): boolean {
@@ -73,6 +364,7 @@ function UserMultiSelect({
   onChange: (ids: string[]) => void;
   exclude?: string[];
 }) {
+  const t = useT(dict);
   const toggle = (uid: string) => onChange(selected.includes(uid) ? selected.filter((id) => id !== uid) : [...selected, uid]);
   const filtered = users.filter((u) => !exclude.includes(u.id));
   return (
@@ -101,7 +393,7 @@ function UserMultiSelect({
               </div>
             );
           })}
-          {filtered.length === 0 && <div className="px-3 py-4 text-sm text-text-placeholder text-center">No users found</div>}
+          {filtered.length === 0 && <div className="px-3 py-4 text-sm text-text-placeholder text-center">{t('noUsersFound')}</div>}
         </div>
       </div>
       {selected.length > 0 && (
@@ -133,16 +425,18 @@ function UserMultiSelect({
 }
 
 function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string> }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const approvals: any[] = cr.approvals || [];
   const currentStep: number = cr.current_step || 0;
 
   const steps = [
-    { label: 'CR Dibuat', role: 'creator', order: 0, status: 'done', actedAt: cr.created_at, note: null },
+    { label: t('crCreatedLabel'), role: 'creator', order: 0, status: 'done', actedAt: cr.created_at, note: null },
     ...approvals.map((a: any) => ({
       label:
         a.role === 'signer'
-          ? `Penandatangan: ${usersMap?.[a.approver_id] || '...'}`
-          : `Penilai ${a.order}: ${usersMap?.[a.approver_id] || '...'}`,
+          ? t('signerLabelPrefix', { name: usersMap?.[a.approver_id] || '...' })
+          : t('reviewerLabelPrefix', { order: a.order, name: usersMap?.[a.approver_id] || '...' }),
       role: a.role,
       order: a.order,
       status:
@@ -201,10 +495,10 @@ function CRTimeline({ cr, usersMap }: { cr: any; usersMap: Record<string, string
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-navy-700/8 text-navy-700">TTE</span>
               )}
               {step.status === 'active' && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info-soft text-info-text animate-pulse">Menunggu</span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info-soft text-info-text animate-pulse">{t('waitingBadge')}</span>
               )}
             </div>
-            {step.actedAt && <div className="text-xs text-text-placeholder mt-0.5">{formatDate(step.actedAt)}</div>}
+            {step.actedAt && <div className="text-xs text-text-placeholder mt-0.5">{formatDate(step.actedAt, locale)}</div>}
             {step.note && <div className="text-xs text-text-tertiary mt-1 bg-surface-2 rounded-lg px-2 py-1.5 italic">"{step.note}"</div>}
           </div>
         </div>
@@ -242,6 +536,7 @@ function CRModal({
   pendingFiles: File[];
   setPendingFiles: React.Dispatch<React.SetStateAction<File[]>>;
 }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
@@ -284,16 +579,16 @@ function CRModal({
         }
       }
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success(editData ? 'CR updated' : 'CR created successfully');
+      toast.success(editData ? t('crUpdated') : t('crCreatedSuccess'));
       setPendingFiles([]);
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSave')),
   });
 
   const handleSubmit = () => {
-    if (!editData && reviewerIds.length === 0) return toast.error('Select at least 1 reviewer');
-    if (!editData && !signerId) return toast.error('Select a signatory');
+    if (!editData && reviewerIds.length === 0) return toast.error(t('selectAtLeastOneReviewer'));
+    if (!editData && !signerId) return toast.error(t('selectASignatory'));
     const payload = editData
       ? { ...form, pelaksana_ids: pelaksanaIds }
       : { ...form, reviewer_ids: reviewerIds, signer_id: signerId, pelaksana_ids: pelaksanaIds };
@@ -305,9 +600,9 @@ function CRModal({
   const inputCls =
     'mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700';
   const taCls = inputCls + ' resize-none';
-  const lbl = (t: string, req = false) => (
+  const lbl = (label: string, req = false) => (
     <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-      {t}
+      {label}
       {req && <span className="text-danger ml-0.5">*</span>}
     </label>
   );
@@ -320,7 +615,7 @@ function CRModal({
         className="bg-white rounded-[6px] w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between p-6 border-b border-border-subtle sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-bold text-navy-900">{editData ? 'Edit Change Request' : 'Create Change Request'}</h2>
+          <h2 className="text-lg font-bold text-navy-900">{editData ? t('editCRTitle') : t('createCRTitle')}</h2>
           <button onClick={onClose} className="p-2 hover:bg-border-subtle rounded-[6px]">
             <X className="w-4 h-4 text-text-tertiary" />
           </button>
@@ -328,142 +623,142 @@ function CRModal({
 
         <div className="p-6 space-y-4">
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
-            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">Basic Information</div>
+            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('basicInformation')}</div>
             <div>
-              {lbl('Title', true)}
-              <input value={form.title} onChange={f('title')} className={inputCls} placeholder="Change title" />
+              {lbl(t('titleLabel'), true)}
+              <input value={form.title} onChange={f('title')} className={inputCls} placeholder={t('changeTitlePlaceholder')} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                {lbl('Priority')}
+                {lbl(t('priorityLabel'))}
                 <select value={form.priority} onChange={f('priority')} className={inputCls}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
+                  <option value="low">{t('priorityLow')}</option>
+                  <option value="medium">{t('priorityMedium')}</option>
+                  <option value="high">{t('priorityHigh')}</option>
+                  <option value="critical">{t('priorityCritical')}</option>
                 </select>
               </div>
               <div>
-                {lbl('Change Type')}
+                {lbl(t('changeTypeLabel'))}
                 <select value={form.change_type} onChange={f('change_type')} className={inputCls}>
-                  <option value="normal">Normal</option>
-                  <option value="standard">Standard</option>
-                  <option value="emergency">Emergency</option>
+                  <option value="normal">{t('changeTypeNormal')}</option>
+                  <option value="standard">{t('changeTypeStandard')}</option>
+                  <option value="emergency">{t('changeTypeEmergency')}</option>
                 </select>
               </div>
             </div>
             <div>
-              {lbl('Planned Change Date')}
+              {lbl(t('plannedChangeDateLabel'))}
               <input type="date" value={form.rencana_waktu} onChange={f('rencana_waktu')} className={inputCls} />
             </div>
           </div>
 
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
-            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">Change Information</div>
+            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('changeInformation')}</div>
             <div>
-              {lbl('Proposed Change', true)}
+              {lbl(t('proposedChangeLabel'), true)}
               <textarea
                 value={form.description}
                 onChange={ta('description')}
                 rows={3}
                 className={taCls}
-                placeholder="What will be changed?"
+                placeholder={t('proposedChangePlaceholder')}
               />
             </div>
             <div>
-              {lbl('Change Details')}
+              {lbl(t('changeDetailsLabel'))}
               <textarea
                 value={form.rincian}
                 onChange={ta('rincian')}
                 rows={3}
                 className={taCls}
-                placeholder="Step-by-step details of the change"
+                placeholder={t('changeDetailsPlaceholder')}
               />
             </div>
             <div>
-              {lbl('Background / Reason', true)}
+              {lbl(t('backgroundReasonLabel'), true)}
               <textarea
                 value={form.reason}
                 onChange={ta('reason')}
                 rows={2}
                 className={taCls}
-                placeholder="Why is this change necessary?"
+                placeholder={t('backgroundReasonPlaceholder')}
               />
             </div>
             <div>
-              {lbl('Service Dependencies')}
+              {lbl(t('serviceDependenciesLabel'))}
               <textarea
                 value={form.dependensi_layanan}
                 onChange={ta('dependensi_layanan')}
                 rows={2}
                 className={taCls}
-                placeholder="Related services"
+                placeholder={t('serviceDependenciesPlaceholder')}
               />
             </div>
             <div>
-              {lbl('Affected Information Systems')}
+              {lbl(t('affectedSystemsLabel'))}
               <textarea
                 value={form.si_terdampak}
                 onChange={ta('si_terdampak')}
                 rows={2}
                 className={taCls}
-                placeholder="Information systems impacted"
+                placeholder={t('affectedSystemsPlaceholder')}
               />
             </div>
           </div>
 
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
-            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">Risk Analysis</div>
+            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('riskAnalysis')}</div>
             <div>
-              {lbl('Change Risk Analysis')}
-              <textarea value={form.impact} onChange={ta('impact')} rows={2} className={taCls} placeholder="Risks that may occur" />
+              {lbl(t('changeRiskAnalysisLabel'))}
+              <textarea value={form.impact} onChange={ta('impact')} rows={2} className={taCls} placeholder={t('changeRiskAnalysisPlaceholder')} />
             </div>
             <div>
-              {lbl('Risk Mitigation Steps')}
+              {lbl(t('riskMitigationLabel'))}
               <textarea
                 value={form.langkah_mitigasi}
                 onChange={ta('langkah_mitigasi')}
                 rows={2}
                 className={taCls}
-                placeholder="Steps to reduce risk"
+                placeholder={t('riskMitigationPlaceholder')}
               />
             </div>
             <div>
-              {lbl('Risk if Change is Not Performed')}
+              {lbl(t('riskIfNotPerformedLabel'))}
               <textarea
                 value={form.risiko_tidak_dilakukan}
                 onChange={ta('risiko_tidak_dilakukan')}
                 rows={2}
                 className={taCls}
-                placeholder="Impact if not performed"
+                placeholder={t('riskIfNotPerformedPlaceholder')}
               />
             </div>
             <div>
-              {lbl('Failure Handling Steps')}
+              {lbl(t('failureHandlingLabel'))}
               <textarea
                 value={form.langkah_penanganan_kegagalan}
                 onChange={ta('langkah_penanganan_kegagalan')}
                 rows={2}
                 className={taCls}
-                placeholder="Rollback plan in case of failure"
+                placeholder={t('failureHandlingPlaceholder')}
               />
             </div>
           </div>
 
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
-            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">Personnel</div>
-            <UserMultiSelect label="Implementers" users={users} selected={pelaksanaIds} onChange={setPelaksanaIds} />
+            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('personnel')}</div>
+            <UserMultiSelect label={t('implementersLabel')} users={users} selected={pelaksanaIds} onChange={setPelaksanaIds} />
             {!editData && (
               <>
                 <UserMultiSelect
-                  label="Reviewers * (order matches selection)"
+                  label={t('reviewersLabel')}
                   users={users}
                   selected={reviewerIds}
                   onChange={setReviewerIds}
                   exclude={[signerId].filter(Boolean)}
                 />
                 <div>
-                  {lbl('Signatory * (1 person, signs via e-Sign)')}
+                  {lbl(t('signatoryLabel'))}
                   <select
                     value={signerId}
                     onChange={(e) => {
@@ -472,7 +767,7 @@ function CRModal({
                     }}
                     className={inputCls}
                   >
-                    <option value="">-- Select signatory --</option>
+                    <option value="">{t('selectSignatoryOption')}</option>
                     {users.map((u: any) => (
                       <option key={u.id} value={u.id}>
                         {u.full_name || u.email}
@@ -484,9 +779,9 @@ function CRModal({
             )}
           </div>
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
-            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">Supporting Attachments</div>
+            <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('supportingAttachments')}</div>
             <label className="flex items-center gap-2 text-sm text-text-secondary border border-border px-3 py-2 rounded-[6px] hover:bg-white transition-colors cursor-pointer">
-              <Paperclip className="w-4 h-4" /> Add Attachment
+              <Paperclip className="w-4 h-4" /> {t('addAttachmentLabel')}
               <input
                 type="file"
                 className="hidden"
@@ -515,7 +810,7 @@ function CRModal({
                 ))}
               </div>
             )}
-            <p className="text-xs text-text-placeholder">Files will be uploaded after the CR is created</p>
+            <p className="text-xs text-text-placeholder">{t('filesUploadedAfterCreate')}</p>
           </div>
         </div>
 
@@ -524,14 +819,14 @@ function CRModal({
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={mutation.isPending || !form.title || !form.description || !form.reason}
             className="flex-1 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50"
           >
-            {mutation.isPending ? 'Saving...' : 'Save'}
+            {mutation.isPending ? t('saving') : t('common.save')}
           </button>
         </div>
       </motion.div>
@@ -540,17 +835,18 @@ function CRModal({
 }
 
 function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onClose: () => void }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const mutation = useMutation({
     mutationFn: () => changeRequestService.reject(crId, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR rejected');
+      toast.success(t('crRejected'));
       onClose();
       setNote('');
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedGeneric')),
   });
   if (!open) return null;
   return (
@@ -560,27 +856,27 @@ function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onC
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-[6px] w-full max-w-md p-6"
       >
-        <h2 className="text-lg font-bold text-navy-900 mb-4">Reject Change Request</h2>
+        <h2 className="text-lg font-bold text-navy-900 mb-4">{t('rejectCRTitle')}</h2>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={4}
           className="w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-danger/20 focus:border-danger resize-none"
-          placeholder="Rejection note (required)"
+          placeholder={t('rejectionNotePlaceholder')}
         />
         <div className="flex gap-3 mt-4">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !note.trim()}
             className="flex-1 px-4 py-2.5 rounded-[6px] bg-danger text-white text-sm font-semibold hover:bg-danger-text disabled:opacity-50"
           >
-            {mutation.isPending ? 'Processing...' : 'Reject CR'}
+            {mutation.isPending ? t('processing') : t('rejectCRButton')}
           </button>
         </div>
       </motion.div>
@@ -589,6 +885,7 @@ function RejectModal({ open, crId, onClose }: { open: boolean; crId: string; onC
 }
 
 function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () => void }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const { user } = useAuthStore();
   const [passphrase, setPassphrase] = useState('');
@@ -599,11 +896,11 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('Document signed successfully!');
+      toast.success(t('documentSignedSuccess'));
       onClose();
       setPassphrase('');
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to sign document'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSignDocument')),
   });
   if (!open || !cr) return null;
   return (
@@ -613,31 +910,31 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white rounded-[6px] w-full max-w-md p-6"
       >
-        <h2 className="text-lg font-bold text-navy-900 mb-1">Sign Document</h2>
+        <h2 className="text-lg font-bold text-navy-900 mb-1">{t('signDocumentTitle')}</h2>
         <p className="text-sm text-text-placeholder mb-4">{cr.title}</p>
         <div className="flex items-center gap-2 mb-4 p-3 bg-surface-2 rounded-[6px] text-sm text-text-secondary">
-          <span className="font-medium">Signing as:</span> {user?.full_name}
+          <span className="font-medium">{t('signingAsLabel')}</span> {user?.full_name}
         </div>
         <div className="mb-4">
-          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">e-Sign Passphrase</label>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('eSignPassphraseLabel')}</label>
           <input
             type="password"
             value={passphrase}
             onChange={(e) => setPassphrase(e.target.value)}
             className="mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 font-mono focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700"
-            placeholder="Enter your e-Sign passphrase"
+            placeholder={t('eSignPassphrasePlaceholder')}
           />
         </div>
         <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-[6px] mb-4 text-xs text-amber-700">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-          Passphrase is not stored in the system. The document will be signed electronically using a certificate issued by BSrE.
+          {t('passphraseNotice')}
         </div>
         <div className="flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => mutation.mutate()}
@@ -645,7 +942,7 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
             className="flex-1 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Pen className="w-3.5 h-3.5" />
-            {mutation.isPending ? 'Signing...' : 'Sign'}
+            {mutation.isPending ? t('signing') : t('signButton')}
           </button>
         </div>
       </motion.div>
@@ -653,19 +950,21 @@ function SignModal({ open, cr, onClose }: { open: boolean; cr: any; onClose: () 
   );
 }
 
-const ACTION_CONFIG: Record<string, { label: string; color: string }> = {
-  created: { label: 'CR Dibuat', color: 'text-text-tertiary' },
-  submitted: { label: 'CR Diajukan', color: 'text-info-text' },
-  reviewed: { label: 'Ditinjau', color: 'text-success-text' },
-  approved: { label: 'Disetujui', color: 'text-success-text' },
-  rejected: { label: 'Ditolak', color: 'text-danger-text' },
-  implemented: { label: 'Diimplementasikan', color: 'text-navy-700' },
-  signed: { label: 'Ditandatangani (TTE)', color: 'text-navy-700' },
-  attachment_added: { label: 'Lampiran Ditambahkan', color: 'text-text-tertiary' },
-  attachment_deleted: { label: 'Lampiran Dihapus', color: 'text-danger' },
+const ACTION_CONFIG: Record<string, { labelKey: string; color: string }> = {
+  created: { labelKey: 'actionCreated', color: 'text-text-tertiary' },
+  submitted: { labelKey: 'actionSubmitted', color: 'text-info-text' },
+  reviewed: { labelKey: 'actionReviewed', color: 'text-success-text' },
+  approved: { labelKey: 'actionApproved', color: 'text-success-text' },
+  rejected: { labelKey: 'actionRejected', color: 'text-danger-text' },
+  implemented: { labelKey: 'actionImplemented', color: 'text-navy-700' },
+  signed: { labelKey: 'actionSigned', color: 'text-navy-700' },
+  attachment_added: { labelKey: 'actionAttachmentAdded', color: 'text-text-tertiary' },
+  attachment_deleted: { labelKey: 'actionAttachmentDeleted', color: 'text-danger' },
 };
 
 function CRAuditLog({ crId, usersMap }: { crId: string; usersMap: Record<string, string> }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { data, isLoading } = useQuery({
     queryKey: ['cr-logs', crId],
     queryFn: () => changeRequestService.logs(crId).then((r) => r.data.data),
@@ -673,23 +972,27 @@ function CRAuditLog({ crId, usersMap }: { crId: string; usersMap: Record<string,
 
   const logs: any[] = Array.isArray(data) ? data : [];
 
-  if (isLoading) return <div className="text-xs text-text-placeholder py-2 mt-3 border-t border-border-subtle pt-3">Loading log...</div>;
+  if (isLoading) return <div className="text-xs text-text-placeholder py-2 mt-3 border-t border-border-subtle pt-3">{t('loadingLog')}</div>;
   if (logs.length === 0) return null;
 
   return (
     <div className="mt-3 border-t border-border-subtle pt-3">
-      <div className="text-xs font-semibold text-text-tertiary mb-2">Riwayat Aktivitas</div>
+      <div className="text-xs font-semibold text-text-tertiary mb-2">{t('activityHistory')}</div>
       <div className="space-y-2">
         {logs.map((log: any) => {
-          const cfg = ACTION_CONFIG[log.action] || { label: log.action, color: 'text-text-tertiary' };
+          const cfg = ACTION_CONFIG[log.action];
+          const label = cfg ? t(cfg.labelKey) : log.action;
+          const color = cfg?.color ?? 'text-text-tertiary';
           return (
             <div key={log.id} className="flex items-start gap-2 text-xs">
               <div className="w-1.5 h-1.5 rounded-full bg-border-button flex-shrink-0 mt-1.5" />
               <div className="flex-1 min-w-0">
-                <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
-                {log.actor_id && <span className="text-text-placeholder"> oleh {usersMap[log.actor_id] || 'sistem'}</span>}
+                <span className={`font-semibold ${color}`}>{label}</span>
+                {log.actor_id && (
+                  <span className="text-text-placeholder"> {t('byActor', { name: usersMap[log.actor_id] || t('systemActor') })}</span>
+                )}
                 {log.note && <span className="text-text-placeholder italic">, {log.note}</span>}
-                <div className="text-border-button mt-0.5">{formatDate(log.created_at)}</div>
+                <div className="text-border-button mt-0.5">{formatDate(log.created_at, locale)}</div>
               </div>
             </div>
           );
@@ -700,6 +1003,7 @@ function CRAuditLog({ crId, usersMap }: { crId: string; usersMap: Record<string,
 }
 
 function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -712,27 +1016,27 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
     mutationFn: (file: File) => crAttachmentService.upload(crId, file),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cr-attachments', crId] });
-      toast.success('Attachment uploaded');
+      toast.success(t('attachmentUploaded'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to upload'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToUpload')),
   });
 
   const implementMutation = useMutation({
     mutationFn: () => changeRequestService.implement(crId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR marked as implemented');
+      toast.success(t('crMarkedImplemented'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedGeneric')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (attachId: string) => crAttachmentService.delete(crId, attachId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cr-attachments', crId] });
-      toast.success('Attachment deleted');
+      toast.success(t('attachmentDeleted'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToDelete')),
   });
 
   const handleDownload = async (attach: any) => {
@@ -745,7 +1049,7 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Download failed');
+      toast.error(t('downloadFailed'));
     }
   };
 
@@ -758,7 +1062,7 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
     <div className="mt-3 border-t border-border-subtle pt-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-text-tertiary flex items-center gap-1.5">
-          <Paperclip className="w-3.5 h-3.5" /> Attachments ({attachments.length})
+          <Paperclip className="w-3.5 h-3.5" /> {t('attachmentsCountLabel', { count: attachments.length })}
         </span>
         {canUpload && (
           <>
@@ -777,15 +1081,15 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
               disabled={uploadMutation.isPending}
               className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-border text-text-secondary hover:bg-surface-2 flex items-center gap-1 disabled:opacity-50"
             >
-              <Plus className="w-3 h-3" /> {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+              <Plus className="w-3 h-3" /> {uploadMutation.isPending ? t('uploading') : t('uploadButton')}
             </button>
           </>
         )}
       </div>
       {isLoading ? (
-        <div className="text-xs text-text-placeholder py-2">Loading attachments...</div>
+        <div className="text-xs text-text-placeholder py-2">{t('loadingAttachments')}</div>
       ) : attachments.length === 0 ? (
-        <div className="text-xs text-text-placeholder py-1">No attachments yet</div>
+        <div className="text-xs text-text-placeholder py-1">{t('noAttachmentsYet')}</div>
       ) : (
         <div className="space-y-1.5">
           {attachments.map((a: any) => (
@@ -802,7 +1106,7 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
               {canUpload && (
                 <button
                   onClick={() => {
-                    if (confirm('Delete this attachment?')) deleteMutation.mutate(a.id);
+                    if (confirm(t('deleteAttachmentConfirm'))) deleteMutation.mutate(a.id);
                   }}
                   className="p-1 hover:bg-danger-soft rounded text-text-placeholder hover:text-danger"
                 >
@@ -834,6 +1138,8 @@ function CRCard({
   userId: string;
   usersMap: Record<string, string>;
 }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const sc = STATUS_CONFIG[cr.status] || STATUS_CONFIG.draft;
@@ -850,27 +1156,27 @@ function CRCard({
     mutationFn: () => changeRequestService.submit(cr.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR submitted');
+      toast.success(t('crSubmitted'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to submit'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSubmit')),
   });
 
   const approveMutation = useMutation({
     mutationFn: () => changeRequestService.approve(cr.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR approved');
+      toast.success(t('crApproved'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to approve'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToApprove')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => changeRequestService.delete(cr.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR deleted');
+      toast.success(t('crDeleted'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToDelete')),
   });
 
   return (
@@ -882,18 +1188,18 @@ function CRCard({
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-navy-900 text-base leading-snug">{cr.title}</h3>
-            <p className="text-xs text-text-placeholder mt-0.5">{formatDate(cr.created_at)}</p>
+            <p className="text-xs text-text-placeholder mt-0.5">{formatDate(cr.created_at, locale)}</p>
           </div>
           <div
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.text} flex-shrink-0`}
           >
             <StatusIcon className="w-3 h-3" />
-            {sc.label}
+            {t(sc.labelKey)}
           </div>
         </div>
 
         <div className="flex gap-2 flex-wrap mb-3">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pc.bg} ${pc.text}`}>{pc.label}</span>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pc.bg} ${pc.text}`}>{t(pc.labelKey)}</span>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-border-subtle text-text-tertiary capitalize">
             {cr.change_type}
           </span>
@@ -904,7 +1210,7 @@ function CRCard({
           )}
           {cr.total_steps > 0 && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-navy-700/8 text-navy-700">
-              {currentStep > 0 ? `Step ${currentStep}/${cr.total_steps}` : `${cr.total_steps} step`}
+              {currentStep > 0 ? t('stepXOfY', { current: currentStep, total: cr.total_steps }) : t('stepsCount', { total: cr.total_steps })}
             </span>
           )}
         </div>
@@ -912,7 +1218,7 @@ function CRCard({
         {isMyTurn && (
           <div className="mb-3 flex items-center gap-2 bg-info-soft text-info-text text-xs font-semibold px-3 py-2 rounded-[6px]">
             <Clock className="w-3.5 h-3.5" />
-            {isSigner ? 'Your turn to sign this CR document' : 'Your turn to review this CR'}
+            {isSigner ? t('yourTurnToSign') : t('yourTurnToReview')}
           </div>
         )}
 
@@ -928,12 +1234,12 @@ function CRCard({
                 a.click();
                 URL.revokeObjectURL(url);
               } catch {
-                toast.error('Failed to download document');
+                toast.error(t('failedToDownloadDocument'));
               }
             }}
             className="mb-3 flex items-center gap-2 bg-navy-700/8 text-navy-900 text-xs font-semibold px-3 py-2 rounded-[6px] hover:bg-navy-700/10 transition-colors"
           >
-            <Pen className="w-3.5 h-3.5" /> Download Signed Document
+            <Pen className="w-3.5 h-3.5" /> {t('downloadSignedDocument')}
           </button>
         )}
 
@@ -942,7 +1248,7 @@ function CRCard({
           className="flex items-center gap-1 text-xs text-text-placeholder hover:text-text-secondary transition-colors mb-1"
         >
           {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          {expanded ? 'Hide progress' : 'View progress'}
+          {expanded ? t('hideProgress') : t('viewProgress')}
         </button>
 
         <AnimatePresence>
@@ -963,23 +1269,23 @@ function CRCard({
               onClick={() => onEdit(cr)}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:bg-surface-2"
             >
-              Edit
+              {t('editButton')}
             </button>
             <button
               onClick={() => submitMutation.mutate()}
               disabled={submitMutation.isPending}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-50"
             >
-              {submitMutation.isPending ? 'Submitting...' : 'Submit'}
+              {submitMutation.isPending ? t('submitting') : t('submitButton')}
             </button>
             <button
               onClick={() => {
-                if (confirm('Delete this CR?')) deleteMutation.mutate();
+                if (confirm(t('deleteCRConfirm'))) deleteMutation.mutate();
               }}
               disabled={deleteMutation.isPending}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger/30 text-danger hover:bg-danger-soft"
             >
-              Delete
+              {t('deleteButton')}
             </button>
           </>
         )}
@@ -989,7 +1295,7 @@ function CRCard({
             className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-success-text text-white hover:bg-success-text disabled:opacity-50 flex items-center gap-1.5"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-            Mark as Implemented
+            {t('markAsImplemented')}
           </button>
         )}
         {isMyTurn && !isSigner && (
@@ -999,13 +1305,13 @@ function CRCard({
               disabled={approveMutation.isPending}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-success text-white hover:bg-success-text disabled:opacity-50"
             >
-              {approveMutation.isPending ? 'Processing...' : 'Approve'}
+              {approveMutation.isPending ? t('processing') : t('approveButton')}
             </button>
             <button
               onClick={() => onReject(cr.id)}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger/30 text-danger hover:bg-danger-soft"
             >
-              Reject
+              {t('rejectButton')}
             </button>
           </>
         )}
@@ -1014,7 +1320,7 @@ function CRCard({
             onClick={() => onSign(cr)}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900 flex items-center gap-1.5"
           >
-            <Pen className="w-3 h-3" /> Sign
+            <Pen className="w-3 h-3" /> {t('signActionButton')}
           </button>
         )}
       </div>
@@ -1023,6 +1329,7 @@ function CRCard({
 }
 
 export default function ChangeManagementPage() {
+  const t = useT(dict);
   const { user } = useAuthStore();
   const [createOpen, setCreateOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
@@ -1051,9 +1358,9 @@ export default function ChangeManagementPage() {
     mutationFn: (id: string) => changeRequestService.implement(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['change-requests'] });
-      toast.success('CR marked as implemented');
+      toast.success(t('crMarkedImplemented'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedGeneric')),
   });
 
   const awaitingMe = useMemo(() => crs.filter((cr) => isMyTurnFn(cr, user?.id || '')), [crs, user?.id]);
@@ -1092,9 +1399,9 @@ export default function ChangeManagementPage() {
       <SignModal open={!!signCr} cr={signCr} onClose={() => setSignCr(null)} />
 
       <PageHeader
-        section="GOVERNANCE"
-        title="Change Management"
-        subtitle={`${crs.length} request${crs.length !== 1 ? 's' : ''} · ${inFlight} in flight · ${awaitingMe.length} awaiting you`}
+        section={t('sectionGovernance')}
+        title={t('changeManagementTitle')}
+        subtitle={t('requestsSubtitle', { count: crs.length, s: crs.length !== 1 ? 's' : '', inFlight, awaiting: awaitingMe.length })}
         actions={
           <>
             <button
@@ -1103,7 +1410,7 @@ export default function ChangeManagementPage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <Plus className="w-3 h-3" strokeWidth={2.5} />
-              New request
+              {t('newRequestButton')}
             </button>
           </>
         }
@@ -1118,32 +1425,34 @@ export default function ChangeManagementPage() {
           <AlertTriangle className="w-[14px] h-[14px] text-gold-500 flex-none" />
           <div className="flex-1 min-w-0">
             <span className="text-[12.5px] font-semibold text-navy-800">
-              {awaitingMe.length === 1 ? `${awaitingMe[0].title} ` : `${awaitingMe.length} requests `}
+              {awaitingMe.length === 1
+                ? t('awaitingApprovalSingle', { title: awaitingMe[0].title })
+                : t('awaitingApprovalMultiple', { count: awaitingMe.length })}
             </span>
-            <span className="text-[12px] text-text-tertiary">awaiting your approval</span>
+            <span className="text-[12px] text-text-tertiary">{t('awaitingYourApproval')}</span>
           </div>
           <span className="inline-flex items-center h-[21px] px-[8px] rounded-[3px] text-[10.5px] font-semibold bg-gold-soft text-gold-700">
-            Action required
+            {t('actionRequired')}
           </span>
         </div>
       )}
 
       {/* Tab bar */}
       <div className="bg-white border border-border rounded-[6px] flex items-center px-[15px] py-[9px] gap-[5px]">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tabItem.id}
+            onClick={() => setTab(tabItem.id)}
             className="h-[26px] px-[10px] rounded-[4px] text-[11.5px] transition-colors flex items-center gap-[5px]"
-            style={tab === t.id ? { background: '#14406a', color: '#fff', fontWeight: 600 } : { color: '#6b7280', fontWeight: 500 }}
+            style={tab === tabItem.id ? { background: '#14406a', color: '#fff', fontWeight: 600 } : { color: '#6b7280', fontWeight: 500 }}
           >
-            {t.label}
-            {t.id === 'awaiting_me' && awaitingMe.length > 0 && (
+            {t(tabItem.labelKey)}
+            {tabItem.id === 'awaiting_me' && awaitingMe.length > 0 && (
               <span
                 className="inline-flex items-center justify-center w-[16px] h-[16px] rounded-full text-[9px] font-bold"
                 style={{
-                  background: tab === t.id ? 'rgba(255,255,255,0.25)' : '#fdeceb',
-                  color: tab === t.id ? '#fff' : '#a3231c',
+                  background: tab === tabItem.id ? 'rgba(255,255,255,0.25)' : '#fdeceb',
+                  color: tab === tabItem.id ? '#fff' : '#a3231c',
                 }}
               >
                 {awaitingMe.length}
@@ -1152,7 +1461,7 @@ export default function ChangeManagementPage() {
           </button>
         ))}
         <span className="ml-auto font-mono text-[9.5px] text-text-meta">
-          {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+          {t('resultsCount', { count: filtered.length, s: filtered.length !== 1 ? 's' : '' })}
         </span>
       </div>
 
@@ -1164,17 +1473,17 @@ export default function ChangeManagementPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={GitMerge}
-          title="No change requests"
+          title={t('noChangeRequestsTitle')}
           subtitle={
             tab === 'awaiting_me'
-              ? 'No requests awaiting your action'
+              ? t('noRequestsAwaitingMe')
               : tab === 'in_flight'
-                ? 'No requests currently in flight'
+                ? t('noRequestsInFlight')
                 : tab === 'submitted_by_me'
-                  ? 'You have not submitted any requests'
+                  ? t('noRequestsSubmittedByMe')
                   : tab === 'closed'
-                    ? 'No closed requests'
-                    : 'No change requests yet'
+                    ? t('noClosedRequests')
+                    : t('noChangeRequestsYet')
           }
         />
       ) : (

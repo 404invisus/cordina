@@ -1,0 +1,33 @@
+{
+  "badge": "14",
+  "badgeAfter": null,
+  "nTxt": [
+    "INBOX",
+    "Notifications",
+    "14 unread · 0 need an action from you · nothing is marked read automatically",
+    "Preferences",
+    "Mark all as read",
+    "Needs action",
+    "Unread",
+    "All",
+    "Mentions",
+    "No notifications",
+    "Nothing needs your action right now",
+    "Showing 0 of 146 · grouped by day",
+    "‹",
+    "1",
+    "2",
+    "3",
+    "›",
+    "Delivery channels",
+    "In-app",
+    "Always on",
+    "Telegram",
+    "Connected · 8082176183"
+  ],
+  "shots": {
+    "sBadge": "shots/3.7.1-2_badge-unread-sidebar.png",
+    "sList": "shots/3.7.1-1d_daftar-notifikasi.png",
+    "sRead": "shots/3.7.1-3_setelah-tandai-dibaca.png"
+  }
+}

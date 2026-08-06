@@ -13,19 +13,101 @@ import { formatDate, timeAgo } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    statusReviewLabel: 'Review',
+    backToTasks: 'Back to Tasks',
+    noDescription: 'No description for this task.',
+    workProgress: 'Work Progress',
+    changeStatus: 'Change status:',
+    comments: 'Comments',
+    noCommentsYet: 'No comments yet',
+    commentPlaceholder: 'Write a comment... type @ to mention (Enter to send, Shift+Enter for new line)',
+    noUsersFound: 'No users found',
+    taskDetails: 'Task Details',
+    fieldType: 'Type',
+    fieldDueDate: 'Due Date',
+    fieldEstimated: 'Estimated',
+    fieldActual: 'Actual',
+    fieldCreated: 'Created',
+    overdueSuffix: ' · Overdue',
+    assignee: 'Assignee',
+    coAssignee: 'Co-assignee',
+    assign: 'Assign',
+    noAssigneesYet: 'No assignees yet',
+    logTime: 'Log Time',
+    assignTaskTitle: 'Assign Task',
+    assignTaskSubtitle: 'Select team members for this task',
+    saving: 'Saving...',
+    saveCount: 'Save ({count})',
+    logTimeSubtitle: 'Record hours worked on this task',
+    hoursWorkedLabel: 'Hours Worked',
+    descriptionLabel: 'Description',
+    logDescPlaceholder: 'What was worked on...',
+    dateLabel: 'Date',
+    taskAssigned: 'Task assigned!',
+    assignFailed: 'Failed to assign',
+    statusUpdated: 'Status updated!',
+    timeLogged: 'Time logged!',
+    assigneeRemoved: 'Assignee removed',
+    assigneeRemoveFailed: 'Failed to remove assignee',
+    fallbackUser: 'User',
+  },
+  id: {
+    statusReviewLabel: 'Ditinjau',
+    backToTasks: 'Kembali ke Tugas',
+    noDescription: 'Tidak ada deskripsi untuk tugas ini.',
+    workProgress: 'Progres Pekerjaan',
+    changeStatus: 'Ubah status:',
+    comments: 'Komentar',
+    noCommentsYet: 'Belum ada komentar',
+    commentPlaceholder: 'Tulis komentar... ketik @ untuk menyebut (Enter untuk kirim, Shift+Enter untuk baris baru)',
+    noUsersFound: 'Pengguna tidak ditemukan',
+    taskDetails: 'Detail Tugas',
+    fieldType: 'Tipe',
+    fieldDueDate: 'Tanggal Jatuh Tempo',
+    fieldEstimated: 'Estimasi',
+    fieldActual: 'Aktual',
+    fieldCreated: 'Dibuat',
+    overdueSuffix: ' · Terlambat',
+    assignee: 'Penanggung Jawab',
+    coAssignee: 'Penanggung Jawab Tambahan',
+    assign: 'Tetapkan',
+    noAssigneesYet: 'Belum ada penanggung jawab',
+    logTime: 'Catat Waktu',
+    assignTaskTitle: 'Tetapkan Tugas',
+    assignTaskSubtitle: 'Pilih anggota tim untuk tugas ini',
+    saving: 'Menyimpan...',
+    saveCount: 'Simpan ({count})',
+    logTimeSubtitle: 'Catat jam kerja untuk tugas ini',
+    hoursWorkedLabel: 'Jam Kerja',
+    descriptionLabel: 'Deskripsi',
+    logDescPlaceholder: 'Apa yang dikerjakan...',
+    dateLabel: 'Tanggal',
+    taskAssigned: 'Tugas berhasil ditetapkan!',
+    assignFailed: 'Gagal menetapkan tugas',
+    statusUpdated: 'Status berhasil diperbarui!',
+    timeLogged: 'Waktu berhasil dicatat!',
+    assigneeRemoved: 'Penanggung jawab dihapus',
+    assigneeRemoveFailed: 'Gagal menghapus penanggung jawab',
+    fallbackUser: 'Pengguna',
+  },
+};
 
 const STATUS_CONFIG: Record<string, { label: string; dot: string; bg: string; text: string; bar: string }> = {
-  todo: { label: 'To Do', dot: 'bg-text-placeholder', bg: 'bg-border-subtle', text: 'text-text-secondary', bar: 'bg-text-placeholder' },
-  in_progress: { label: 'In Progress', dot: 'bg-info', bg: 'bg-info-soft', text: 'text-info-text', bar: 'bg-info' },
-  review: { label: 'Review', dot: 'bg-navy-700', bg: 'bg-navy-700/8', text: 'text-navy-900', bar: 'bg-navy-700' },
-  done: { label: 'Done', dot: 'bg-success', bg: 'bg-success-soft', text: 'text-success-text', bar: 'bg-success' },
+  todo: { label: 'common.status_todo', dot: 'bg-text-placeholder', bg: 'bg-border-subtle', text: 'text-text-secondary', bar: 'bg-text-placeholder' },
+  in_progress: { label: 'common.status_in_progress', dot: 'bg-info', bg: 'bg-info-soft', text: 'text-info-text', bar: 'bg-info' },
+  review: { label: 'statusReviewLabel', dot: 'bg-navy-700', bg: 'bg-navy-700/8', text: 'text-navy-900', bar: 'bg-navy-700' },
+  done: { label: 'common.status_done', dot: 'bg-success', bg: 'bg-success-soft', text: 'text-success-text', bar: 'bg-success' },
 };
 
 const PRIORITY_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  critical: { label: 'Critical', bg: 'bg-danger-soft', text: 'text-danger-text', dot: 'bg-danger' },
-  high: { label: 'High', bg: 'bg-orange-50', text: 'text-orange-600', dot: 'bg-orange-500' },
-  medium: { label: 'Medium', bg: 'bg-amber-50', text: 'text-amber-600', dot: 'bg-amber-400' },
-  low: { label: 'Low', bg: 'bg-success-soft', text: 'text-success-text', dot: 'bg-success' },
+  critical: { label: 'common.status_critical', bg: 'bg-danger-soft', text: 'text-danger-text', dot: 'bg-danger' },
+  high: { label: 'common.status_high', bg: 'bg-orange-50', text: 'text-orange-600', dot: 'bg-orange-500' },
+  medium: { label: 'common.status_medium', bg: 'bg-amber-50', text: 'text-amber-600', dot: 'bg-amber-400' },
+  low: { label: 'common.status_low', bg: 'bg-success-soft', text: 'text-success-text', dot: 'bg-success' },
 };
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
@@ -68,6 +150,8 @@ function Avatar({ name, size = 'md', color = 'default' }: { name: string; size?:
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { user, hasRole, hasPermission } = useAuthStore();
   const [assignOpen, setAssignOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
@@ -107,18 +191,18 @@ export default function TaskDetailPage() {
     mutationFn: (assignee_ids: string[]) => taskService.update(id, { assignee_ids }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('Task assigned!');
+      toast.success(t('taskAssigned'));
       setAssignOpen(false);
       setSelectedAssignees([]);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to assign'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('assignFailed')),
   });
 
   const updateStatusMutation = useMutation({
     mutationFn: (status: string) => taskService.update(id, { status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('Status updated!');
+      toast.success(t('statusUpdated'));
     },
   });
 
@@ -126,7 +210,7 @@ export default function TaskDetailPage() {
     mutationFn: (data: any) => taskService.logTime(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['task', id] });
-      toast.success('Time logged!');
+      toast.success(t('timeLogged'));
       setLogOpen(false);
     },
   });
@@ -184,7 +268,7 @@ export default function TaskDetailPage() {
           className="inline-flex items-center gap-1.5 text-sm text-text-placeholder hover:text-navy-700 transition-colors font-medium"
         >
           <ChevronLeft className="w-4 h-4" />
-          Back to Tasks
+          {t('backToTasks')}
         </Link>
       </div>
 
@@ -205,18 +289,18 @@ export default function TaskDetailPage() {
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.text}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-                        {status.label}
+                        {t(status.label)}
                       </span>
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${priority.bg} ${priority.text}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${priority.dot}`} />
-                        {priority.label}
+                        {t(priority.label)}
                       </span>
                     </div>
                   </div>
                   <p className="text-sm text-text-placeholder mt-2 leading-relaxed">
-                    {task?.description || 'No description for this task.'}
+                    {task?.description || t('noDescription')}
                   </p>
                 </div>
               </div>
@@ -224,7 +308,7 @@ export default function TaskDetailPage() {
               {task?.estimated_hours > 0 && (
                 <div className="mb-4 p-4 rounded-[6px] bg-surface-2 border border-border-subtle">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-text-tertiary">Work Progress</span>
+                    <span className="text-xs font-semibold text-text-tertiary">{t('workProgress')}</span>
                     <span className="text-xs font-bold text-text-secondary">
                       {task.actual_hours || 0}h / {task.estimated_hours}h
                     </span>
@@ -248,7 +332,7 @@ export default function TaskDetailPage() {
 
               {canUpdateStatus && (
                 <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-surface-2">
-                  <span className="text-xs font-semibold text-text-placeholder uppercase tracking-wider">Change status:</span>
+                  <span className="text-xs font-semibold text-text-placeholder uppercase tracking-wider">{t('changeStatus')}</span>
                   {statuses
                     .filter((s) => s !== task?.status)
                     .map((s) => {
@@ -260,7 +344,7 @@ export default function TaskDetailPage() {
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-xs font-semibold border transition-all ${sc.bg} ${sc.text} border-transparent hover:border-current`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                          {sc.label}
+                          {t(sc.label)}
                         </button>
                       );
                     })}
@@ -275,7 +359,7 @@ export default function TaskDetailPage() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-text-placeholder">
                   <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
                 </svg>
-                Comments
+                {t('comments')}
                 <span className="text-xs font-semibold text-text-placeholder bg-border-subtle px-2 py-0.5 rounded-full">
                   {comments?.length || 0}
                 </span>
@@ -292,11 +376,11 @@ export default function TaskDetailPage() {
                     transition={{ delay: i * 0.04 }}
                     className="flex gap-3"
                   >
-                    <Avatar name={c.author_name || 'User'} size="sm" />
+                    <Avatar name={c.author_name || t('fallbackUser')} size="sm" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-sm font-semibold text-text-secondary">{c.author_name || 'User'}</span>
-                        <span className="text-xs text-text-placeholder">{timeAgo(c.created_at)}</span>
+                        <span className="text-sm font-semibold text-text-secondary">{c.author_name || t('fallbackUser')}</span>
+                        <span className="text-xs text-text-placeholder">{timeAgo(c.created_at, locale)}</span>
                       </div>
                       <div className="text-sm text-text-secondary bg-surface-2 rounded-[6px] rounded-tl-sm px-4 py-3 leading-relaxed border border-border-subtle">
                         {c.content.split(/(@\w[\w\s]*)/g).map((part: string, i: number) =>
@@ -313,7 +397,7 @@ export default function TaskDetailPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              {(!comments || comments.length === 0) && <div className="text-center py-8 text-border-button text-sm">No comments yet</div>}
+              {(!comments || comments.length === 0) && <div className="text-center py-8 text-border-button text-sm">{t('noCommentsYet')}</div>}
             </div>
 
             <div className="flex gap-3 items-start">
@@ -348,7 +432,7 @@ export default function TaskDetailPage() {
                         </button>
                       ))}
                     {(users || []).filter((u: any) => u.full_name?.toLowerCase().includes(mentionQuery.toLowerCase()) && u.id !== user?.id)
-                      .length === 0 && <div className="px-3 py-2 text-xs text-text-placeholder">No users found</div>}
+                      .length === 0 && <div className="px-3 py-2 text-xs text-text-placeholder">{t('noUsersFound')}</div>}
                   </div>
                 )}
                 {mentionedUsers.length > 0 && (
@@ -397,7 +481,7 @@ export default function TaskDetailPage() {
                       }
                       if (e.key === 'Escape') setShowMentions(false);
                     }}
-                    placeholder="Write a comment... type @ to mention (Enter to send, Shift+Enter for new line)"
+                    placeholder={t('commentPlaceholder')}
                     className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm text-text-secondary placeholder:text-border-button focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all resize-none"
                   />
                   <motion.button
@@ -416,11 +500,11 @@ export default function TaskDetailPage() {
 
         <div className="space-y-4">
           <div className="bg-white rounded-[6px] border border-border-subtle p-5">
-            <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">Task Details</h3>
+            <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">{t('taskDetails')}</h3>
             <div className="space-y-3">
               {[
                 {
-                  label: 'Type',
+                  label: t('fieldType'),
                   value: (
                     <div className="flex items-center gap-1.5">
                       {TYPE_ICON[task?.type] || TYPE_ICON.task}
@@ -429,25 +513,25 @@ export default function TaskDetailPage() {
                   ),
                 },
                 {
-                  label: 'Due Date',
+                  label: t('fieldDueDate'),
                   value: (
                     <span className={`text-sm font-medium ${isOverdue ? 'text-danger' : 'text-text-secondary'}`}>
-                      {task?.due_date ? formatDate(task.due_date) : '—'}
-                      {isOverdue && ' · Overdue'}
+                      {task?.due_date ? formatDate(task.due_date, locale) : '—'}
+                      {isOverdue && t('overdueSuffix')}
                     </span>
                   ),
                 },
                 {
-                  label: 'Estimated',
+                  label: t('fieldEstimated'),
                   value: <span className="text-sm font-mono font-semibold text-text-secondary">{task?.estimated_hours || 0}h</span>,
                 },
                 {
-                  label: 'Actual',
+                  label: t('fieldActual'),
                   value: <span className="text-sm font-mono font-semibold text-text-secondary">{task?.actual_hours || 0}h</span>,
                 },
                 {
-                  label: 'Created',
-                  value: <span className="text-sm text-text-tertiary">{task?.created_at ? timeAgo(task.created_at) : '—'}</span>,
+                  label: t('fieldCreated'),
+                  value: <span className="text-sm text-text-tertiary">{task?.created_at ? timeAgo(task.created_at, locale) : '—'}</span>,
                 },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-2 border-b border-surface-2 last:border-0">
@@ -460,7 +544,7 @@ export default function TaskDetailPage() {
 
           <div className="bg-white rounded-[6px] border border-border-subtle p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">Assignee</h3>
+              <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">{t('assignee')}</h3>
               {canManage && (
                 <button
                   onClick={() => {
@@ -470,7 +554,7 @@ export default function TaskDetailPage() {
                   className="text-xs font-semibold text-navy-700 hover:text-navy-900 flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
-                  Assign
+                  {t('assign')}
                 </button>
               )}
             </div>
@@ -478,13 +562,13 @@ export default function TaskDetailPage() {
               <div className="space-y-1.5">
                 {(task?.assignee_ids?.length > 0 ? task.assignee_ids : [task.assignee_id]).map((uid: string, idx: number) => {
                   const u = resolveUser(uid);
-                  const name = u?.full_name || 'Loading...';
+                  const name = u?.full_name || t('common.loading');
                   return (
                     <div key={uid} className="flex items-center gap-3 p-3 rounded-[6px] bg-surface-2 border border-border-subtle">
                       <Avatar name={name} size="sm" />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-semibold text-text-secondary truncate">{name}</div>
-                        <div className="text-xs text-text-placeholder">{idx === 0 ? 'Assignee' : 'Co-assignee'}</div>
+                        <div className="text-xs text-text-placeholder">{idx === 0 ? t('assignee') : t('coAssignee')}</div>
                       </div>
                       {canManage && (
                         <button
@@ -493,9 +577,9 @@ export default function TaskDetailPage() {
                               .removeAssignee(id, uid)
                               .then(() => {
                                 qc.invalidateQueries({ queryKey: ['task', id] });
-                                toast.success('Assignee removed');
+                                toast.success(t('assigneeRemoved'));
                               })
-                              .catch(() => toast.error('Failed to remove assignee'));
+                              .catch(() => toast.error(t('assigneeRemoveFailed')));
                           }}
                           className="p-1 rounded-lg text-border-button hover:text-danger hover:bg-danger-soft transition-colors flex-shrink-0"
                         >
@@ -517,7 +601,7 @@ export default function TaskDetailPage() {
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
-                <p className="text-xs text-text-placeholder font-medium">No assignees yet</p>
+                <p className="text-xs text-text-placeholder font-medium">{t('noAssigneesYet')}</p>
               </div>
             )}
           </div>
@@ -531,7 +615,7 @@ export default function TaskDetailPage() {
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
-            Log Time
+            {t('logTime')}
           </motion.button>
         </div>
       </div>
@@ -541,8 +625,8 @@ export default function TaskDetailPage() {
           <div className="bg-white rounded-[6px] w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b border-border-subtle">
               <div>
-                <h2 className="font-bold text-navy-900">Assign Task</h2>
-                <p className="text-xs text-text-placeholder mt-0.5">Select team members for this task</p>
+                <h2 className="font-bold text-navy-900">{t('assignTaskTitle')}</h2>
+                <p className="text-xs text-text-placeholder mt-0.5">{t('assignTaskSubtitle')}</p>
               </div>
               <button
                 onClick={() => {
@@ -602,24 +686,24 @@ export default function TaskDetailPage() {
                 }}
                 className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => assignMutation.mutate(selectedAssignees)}
                 disabled={assignMutation.isPending || selectedAssignees.length === 0}
                 className="flex-1 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50"
               >
-                {assignMutation.isPending ? 'Saving...' : `Save (${selectedAssignees.length})`}
+                {assignMutation.isPending ? t('saving') : t('saveCount', { count: selectedAssignees.length })}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <Modal open={logOpen} onClose={() => setLogOpen(false)} title="Log Time" subtitle="Record hours worked on this task" size="sm">
+      <Modal open={logOpen} onClose={() => setLogOpen(false)} title={t('logTime')} subtitle={t('logTimeSubtitle')} size="sm">
         <form onSubmit={handleLog((d) => logTimeMutation.mutate(d))} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">Hours Worked</label>
+            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">{t('hoursWorkedLabel')}</label>
             <div className="relative">
               <svg
                 viewBox="0 0 24 24"
@@ -641,15 +725,15 @@ export default function TaskDetailPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">Description</label>
+            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">{t('descriptionLabel')}</label>
             <textarea
               {...regLog('description')}
               className="w-full px-4 py-2.5 rounded-[6px] border border-border text-sm text-text-secondary placeholder:text-border-button focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all resize-none h-20"
-              placeholder="What was worked on..."
+              placeholder={t('logDescPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">Date</label>
+            <label className="block text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">{t('dateLabel')}</label>
             <div className="relative">
               <svg
                 viewBox="0 0 24 24"
@@ -677,7 +761,7 @@ export default function TaskDetailPage() {
               onClick={() => setLogOpen(false)}
               className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
@@ -686,7 +770,7 @@ export default function TaskDetailPage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              Save
+              {t('common.save')}
             </button>
           </div>
         </form>

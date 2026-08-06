@@ -10,6 +10,32 @@ import { authService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { permissionService } from '@/lib/api';
 import { getDashboardPath } from '@/lib/utils';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    signIn: 'Sign in',
+    email: 'Email',
+    password: 'Password',
+    emailRequired: 'Email is required',
+    invalidEmail: 'Invalid email format',
+    passwordRequired: 'Password is required',
+    or: 'or',
+    welcome: 'Welcome, {name}!',
+    incorrectCredentials: 'Incorrect email or password.',
+  },
+  id: {
+    signIn: 'Masuk',
+    email: 'Email',
+    password: 'Kata Sandi',
+    emailRequired: 'Email wajib diisi',
+    invalidEmail: 'Format email tidak valid',
+    passwordRequired: 'Kata sandi wajib diisi',
+    or: 'atau',
+    welcome: 'Selamat datang, {name}!',
+    incorrectCredentials: 'Email atau kata sandi salah.',
+  },
+};
 
 interface LoginForm {
   email: string;
@@ -18,6 +44,8 @@ interface LoginForm {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { locale, setLocale } = useLocale();
+  const t = useT(dict);
   const setAuth = useAuthStore((s) => s.setAuth);
   const updateUser = useAuthStore((s) => s.updateUser);
   const setPermissions = useAuthStore((s) => s.setPermissions);
@@ -52,11 +80,11 @@ export default function LoginPage() {
         const permRes = await permissionService.myPermissions();
         if (permRes.data?.data) setPermissions(permRes.data.data);
       } catch {}
-      toast.success(`Welcome, ${user.full_name.split(' ')[0]}!`);
+      toast.success(t('welcome', { name: user.full_name.split(' ')[0] }));
       router.push(getDashboardPath(user.roles?.[0]));
     } catch (err: any) {
       const msg = err?.response?.data?.message;
-      toast.error(msg || 'Incorrect email or password.');
+      toast.error(msg || t('incorrectCredentials'));
     } finally {
       setLoading(false);
     }
@@ -97,6 +125,23 @@ export default function LoginPage() {
           className="absolute -right-28 -bottom-28 w-[440px] h-[440px] object-contain opacity-[0.025] pointer-events-none select-none"
         />
 
+        {/* Language switcher */}
+        <div className="absolute right-6 top-5 z-10 flex items-center gap-1 text-[11px] font-semibold">
+          <button
+            onClick={() => setLocale('en')}
+            className={`px-2 py-1 rounded-sm transition-colors ${locale === 'en' ? 'text-navy-700' : 'text-navy-700/30 hover:text-navy-700/60'}`}
+          >
+            EN
+          </button>
+          <span className="text-navy-700/20">/</span>
+          <button
+            onClick={() => setLocale('id')}
+            className={`px-2 py-1 rounded-sm transition-colors ${locale === 'id' ? 'text-navy-700' : 'text-navy-700/30 hover:text-navy-700/60'}`}
+          >
+            ID
+          </button>
+        </div>
+
         <div className="relative z-10 lg:hidden px-6 py-5 flex items-center gap-2 border-b border-navy-700/8">
           <img src="/logo-only-black.png" alt="ConnectOne" width={20} height={20} className="object-contain" />
           <span className="font-semibold text-navy-700 text-sm">ConnectOne</span>
@@ -109,15 +154,15 @@ export default function LoginPage() {
             transition={{ duration: 0.35 }}
             className="w-full max-w-sm"
           >
-            <h1 className="font-display text-navy-700 mb-8 leading-tight text-[1.6rem]">Sign in</h1>
+            <h1 className="font-display text-navy-700 mb-8 leading-tight text-[1.6rem]">{t('signIn')}</h1>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-navy-700/60 uppercase tracking-wider mb-2">Email</label>
+                <label className="block text-xs font-semibold text-navy-700/60 uppercase tracking-wider mb-2">{t('email')}</label>
                 <input
                   {...register('email', {
-                    required: 'Email is required',
-                    pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email format' },
+                    required: t('emailRequired'),
+                    pattern: { value: /\S+@\S+\.\S+/, message: t('invalidEmail') },
                   })}
                   type="email"
                   placeholder="email@bssn.go.id"
@@ -130,10 +175,10 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy-700/60 uppercase tracking-wider mb-2">Password</label>
+                <label className="block text-xs font-semibold text-navy-700/60 uppercase tracking-wider mb-2">{t('password')}</label>
                 <div className="relative">
                   <input
-                    {...register('password', { required: 'Password is required' })}
+                    {...register('password', { required: t('passwordRequired') })}
                     type={showPass ? 'text' : 'password'}
                     placeholder="••••••••"
                     autoComplete="current-password"
@@ -165,7 +210,7 @@ export default function LoginPage() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
                   ) : (
-                    'Sign in'
+                    t('signIn')
                   )}
                 </button>
               </div>
@@ -173,7 +218,7 @@ export default function LoginPage() {
 
             <div className="flex items-center gap-3 my-6">
               <div className="flex-1 h-px bg-navy-700/10" />
-              <span className="text-[11px] font-semibold text-navy-700/35 uppercase tracking-wider">or</span>
+              <span className="text-[11px] font-semibold text-navy-700/35 uppercase tracking-wider">{t('or')}</span>
               <div className="flex-1 h-px bg-navy-700/10" />
             </div>
 

@@ -1,0 +1,8 @@
+{
+  "NAME": "Pengguna UAT 09473",
+  "EMAIL": "uat09473@test.com",
+  "shots": [
+    "shots/3.8.1-4a_menu-nonaktifkan.png",
+    "shots/3.8.1-4b_pengguna-nonaktif.png"
+  ]
+}

@@ -7,6 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import { adminWorkloadService, adminProjectService, adminReportExportService, sprintService } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
 const GRADIENTS = [
   'from-navy-700 to-navy-700',
@@ -36,7 +37,83 @@ async function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+const dict = {
+  en: {
+    title: 'Workload Monitor',
+    subtitle: 'Monitor team capacity and workload',
+    exportPdf: 'Export PDF',
+    toastSelectProjectFirst: 'Please select a project first',
+    toastDownloaded: 'Report downloaded successfully',
+    toastDownloadFailed: 'Failed to download report',
+    selectProject: 'Select Project',
+    allSprints: 'All sprints',
+    activeSuffix: ' (active: {name})',
+    activeParens: ' (active)',
+    selectProjectPrompt: 'Select a project to load workload data',
+    burndownChart: 'Burndown Chart',
+    selectedSprint: 'Selected sprint',
+    activeSprintLabel: 'Active sprint: {name}',
+    noActiveSprint: 'No active sprint',
+    legendIdeal: 'Ideal',
+    legendActual: 'Actual',
+    noBurndownData: 'No burndown data yet',
+    selectSprintOrActive: 'Select a sprint or ensure there is an active sprint',
+    velocityPerSprint: 'Velocity per Sprint',
+    storyPoints: 'Story Points',
+    noVelocityData: 'No velocity data yet',
+    workloadPerMember: 'Workload per Member',
+    membersCount: '{count} member{plural}',
+    noActiveSprintProject: 'No active sprint on this project',
+    selectSprintManually: 'Select a sprint manually from the filter above',
+    noWorkloadData: 'No workload data',
+    unknownUser: 'Unknown',
+    ofTotalTasks: '/{total} task',
+    utilizationPercent: '{util}% utilization',
+    statTotal: 'Total',
+    statDone: 'Done',
+    statEstHours: 'Est. Hours',
+    statActual: 'Actual',
+  },
+  id: {
+    title: 'Monitor Beban Kerja',
+    subtitle: 'Pantau kapasitas dan beban kerja tim',
+    exportPdf: 'Ekspor PDF',
+    toastSelectProjectFirst: 'Silakan pilih proyek terlebih dahulu',
+    toastDownloaded: 'Laporan berhasil diunduh',
+    toastDownloadFailed: 'Gagal mengunduh laporan',
+    selectProject: 'Pilih Proyek',
+    allSprints: 'Semua sprint',
+    activeSuffix: ' (aktif: {name})',
+    activeParens: ' (aktif)',
+    selectProjectPrompt: 'Pilih proyek untuk memuat data beban kerja',
+    burndownChart: 'Grafik Burndown',
+    selectedSprint: 'Sprint terpilih',
+    activeSprintLabel: 'Sprint aktif: {name}',
+    noActiveSprint: 'Tidak ada sprint aktif',
+    legendIdeal: 'Ideal',
+    legendActual: 'Aktual',
+    noBurndownData: 'Belum ada data burndown',
+    selectSprintOrActive: 'Pilih sprint atau pastikan ada sprint yang aktif',
+    velocityPerSprint: 'Velositas per Sprint',
+    storyPoints: 'Story Point',
+    noVelocityData: 'Belum ada data velositas',
+    workloadPerMember: 'Beban Kerja per Anggota',
+    membersCount: '{count} anggota',
+    noActiveSprintProject: 'Tidak ada sprint aktif pada proyek ini',
+    selectSprintManually: 'Pilih sprint secara manual dari filter di atas',
+    noWorkloadData: 'Tidak ada data beban kerja',
+    unknownUser: 'Tidak diketahui',
+    ofTotalTasks: '/{total} tugas',
+    utilizationPercent: '{util}% utilisasi',
+    statTotal: 'Total',
+    statDone: 'Selesai',
+    statEstHours: 'Estimasi Jam',
+    statActual: 'Aktual',
+  },
+};
+
 export default function AdminWorkloadPage() {
+  const t = useT(dict);
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSprint, setSelectedSprint] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -77,16 +154,16 @@ export default function AdminWorkloadPage() {
 
   const handleExport = async () => {
     if (!selectedProject) {
-      toast.error('Please select a project first');
+      toast.error(t('toastSelectProjectFirst'));
       return;
     }
     setExporting(true);
     try {
       const res = await adminReportExportService.workload(selectedProject, selectedSprint || undefined);
       await downloadBlob(res.data, `workload_report_${new Date().toISOString().slice(0, 10)}.pdf`);
-      toast.success('Report downloaded successfully');
+      toast.success(t('toastDownloaded'));
     } catch {
-      toast.error('Failed to download report');
+      toast.error(t('toastDownloadFailed'));
     } finally {
       setExporting(false);
     }
@@ -100,8 +177,8 @@ export default function AdminWorkloadPage() {
             <Activity className="w-5 h-5 text-success-text" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-900">Workload Monitor</h1>
-            <p className="text-sm text-text-placeholder mt-0.5">Monitor team capacity and workload</p>
+            <h1 className="text-2xl font-bold text-navy-900">{t('title')}</h1>
+            <p className="text-sm text-text-placeholder mt-0.5">{t('subtitle')}</p>
           </div>
         </div>
         <button
@@ -110,7 +187,7 @@ export default function AdminWorkloadPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 transition-colors disabled:opacity-40"
         >
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Export PDF
+          {t('exportPdf')}
         </button>
       </div>
 
@@ -124,7 +201,7 @@ export default function AdminWorkloadPage() {
             }}
             className="appearance-none pl-3 pr-8 py-2 rounded-[6px] border border-border text-sm text-text-secondary focus:outline-none focus:ring-2 focus:ring-navy-700/20 bg-white min-w-[180px]"
           >
-            <option value="">Select Project</option>
+            <option value="">{t('selectProject')}</option>
             {(projects || []).map((p: any) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -141,11 +218,14 @@ export default function AdminWorkloadPage() {
               onChange={(e) => setSelectedSprint(e.target.value)}
               className="appearance-none pl-3 pr-8 py-2 rounded-[6px] border border-border text-sm text-text-secondary focus:outline-none focus:ring-2 focus:ring-navy-700/20 bg-white min-w-[200px]"
             >
-              <option value="">All sprints{activeSprint ? ` (active: ${activeSprint.name})` : ''}</option>
+              <option value="">
+                {t('allSprints')}
+                {activeSprint ? t('activeSuffix', { name: activeSprint.name }) : ''}
+              </option>
               {(sprints || []).map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.status === 'active' ? ' (active)' : ''}
+                  {s.status === 'active' ? t('activeParens') : ''}
                 </option>
               ))}
             </select>
@@ -153,7 +233,7 @@ export default function AdminWorkloadPage() {
           </div>
         )}
 
-        {!selectedProject && <p className="text-sm text-text-placeholder">Select a project to load workload data</p>}
+        {!selectedProject && <p className="text-sm text-text-placeholder">{t('selectProjectPrompt')}</p>}
       </div>
 
       {selectedProject && (
@@ -162,9 +242,13 @@ export default function AdminWorkloadPage() {
             <div className="bg-white rounded-[6px] border border-border-subtle p-5">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-navy-700" />
-                <h3 className="font-bold text-navy-800 text-sm">Burndown Chart</h3>
+                <h3 className="font-bold text-navy-800 text-sm">{t('burndownChart')}</h3>
                 <span className="text-xs text-text-placeholder ml-auto">
-                  {selectedSprint ? 'Selected sprint' : activeSprint ? `Active sprint: ${activeSprint.name}` : 'No active sprint'}
+                  {selectedSprint
+                    ? t('selectedSprint')
+                    : activeSprint
+                      ? t('activeSprintLabel', { name: activeSprint.name })
+                      : t('noActiveSprint')}
                 </span>
               </div>
               {burndown?.data?.length > 0 ? (
@@ -187,17 +271,17 @@ export default function AdminWorkloadPage() {
                       stroke="#94a3b8"
                       strokeDasharray="5 3"
                       dot={false}
-                      name="Ideal"
+                      name={t('legendIdeal')}
                       strokeWidth={1.5}
                     />
-                    <Line type="monotone" dataKey="remaining" stroke="#284074" dot={false} name="Actual" strokeWidth={2} />
+                    <Line type="monotone" dataKey="remaining" stroke="#284074" dot={false} name={t('legendActual')} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[180px] text-border-button">
                   <TrendingUp className="w-8 h-8 mb-2" />
                   <p className="text-xs">
-                    {activeSprintId ? 'No burndown data yet' : 'Select a sprint or ensure there is an active sprint'}
+                    {activeSprintId ? t('noBurndownData') : t('selectSprintOrActive')}
                   </p>
                 </div>
               )}
@@ -206,7 +290,7 @@ export default function AdminWorkloadPage() {
             <div className="bg-white rounded-[6px] border border-border-subtle p-5">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart2 className="w-4 h-4 text-navy-700" />
-                <h3 className="font-bold text-navy-800 text-sm">Velocity per Sprint</h3>
+                <h3 className="font-bold text-navy-800 text-sm">{t('velocityPerSprint')}</h3>
               </div>
               {velocity?.length > 0 ? (
                 <ResponsiveContainer width="100%" height={180}>
@@ -215,13 +299,13 @@ export default function AdminWorkloadPage() {
                     <XAxis dataKey="sprint_name" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    <Bar dataKey="completed_points" fill="#284074" radius={[4, 4, 0, 0]} name="Story Points" />
+                    <Bar dataKey="completed_points" fill="#284074" radius={[4, 4, 0, 0]} name={t('storyPoints')} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex flex-col items-center justify-center h-[180px] text-border-button">
                   <BarChart2 className="w-8 h-8 mb-2" />
-                  <p className="text-xs">No velocity data yet</p>
+                  <p className="text-xs">{t('noVelocityData')}</p>
                 </div>
               )}
             </div>
@@ -230,10 +314,10 @@ export default function AdminWorkloadPage() {
           <div className="bg-white rounded-[6px] border border-border-subtle overflow-hidden">
             <div className="px-5 py-4 border-b border-border-subtle flex items-center gap-2">
               <Users className="w-4 h-4 text-text-placeholder" />
-              <h3 className="font-bold text-navy-800 text-sm">Workload per Member</h3>
+              <h3 className="font-bold text-navy-800 text-sm">{t('workloadPerMember')}</h3>
               {userWorkloads.length > 0 && (
                 <span className="ml-auto text-xs text-text-placeholder">
-                  {userWorkloads.length} member{userWorkloads.length !== 1 ? 's' : ''}
+                  {t('membersCount', { count: userWorkloads.length, plural: userWorkloads.length !== 1 ? 's' : '' })}
                 </span>
               )}
             </div>
@@ -245,13 +329,13 @@ export default function AdminWorkloadPage() {
             ) : !activeSprintId ? (
               <div className="text-center py-16 text-text-placeholder">
                 <Activity className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No active sprint on this project</p>
-                <p className="text-xs mt-1 text-border-button">Select a sprint manually from the filter above</p>
+                <p className="text-sm">{t('noActiveSprintProject')}</p>
+                <p className="text-xs mt-1 text-border-button">{t('selectSprintManually')}</p>
               </div>
             ) : userWorkloads.length === 0 ? (
               <div className="text-center py-16 text-text-placeholder">
                 <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No workload data</p>
+                <p className="text-sm">{t('noWorkloadData')}</p>
               </div>
             ) : (
               <div className="divide-y divide-surface-2">
@@ -277,12 +361,13 @@ export default function AdminWorkloadPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1.5">
                             <div>
-                              <span className="text-sm font-semibold text-navy-800">{u.full_name || 'Unknown'}</span>
+                              <span className="text-sm font-semibold text-navy-800">{u.full_name || t('unknownUser')}</span>
                               <span className="text-xs text-text-placeholder ml-2">{u.division || ''}</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-xs text-text-tertiary">
-                                <span className="font-semibold text-text-secondary">{done}</span>/{total} task
+                                <span className="font-semibold text-text-secondary">{done}</span>
+                                {t('ofTotalTasks', { total })}
                               </div>
                               <span
                                 className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -293,7 +378,7 @@ export default function AdminWorkloadPage() {
                                       : 'bg-success-soft text-success-text'
                                 }`}
                               >
-                                {util}% utilization
+                                {t('utilizationPercent', { util })}
                               </span>
                             </div>
                           </div>
@@ -305,10 +390,10 @@ export default function AdminWorkloadPage() {
                           </div>
                           <div className="flex gap-3 mt-2">
                             {[
-                              { label: 'Total', value: u.task_count || 0, color: 'text-text-tertiary' },
-                              { label: 'Done', value: u.done_count || 0, color: 'text-success-text' },
-                              { label: 'Est. Hours', value: u.estimated_hours || 0, color: 'text-navy-700' },
-                              { label: 'Actual', value: u.actual_hours || 0, color: 'text-amber-600' },
+                              { label: t('statTotal'), value: u.task_count || 0, color: 'text-text-tertiary' },
+                              { label: t('statDone'), value: u.done_count || 0, color: 'text-success-text' },
+                              { label: t('statEstHours'), value: u.estimated_hours || 0, color: 'text-navy-700' },
+                              { label: t('statActual'), value: u.actual_hours || 0, color: 'text-amber-600' },
                             ].map((s) => (
                               <div key={s.label} className="flex items-center gap-1">
                                 <span className={`text-[10px] ${s.color}`}>{s.label}</span>

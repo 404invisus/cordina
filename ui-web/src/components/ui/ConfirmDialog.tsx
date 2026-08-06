@@ -3,6 +3,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Info } from 'lucide-react';
 import Modal from './Modal';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: { typeToConfirm: 'Type "{word}" to confirm' },
+  id: { typeToConfirm: 'Ketik "{word}" untuk konfirmasi' },
+};
 
 export default function ConfirmDialog({
   open,
@@ -11,7 +17,7 @@ export default function ConfirmDialog({
   title,
   message,
   danger = true,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   /** If set, the confirm button stays disabled until the user types this exact word/phrase. */
   typedConfirmation,
 }: {
@@ -24,6 +30,7 @@ export default function ConfirmDialog({
   confirmLabel?: string;
   typedConfirmation?: string;
 }) {
+  const t = useT(dict);
   const [typed, setTyped] = useState('');
   const locked = !!typedConfirmation && typed !== typedConfirmation;
 
@@ -52,7 +59,7 @@ export default function ConfirmDialog({
         {typedConfirmation && (
           <div className="mb-4 text-left">
             <label className="block font-mono text-[9.5px] font-semibold tracking-[0.1em] text-text-muted uppercase mb-1.5">
-              Type "{typedConfirmation}" to confirm
+              {t('typeToConfirm', { word: typedConfirmation })}
             </label>
             <input
               autoFocus
@@ -69,7 +76,7 @@ export default function ConfirmDialog({
             onClick={handleClose}
             className="flex-1 h-[34px] rounded-[6px] border border-border-button text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -81,7 +88,7 @@ export default function ConfirmDialog({
                 : 'bg-navy-700 text-white hover:bg-navy-900'
             }`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.confirm')}
           </motion.button>
         </div>
       </div>

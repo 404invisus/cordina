@@ -1,3 +1,6 @@
+import { commonDict } from '@/lib/i18n/common-dict';
+import type { Locale } from '@/lib/i18n/types';
+
 export type StatusTone = 'success' | 'pending' | 'info' | 'danger' | 'neutral';
 
 /**
@@ -63,8 +66,11 @@ export function getStatusTone(status: string | null | undefined): StatusTone {
   return TONE_BY_STATUS[status.toLowerCase()] ?? 'neutral';
 }
 
-export function getStatusLabel(status: string | null | undefined): string {
+export function getStatusLabel(status: string | null | undefined, locale: Locale = 'en'): string {
   if (!status) return '—';
+  const key = `status_${status.toLowerCase()}`;
+  const mapped = commonDict[locale][key] ?? commonDict.en[key];
+  if (mapped) return mapped;
   return status
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

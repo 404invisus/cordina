@@ -1,0 +1,12 @@
+[
+  {
+    "id": "3.4.1-4",
+    "scenario": "Tambah anggota proyek",
+    "verdict": "PASS",
+    "notes": "Pada halaman detail proyek \"Proyek UAT 627832\" dibuka tab Members -> \"Add Member\" -> pilih pengguna dari daftar (tersedia pencarian nama/email dan pemilihan peran). Anggota yang berhasil terdaftar di proyek: Kepala Seksi, Project Manager, Staff Satu (3 anggota). Daftar anggota beserta perannya tampil pada tab Members.",
+    "shots": [
+      "shots/3.4.1-4a_tab-anggota.png",
+      "shots/3.4.1-4c_anggota-terdaftar.png"
+    ]
+  }
+]

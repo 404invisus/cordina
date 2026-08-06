@@ -1,0 +1,45 @@
+{
+  "info": {
+    "heading": "Manage Privileges",
+    "buttons": [
+      "Reset ke default",
+      "Selesai"
+    ],
+    "checkboxes": 0,
+    "clickableRows": 0,
+    "text": [
+      "Manage Privileges",
+      "Pengguna UAT 75937 · Project Manager",
+      "Toggle untuk tambah/cabut privilege di luar role default",
+      "Reset ke default",
+      "Create new projects",
+      "project.create",
+      "Edit projects",
+      "DEFAULT",
+      "project.edit",
+      "Delete projects",
+      "project.delete",
+      "Add/remove project members",
+      "DEFAULT",
+      "project.manage_members",
+      "Create, start, and complete sprints",
+      "DEFAULT",
+      "sprint.manage",
+      "View sprint details and backlog",
+      "DEFAULT",
+      "sprint.view",
+      "Create new tasks",
+      "DEFAULT",
+      "task.create",
+      "Edit own tasks",
+      "DEFAULT",
+      "task.edit_own"
+    ]
+  },
+  "shots": {
+    "sRoleForm": "shots/3.8.1-3a_form-ubah-role.png",
+    "sRolePick": "shots/3.8.1-3b_pilih-role-baru.png",
+    "sRoleAfter": "shots/3.8.1-3c_role-terupdate.png",
+    "sPrivBefore": "shots/3.8.2-1a_kelola-privilege.png"
+  }
+}

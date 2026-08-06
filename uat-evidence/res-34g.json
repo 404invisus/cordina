@@ -1,0 +1,13 @@
+[
+  {
+    "id": "3.4.3-3",
+    "scenario": "Mention anggota tim di komentar",
+    "verdict": "PASS",
+    "notes": "Pada kolom komentar task diketik \"@Scr\"; sistem menampilkan daftar saran mention berisi anggota proyek (tampil: \"Scrum Master - Teknologi\"). Setelah anggota dipilih, teks \"@Scrum Master \" tersisip otomatis ke komentar, lalu komentar dikirim. Terverifikasi di basis data: kolom mentions pada tabel comments terisi user_id anggota yang disebut ([\"11f8b7d5-9edd-4424-8270-0d651f53c644\"]), dan tabel notifications mencatat notifikasi bertipe 'task.mentioned' berstatus 'sent' pada kanal in_app maupun telegram. CATATAN PERILAKU: daftar saran mention hanya memuat ANGGOTA PROYEK tempat task berada, bukan seluruh pengguna sistem. Mengetik nama pengguna yang bukan anggota proyek menghasilkan \"No users found\". Perilaku ini wajar secara keamanan, namun perlu diketahui penguji agar tidak dianggap kegagalan.",
+    "shots": [
+      "shots/3.4.3-3a_autocomplete-mention.png",
+      "shots/3.4.3-3b_komentar-dengan-mention.png",
+      "shots/3.4.3-3c_mention-terkirim.png"
+    ]
+  }
+]

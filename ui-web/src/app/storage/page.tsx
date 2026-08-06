@@ -10,6 +10,78 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { storageService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    sectionFiles: 'FILES',
+    storageTitle: 'Storage',
+    storageSubtitle: 'Working files only — signed records live in Official Documents',
+    uploading: 'Uploading…',
+    uploadedSuccess: '{name} uploaded successfully',
+    uploadFailed: 'Upload failed',
+    downloadFailed: 'Download failed',
+    fileDeleted: 'File deleted',
+    failedToDeleteFile: 'Failed to delete file',
+    usedOfQuota: '{used} of {quota} GB used',
+    institutionQuota: 'Institution quota · {count} files',
+    taskAttachments: 'Task attachments',
+    crAttachments: 'CR attachments',
+    signatureSpecimens: 'Signature specimens',
+    otherLabel: 'Other',
+    allFiles: 'All files',
+    searchFilesPlaceholder: 'Search files',
+    colFile: 'FILE',
+    colType: 'TYPE',
+    colUploadedBy: 'UPLOADED BY',
+    colDate: 'DATE',
+    noFilesTitle: 'No files yet',
+    dropFileHere: 'Drop your file here',
+    uploadOrDrag: 'Upload a file or drag & drop it onto this panel',
+    typeSheet: 'Sheet',
+    typePDF: 'PDF',
+    typeDoc: 'Doc',
+    typeImage: 'Image',
+    typeFile: 'File',
+    showingOfFiles: 'Showing {shown} of {total} files',
+    deleteFileTitle: 'Delete File?',
+    deleteFileMessage: 'This action cannot be undone.',
+  },
+  id: {
+    sectionFiles: 'BERKAS',
+    storageTitle: 'Penyimpanan',
+    storageSubtitle: 'Hanya berkas kerja — dokumen bertanda tangan tersimpan di Dokumen Resmi',
+    uploading: 'Mengunggah…',
+    uploadedSuccess: '{name} berhasil diunggah',
+    uploadFailed: 'Gagal mengunggah',
+    downloadFailed: 'Gagal mengunduh',
+    fileDeleted: 'Berkas dihapus',
+    failedToDeleteFile: 'Gagal menghapus berkas',
+    usedOfQuota: '{used} dari {quota} GB terpakai',
+    institutionQuota: 'Kuota institusi · {count} berkas',
+    taskAttachments: 'Lampiran tugas',
+    crAttachments: 'Lampiran CR',
+    signatureSpecimens: 'Spesimen tanda tangan',
+    otherLabel: 'Lainnya',
+    allFiles: 'Semua berkas',
+    searchFilesPlaceholder: 'Cari berkas',
+    colFile: 'BERKAS',
+    colType: 'TIPE',
+    colUploadedBy: 'DIUNGGAH OLEH',
+    colDate: 'TANGGAL',
+    noFilesTitle: 'Belum ada berkas',
+    dropFileHere: 'Lepaskan berkas Anda di sini',
+    uploadOrDrag: 'Unggah berkas atau seret & lepas ke panel ini',
+    typeSheet: 'Lembar',
+    typePDF: 'PDF',
+    typeDoc: 'Dok',
+    typeImage: 'Gambar',
+    typeFile: 'Berkas',
+    showingOfFiles: 'Menampilkan {shown} dari {total} berkas',
+    deleteFileTitle: 'Hapus Berkas?',
+    deleteFileMessage: 'Tindakan ini tidak dapat dibatalkan.',
+  },
+};
 
 function formatSize(bytes: number) {
   if (!bytes) return '—';
@@ -31,27 +103,28 @@ function fmtDate(iso: string) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-type FileTypeInfo = { label: string; iconBg: string; iconColor: string; Icon: React.ElementType };
+type FileTypeInfo = { labelKey: string; iconBg: string; iconColor: string; Icon: React.ElementType };
 
 function getFileTypeInfo(mime: string): FileTypeInfo {
   if (mime?.includes('spreadsheet') || mime?.includes('excel') || mime?.includes('csv') || mime?.includes('xlsx')) {
-    return { label: 'Sheet', iconBg: '#e9f4ee', iconColor: '#0f6144', Icon: FileSpreadsheet };
+    return { labelKey: 'typeSheet', iconBg: '#e9f4ee', iconColor: '#0f6144', Icon: FileSpreadsheet };
   }
   if (mime === 'application/pdf') {
-    return { label: 'PDF', iconBg: '#fdeceb', iconColor: '#a3231c', Icon: FileText };
+    return { labelKey: 'typePDF', iconBg: '#fdeceb', iconColor: '#a3231c', Icon: FileText };
   }
   if (mime?.includes('word') || mime?.includes('document') || mime?.includes('docx')) {
-    return { label: 'Doc', iconBg: '#eaf1f8', iconColor: '#14406a', Icon: FileText };
+    return { labelKey: 'typeDoc', iconBg: '#eaf1f8', iconColor: '#14406a', Icon: FileText };
   }
   if (mime?.includes('image')) {
-    return { label: 'Image', iconBg: '#fbf3e0', iconColor: '#8a6209', Icon: FileImage };
+    return { labelKey: 'typeImage', iconBg: '#fbf3e0', iconColor: '#8a6209', Icon: FileImage };
   }
-  return { label: 'File', iconBg: '#f1f0ed', iconColor: '#5c6470', Icon: FileIcon };
+  return { labelKey: 'typeFile', iconBg: '#f1f0ed', iconColor: '#5c6470', Icon: FileIcon };
 }
 
 const QUOTA_GB = 50;
 
 export default function StoragePage() {
+  const t = useT(dict);
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -77,9 +150,9 @@ export default function StoragePage() {
       await storageService.upload(fd);
       await qc.invalidateQueries({ queryKey: ['files'] });
       await qc.refetchQueries({ queryKey: ['files'] });
-      toast.success(`${file.name} uploaded successfully`);
+      toast.success(t('uploadedSuccess', { name: file.name }));
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Upload failed');
+      toast.error(err?.response?.data?.message || t('uploadFailed'));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -110,7 +183,7 @@ export default function StoragePage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      toast.error('Download failed');
+      toast.error(t('downloadFailed'));
     }
   };
 
@@ -119,10 +192,10 @@ export default function StoragePage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['files'] });
       await qc.refetchQueries({ queryKey: ['files'] });
-      toast.success('File deleted');
+      toast.success(t('fileDeleted'));
       setDeleteId(null);
     },
-    onError: () => toast.error('Failed to delete file'),
+    onError: () => toast.error(t('failedToDeleteFile')),
   });
 
   const filtered = files.filter((f) => {
@@ -136,9 +209,9 @@ export default function StoragePage() {
       <input ref={fileRef} type="file" className="hidden" onChange={handleUpload} />
 
       <PageHeader
-        section="FILES"
-        title="Storage"
-        subtitle="Working files only — signed records live in Official Documents"
+        section={t('sectionFiles')}
+        title={t('storageTitle')}
+        subtitle={t('storageSubtitle')}
         actions={
           <>
             <button
@@ -148,7 +221,7 @@ export default function StoragePage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <Upload className="w-3 h-3" />
-              {uploading ? 'Uploading…' : 'Upload'}
+              {uploading ? t('uploading') : t('common.upload')}
             </button>
           </>
         }
@@ -160,10 +233,8 @@ export default function StoragePage() {
           <HardDrive className="w-4 h-4 text-navy-700" />
         </div>
         <div className="min-w-[160px]">
-          <div className="text-[12.5px] font-semibold text-navy-800">
-            {usedDisplay} of {QUOTA_GB} GB used
-          </div>
-          <div className="text-[11px] text-neutral">Institution quota · {files.length.toLocaleString()} files</div>
+          <div className="text-[12.5px] font-semibold text-navy-800">{t('usedOfQuota', { used: usedDisplay, quota: QUOTA_GB })}</div>
+          <div className="text-[11px] text-neutral">{t('institutionQuota', { count: files.length.toLocaleString() })}</div>
         </div>
         <div className="flex-1 flex flex-col gap-[5px]">
           <div className="h-[8px] rounded-full bg-border-subtle overflow-hidden flex">
@@ -174,14 +245,14 @@ export default function StoragePage() {
           </div>
           <div className="flex gap-[14px] text-[10.5px] text-text-tertiary">
             {[
-              { color: 'bg-navy-700', label: 'Task attachments' },
-              { color: 'bg-gold-500', label: 'CR attachments' },
-              { color: 'bg-success', label: 'Signature specimens' },
-              { color: 'bg-neutral', label: 'Other' },
+              { color: 'bg-navy-700', labelKey: 'taskAttachments' },
+              { color: 'bg-gold-500', labelKey: 'crAttachments' },
+              { color: 'bg-success', labelKey: 'signatureSpecimens' },
+              { color: 'bg-neutral', labelKey: 'otherLabel' },
             ].map((s) => (
-              <span key={s.label} className="flex items-center gap-[5px]">
+              <span key={s.labelKey} className="flex items-center gap-[5px]">
                 <span className={cn('w-2 h-2 rounded-[2px] inline-block', s.color)} />
-                {s.label}
+                {t(s.labelKey)}
               </span>
             ))}
           </div>
@@ -204,13 +275,13 @@ export default function StoragePage() {
         >
           {/* Toolbar */}
           <div className="flex items-center px-[15px] py-[9px] gap-[10px] border-b border-border-subtle">
-            <span className="text-[12.5px] font-semibold text-navy-900">All files</span>
+            <span className="text-[12.5px] font-semibold text-navy-900">{t('allFiles')}</span>
             <div className="flex items-center gap-[8px] h-[30px] px-[11px] border border-border-input rounded-[6px] w-[200px]">
               <Search className="w-3 h-3 text-text-placeholder flex-none" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search files"
+                placeholder={t('searchFilesPlaceholder')}
                 className="flex-1 text-[12px] outline-none bg-transparent"
               />
             </div>
@@ -221,7 +292,7 @@ export default function StoragePage() {
             className="grid px-[15px] h-[30px] items-center border-b border-border-subtle bg-surface-2"
             style={{ gridTemplateColumns: '1fr 132px 108px 108px 60px' }}
           >
-            {['FILE', 'TYPE', 'UPLOADED BY', 'DATE', ''].map((h, i) => (
+            {[t('colFile'), t('colType'), t('colUploadedBy'), t('colDate'), ''].map((h, i) => (
               <div
                 key={i}
                 className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral"
@@ -241,13 +312,13 @@ export default function StoragePage() {
             ) : !filtered.length ? (
               <EmptyState
                 icon={HardDrive}
-                title="No files yet"
-                subtitle={dragOver ? 'Drop your file here' : 'Upload a file or drag & drop it onto this panel'}
+                title={t('noFilesTitle')}
+                subtitle={dragOver ? t('dropFileHere') : t('uploadOrDrag')}
               />
             ) : (
               <AnimatePresence>
                 {filtered.map((f, i) => {
-                  const { label, iconBg, iconColor, Icon } = getFileTypeInfo(f.mime_type);
+                  const { labelKey, iconBg, iconColor, Icon } = getFileTypeInfo(f.mime_type);
                   const uploader = f.uploader_name || f.uploaded_by || f.user_name || '—';
                   return (
                     <motion.div
@@ -277,7 +348,7 @@ export default function StoragePage() {
                       {/* Type badge */}
                       <div>
                         <span className="inline-flex items-center h-[20px] px-[7px] rounded-[3px] bg-neutral-soft text-neutral-text text-[10.5px] font-semibold">
-                          {label}
+                          {t(labelKey)}
                         </span>
                       </div>
 
@@ -292,14 +363,14 @@ export default function StoragePage() {
                         <button
                           onClick={() => handleDownload(f)}
                           className="p-1 text-neutral hover:text-navy-700 transition-colors"
-                          title="Download"
+                          title={t('common.download')}
                         >
                           <Download className="w-[13px] h-[13px]" />
                         </button>
                         <button
                           onClick={() => setDeleteId(f.id)}
                           className="p-1 text-neutral hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
-                          title="Delete"
+                          title={t('common.delete')}
                         >
                           <Trash2 className="w-[13px] h-[13px]" />
                         </button>
@@ -314,9 +385,7 @@ export default function StoragePage() {
           {/* Footer */}
           {!isLoading && filtered.length > 0 && (
             <div className="h-[36px] flex-none flex items-center justify-between px-[15px] border-t border-border-subtle bg-surface-2">
-              <span className="text-[11px] text-neutral">
-                Showing {filtered.length} of {files.length} files
-              </span>
+              <span className="text-[11px] text-neutral">{t('showingOfFiles', { shown: filtered.length, total: files.length })}</span>
             </div>
           )}
         </div>
@@ -326,8 +395,8 @@ export default function StoragePage() {
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
-        title="Delete File?"
-        message="This action cannot be undone."
+        title={t('deleteFileTitle')}
+        message={t('deleteFileMessage')}
       />
     </AppLayout>
   );

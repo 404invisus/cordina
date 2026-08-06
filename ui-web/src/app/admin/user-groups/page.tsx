@@ -7,8 +7,61 @@ import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import { userGroupService, adminUserService } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    title: 'User Groups',
+    subtitle: 'Manage groups for notifications and calendar invites',
+    section: 'ADMIN',
+    newGroup: 'New Group',
+    noGroupsYet: 'No groups yet',
+    membersCount: '{count} member{plural}',
+    confirmDeleteGroup: 'Delete this group?',
+    toastGroupDeleted: 'Group deleted',
+    toastFailedToDelete: 'Failed to delete',
+    editGroup: 'Edit Group',
+    createNewGroup: 'Create New Group',
+    groupNameLabel: 'Group Name *',
+    groupNamePlaceholder: 'e.g. All Squad, Tech Team',
+    groupDescPlaceholder: 'Group description (optional)',
+    membersLabel: 'Members',
+    selectedCount: '{count} selected',
+    saving: 'Saving...',
+    saveChanges: 'Save Changes',
+    createGroup: 'Create Group',
+    toastGroupUpdated: 'Group updated',
+    toastGroupCreated: 'Group created',
+    toastFailed: 'Failed',
+  },
+  id: {
+    title: 'Grup Pengguna',
+    subtitle: 'Kelola grup untuk notifikasi dan undangan kalender',
+    section: 'ADMIN',
+    newGroup: 'Grup Baru',
+    noGroupsYet: 'Belum ada grup',
+    membersCount: '{count} anggota',
+    confirmDeleteGroup: 'Hapus grup ini?',
+    toastGroupDeleted: 'Grup dihapus',
+    toastFailedToDelete: 'Gagal menghapus',
+    editGroup: 'Ubah Grup',
+    createNewGroup: 'Buat Grup Baru',
+    groupNameLabel: 'Nama Grup *',
+    groupNamePlaceholder: 'cth. All Squad, Tech Team',
+    groupDescPlaceholder: 'Deskripsi grup (opsional)',
+    membersLabel: 'Anggota',
+    selectedCount: '{count} dipilih',
+    saving: 'Menyimpan...',
+    saveChanges: 'Simpan Perubahan',
+    createGroup: 'Buat Grup',
+    toastGroupUpdated: 'Grup diperbarui',
+    toastGroupCreated: 'Grup dibuat',
+    toastFailed: 'Gagal',
+  },
+};
 
 function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () => void; editData?: any }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [name, setName] = useState(editData?.name || '');
   const [desc, setDesc] = useState(editData?.description || '');
@@ -28,10 +81,10 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
         : userGroupService.create({ name, description: desc, telegram_chat_id: chatId, member_ids: memberIds }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-groups'] });
-      toast.success(editData ? 'Group updated' : 'Group created');
+      toast.success(editData ? t('toastGroupUpdated') : t('toastGroupCreated'));
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('toastFailed')),
   });
 
   const toggle = (id: string) => setMemberIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -49,7 +102,7 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
             <div className="w-9 h-9 bg-navy-700/8 rounded-[6px] flex items-center justify-center">
               <Users className="w-4 h-4 text-navy-700" />
             </div>
-            <h2 className="text-lg font-bold text-navy-900">{editData ? 'Edit Group' : 'Create New Group'}</h2>
+            <h2 className="text-lg font-bold text-navy-900">{editData ? t('editGroup') : t('createNewGroup')}</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-border-subtle rounded-[6px]">
             <X className="w-4 h-4 text-text-tertiary" />
@@ -57,27 +110,27 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Group Name *</label>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('groupNameLabel')}</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-navy-700/20"
-              placeholder="e.g. All Squad, Tech Team"
+              placeholder={t('groupNamePlaceholder')}
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Description</label>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('common.description')}</label>
             <input
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 focus:outline-none focus:ring-2 focus:ring-navy-700/20"
-              placeholder="Group description (optional)"
+              placeholder={t('groupDescPlaceholder')}
             />
           </div>
 
           <div>
             <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-              Members <span className="text-navy-700 font-bold">{memberIds.length} selected</span>
+              {t('membersLabel')} <span className="text-navy-700 font-bold">{t('selectedCount', { count: memberIds.length })}</span>
             </label>
             <div className="mt-1 border border-border rounded-[6px] overflow-hidden">
               <div className="max-h-48 overflow-y-auto divide-y divide-surface-2">
@@ -111,7 +164,7 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
             disabled={mutation.isPending || !name}
             className="w-full py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-colors"
           >
-            {mutation.isPending ? 'Saving...' : editData ? 'Save Changes' : 'Create Group'}
+            {mutation.isPending ? t('saving') : editData ? t('saveChanges') : t('createGroup')}
           </button>
         </div>
       </motion.div>
@@ -120,6 +173,7 @@ function GroupModal({ open, onClose, editData }: { open: boolean; onClose: () =>
 }
 
 export default function UserGroupsPage() {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
@@ -133,9 +187,9 @@ export default function UserGroupsPage() {
     mutationFn: (id: string) => userGroupService.destroy(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-groups'] });
-      toast.success('Group deleted');
+      toast.success(t('toastGroupDeleted'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to delete'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('toastFailedToDelete')),
   });
 
   const groups = Array.isArray(data) ? data : [];
@@ -152,16 +206,16 @@ export default function UserGroupsPage() {
       />
 
       <PageHeader
-        section="ADMIN"
-        title="User Groups"
-        subtitle="Manage groups for notifications and calendar invites"
+        section={t('section')}
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <button
             onClick={() => setCreateOpen(true)}
             className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold hover:bg-navy-900 transition-colors"
           >
             <Plus className="w-3 h-3" strokeWidth={2.5} />
-            New Group
+            {t('newGroup')}
           </button>
         }
       />
@@ -173,7 +227,7 @@ export default function UserGroupsPage() {
       ) : groups.length === 0 ? (
         <div className="text-center py-20">
           <Users className="w-12 h-12 text-border mx-auto mb-3" />
-          <div className="text-text-placeholder text-sm">No groups yet</div>
+          <div className="text-text-placeholder text-sm">{t('noGroupsYet')}</div>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -193,7 +247,8 @@ export default function UserGroupsPage() {
                     {g.description && <div className="text-xs text-text-placeholder mt-0.5">{g.description}</div>}
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-xs text-text-placeholder flex items-center gap-1">
-                        <UserPlus className="w-3 h-3" /> {g.member_count || 0} member{(g.member_count || 0) !== 1 ? 's' : ''}
+                        <UserPlus className="w-3 h-3" />{' '}
+                        {t('membersCount', { count: g.member_count || 0, plural: (g.member_count || 0) !== 1 ? 's' : '' })}
                       </span>
                       {g.telegram_chat_id && <span className="text-xs text-info font-mono">{g.telegram_chat_id}</span>}
                     </div>
@@ -210,7 +265,7 @@ export default function UserGroupsPage() {
                   </button>
                   <button
                     onClick={() => {
-                      if (confirm('Delete this group?')) deleteMutation.mutate(g.id);
+                      if (confirm(t('confirmDeleteGroup'))) deleteMutation.mutate(g.id);
                     }}
                     className="p-2 hover:bg-danger-soft rounded-[6px]"
                   >

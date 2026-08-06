@@ -1,0 +1,15 @@
+{
+  "pre": {
+    "judul": "Dokumen UAT 93744",
+    "nomor": "SK/2026/93744",
+    "kategori": "SOP",
+    "saveAktif": true
+  },
+  "shown": true,
+  "NEWNUM": "SK/2026/93744-REV1",
+  "NEWDESC": "Deskripsi diperbarui pada pengujian ulang setelah perbaikan.",
+  "shots": [
+    "shots/4.2-5a_form-edit-terisi.png",
+    "shots/4.2-5b_metadata-tersimpan.png"
+  ]
+}

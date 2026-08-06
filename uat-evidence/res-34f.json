@@ -1,0 +1,29 @@
+[
+  {
+    "id": "3.4.5-1",
+    "scenario": "Generate laporan proyek",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman /reports dibuka, dipilih proyek \"Project Alpha\" dan sprint \"first sprint\". Laporan tersusun dan tampil di layar mencakup ringkasan progress, sprint, dan statistik task. Tersedia lima jenis laporan: Workload, Sprint, Time tracking, Velocity, dan Portfolio. CATATAN KETIDAKSESUAIAN: tidak ada tombol berlabel \"Generate\" seperti pada dokumen — laporan tersusun otomatis setelah proyek dan sprint dipilih. Selain itu laporan WAJIB memilih sprint; bila hanya proyek yang dipilih sistem menampilkan pesan \"Sprint: choose one to continue\" dan \"No report to preview\".",
+    "shots": [
+      "shots/3.4.5-1_laporan-proyek.png"
+    ]
+  },
+  {
+    "id": "3.4.5-2",
+    "scenario": "Ekspor laporan ke PDF",
+    "verdict": "PASS",
+    "notes": "Tombol \"Export PDF\" pada halaman laporan menghasilkan berkas \"report_sprint_2026-07-30.pdf\" berukuran 216.237 byte. Berkas terverifikasi berformat PDF sah (header %PDF) dan memuat data laporan sesuai tampilan layar.",
+    "shots": [
+      "shots/3.4.5-2_export-pdf.png"
+    ]
+  },
+  {
+    "id": "3.4.5-3",
+    "scenario": "Laporan kinerja anggota",
+    "verdict": "PASS",
+    "notes": "Pada halaman laporan dipilih jenis laporan \"Workload\" dengan proyek dan sprint terpilih. Sistem menampilkan rekap pekerjaan per anggota tim beserta jumlah task dan status penyelesaiannya. Konten terbaca: [\"REPORTING\",\"Reports\",\"Same layout on screen and in the exported PDF\",\"Schedule\",\"Export PDF\",\"Workload\",\"Sprint\",\"Time tracking\",\"Velocity\",\"Portfolio\",\"REQUIRED\",\"Project: choose one\",\"Project Alpha\",\"Project Alpha\",\"ID Wallet\",\"Test Permission Project\",\"Test UAT Project\",\"Simulasi UAT\"].",
+    "shots": [
+      "shots/3.4.5-3_laporan-kinerja-anggota.png"
+    ]
+  }
+]

@@ -13,11 +13,57 @@ import { formatDate } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    reviewColumnLabel: 'Review',
+    moveTo: 'Move to',
+    progressLabel: 'Progress',
+    addBacklogToBoardTitle: 'Add Backlog to Board',
+    addBacklogToBoardSubtitle: 'Select backlog from this sprint',
+    loadingBacklogs: 'Loading backlogs...',
+    allBacklogsOnBoard: 'All backlogs are already on the board',
+    ptsSuffix: 'pts',
+    assigneeLabel: 'Assignee',
+    noMembers: 'No members',
+    backlogAddedToBoard: 'Backlog added to board!',
+    addBacklogFailed: 'Failed to add backlog',
+    backToProject: 'Back to Project',
+    addBacklogBtn: 'Add Backlog',
+    moveTaskFailed: 'Failed to move task',
+    kanbanBoard: 'Kanban Board',
+    boardSubtitle: '{count} tasks total · hover a card to change status',
+    noTasks: 'No tasks',
+    doneSuffix: 'done',
+  },
+  id: {
+    reviewColumnLabel: 'Ditinjau',
+    moveTo: 'Pindahkan ke',
+    progressLabel: 'Progres',
+    addBacklogToBoardTitle: 'Tambah Backlog ke Papan',
+    addBacklogToBoardSubtitle: 'Pilih backlog dari sprint ini',
+    loadingBacklogs: 'Memuat backlog...',
+    allBacklogsOnBoard: 'Semua backlog sudah ada di papan',
+    ptsSuffix: 'poin',
+    assigneeLabel: 'Penanggung Jawab',
+    noMembers: 'Tidak ada anggota',
+    backlogAddedToBoard: 'Backlog berhasil ditambahkan ke papan!',
+    addBacklogFailed: 'Gagal menambahkan backlog',
+    backToProject: 'Kembali ke Proyek',
+    addBacklogBtn: 'Tambah Backlog',
+    moveTaskFailed: 'Gagal memindahkan tugas',
+    kanbanBoard: 'Papan Kanban',
+    boardSubtitle: '{count} total tugas · arahkan kursor ke kartu untuk mengubah status',
+    noTasks: 'Tidak ada tugas',
+    doneSuffix: 'selesai',
+  },
+};
 
 const COLUMNS = [
   {
     id: 'todo',
-    label: 'To Do',
+    label: 'common.status_todo',
     bg: 'bg-surface-2',
     border: 'border-border/80',
     dot: 'bg-text-placeholder',
@@ -26,7 +72,7 @@ const COLUMNS = [
   },
   {
     id: 'in_progress',
-    label: 'In Progress',
+    label: 'common.status_in_progress',
     bg: 'bg-info-soft/40',
     border: 'border-info/30',
     dot: 'bg-info',
@@ -35,7 +81,7 @@ const COLUMNS = [
   },
   {
     id: 'review',
-    label: 'Review',
+    label: 'reviewColumnLabel',
     bg: 'bg-navy-700/8',
     border: 'border-navy-700/20',
     dot: 'bg-navy-700',
@@ -44,7 +90,7 @@ const COLUMNS = [
   },
   {
     id: 'done',
-    label: 'Done',
+    label: 'common.status_done',
     bg: 'bg-success-soft/40',
     border: 'border-success/30',
     dot: 'bg-success',
@@ -54,10 +100,10 @@ const COLUMNS = [
 ];
 
 const PRIORITY: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  critical: { label: 'Critical', color: 'text-danger-text', bg: 'bg-danger-soft', dot: 'bg-danger' },
-  high: { label: 'High', color: 'text-orange-600', bg: 'bg-orange-50', dot: 'bg-orange-500' },
-  medium: { label: 'Medium', color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-400' },
-  low: { label: 'Low', color: 'text-success-text', bg: 'bg-success-soft', dot: 'bg-success' },
+  critical: { label: 'common.status_critical', color: 'text-danger-text', bg: 'bg-danger-soft', dot: 'bg-danger' },
+  high: { label: 'common.status_high', color: 'text-orange-600', bg: 'bg-orange-50', dot: 'bg-orange-500' },
+  medium: { label: 'common.status_medium', color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-400' },
+  low: { label: 'common.status_low', color: 'text-success-text', bg: 'bg-success-soft', dot: 'bg-success' },
 };
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
@@ -81,6 +127,8 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 };
 
 function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, status: string) => void; colId: string }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const p = PRIORITY[task.priority] || PRIORITY.medium;
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && colId !== 'done';
@@ -105,7 +153,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
             </div>
             <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${p.bg} ${p.color}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${p.dot}`} />
-              {p.label}
+              {t(p.label)}
             </span>
           </div>
 
@@ -133,7 +181,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
                     exit={{ opacity: 0, scale: 0.92 }}
                     className="absolute right-0 top-8 z-20 bg-white rounded-[6px] border border-border py-1.5 w-40 overflow-hidden"
                   >
-                    <div className="px-3 py-1.5 text-xs font-semibold text-text-placeholder uppercase tracking-wider">Move to</div>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-text-placeholder uppercase tracking-wider">{t('moveTo')}</div>
                     {COLUMNS.filter((c) => c.id !== colId).map((c) => (
                       <button
                         key={c.id}
@@ -144,7 +192,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
                         className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-surface-2 text-sm text-text-secondary transition-colors"
                       >
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
-                        {c.label}
+                        {t(c.label)}
                       </button>
                     ))}
                   </motion.div>
@@ -164,7 +212,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
         {progressPct !== null && (
           <div className="mb-3">
             <div className="flex justify-between text-xs text-text-placeholder mb-1">
-              <span>Progress</span>
+              <span>{t('progressLabel')}</span>
               <span className="font-medium">{progressPct}%</span>
             </div>
             <div className="h-1 bg-border-subtle rounded-full overflow-hidden">
@@ -194,7 +242,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 )}
-                {isOverdue ? 'Overdue' : formatDate(task.due_date)}
+                {isOverdue ? t('common.status_overdue') : formatDate(task.due_date, locale)}
               </div>
             )}
             {task.estimated_hours && (
@@ -230,6 +278,7 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
 }
 
 function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds }: any) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string | null>(null);
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
@@ -281,14 +330,14 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['board', projectId, sprintId] });
       qc.invalidateQueries({ queryKey: ['all-backlog', projectId] });
-      toast.success('Backlog added to board!');
+      toast.success(t('backlogAddedToBoard'));
       setSelected(null);
       setAssigneeIds([]);
       onClose();
     },
     onError: (e: any) => {
       console.error('[AddBacklog] error:', e);
-      toast.error(e?.response?.data?.message || 'Failed to add backlog');
+      toast.error(e?.response?.data?.message || t('addBacklogFailed'));
     },
   });
 
@@ -299,11 +348,11 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
     low: 'text-success-text bg-success-soft',
   };
   return (
-    <Modal open={open} onClose={onClose} title="Add Backlog to Board" subtitle="Select backlog from this sprint">
+    <Modal open={open} onClose={onClose} title={t('addBacklogToBoardTitle')} subtitle={t('addBacklogToBoardSubtitle')}>
       <div className="space-y-4">
-        {isLoading && <div className="py-8 text-center text-sm text-text-placeholder">Loading backlogs...</div>}
+        {isLoading && <div className="py-8 text-center text-sm text-text-placeholder">{t('loadingBacklogs')}</div>}
         {!isLoading && unassignedStories.length === 0 && (
-          <div className="py-8 text-center text-sm text-text-placeholder">All backlogs are already on the board</div>
+          <div className="py-8 text-center text-sm text-text-placeholder">{t('allBacklogsOnBoard')}</div>
         )}
         {unassignedStories.length > 0 && (
           <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
@@ -332,7 +381,7 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {s.story_points && (
                     <span className="text-xs font-semibold text-text-placeholder bg-border-subtle px-2 py-0.5 rounded-lg">
-                      {s.story_points}pts
+                      {s.story_points}{t('ptsSuffix')}
                     </span>
                   )}
                   {s.priority && (
@@ -405,6 +454,7 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
 }
 
 export default function BoardPage() {
+  const t = useT(dict);
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const sprintId = searchParams.get('sprint_id') || '';
@@ -422,7 +472,7 @@ export default function BoardPage() {
   const moveMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: string; status: string }) => taskService.move(taskId, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['board', id, sprintId] }),
-    onError: () => toast.error('Failed to move task'),
+    onError: () => toast.error(t('moveTaskFailed')),
   });
 
   if (isLoading)

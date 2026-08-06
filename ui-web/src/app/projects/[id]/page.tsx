@@ -14,6 +14,228 @@ import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    tabOverview: 'Overview',
+    tabBoard: 'Board',
+    tabSprints: 'Sprints',
+    tabEpics: 'Epics',
+    tabMembers: 'Members',
+
+    selectBacklogForSprintTitle: 'Select Backlog for Sprint',
+    loadingBacklogs: 'Loading backlogs...',
+    noBacklogOutsideSprint: 'No backlog items outside of a sprint',
+    ptsSuffix: 'pts',
+    selectedCount: '{count} selected',
+    addCount: 'Add ({count})',
+    backlogsAddedToSprint: '{count} backlog(s) added to sprint!',
+    addBacklogFailed: 'Failed to add backlog',
+
+    sprintStarted: 'Sprint started!',
+    sprintStartFailed: 'Failed to start sprint',
+    sprintCompleted: 'Sprint completed!',
+    sprintCompleteFailed: 'Failed to complete sprint',
+    startSprint: 'Start Sprint',
+    complete: 'Complete',
+    addBacklogBtn: 'Add Backlog',
+    boardLinkText: 'Board',
+
+    createNewSprintTitle: 'Create New Sprint',
+    sprintNameLabel: 'Sprint Name',
+    sprintNamePlaceholder: 'Sprint 1',
+    sprintGoalLabel: 'Sprint Goal',
+    sprintGoalPlaceholder: 'Sprint goal...',
+    startDateLabel: 'Start Date',
+    endDateLabel: 'End Date',
+    createSprintBtn: '+ Create Sprint',
+    sprintCreated: 'Sprint created!',
+    sprintCreateFailed: 'Failed to create sprint',
+
+    addNewBacklogTitle: 'Add New Backlog',
+    backlogTitleLabel: 'Backlog Title',
+    backlogTitlePlaceholder: 'Briefly describe the backlog...',
+    titleRequired: 'Title is required',
+    descriptionLabel: 'Description',
+    backlogDescPlaceholder: 'Additional details about this backlog...',
+    priorityLabel: 'Priority',
+    typeLabel: 'Type',
+    typeStory: 'Story',
+    typeBug: 'Bug',
+    typeFeature: 'Feature',
+    typeTask: 'Task',
+    storyPointsLabel: 'Story Points',
+    estimatedHoursLabel: 'Estimated (Hours)',
+    dueDateLabel: 'Due Date',
+    addBacklogSubmitBtn: '+ Add Backlog',
+    backlogCreated: 'Backlog created!',
+    backlogCreateFailed: 'Failed to create backlog',
+
+    inSprint: 'In sprint',
+    backlogLabel: 'Backlog',
+    noBacklogYet: 'No backlog yet',
+
+    createNewEpicTitle: 'Create New Epic',
+    epicTitleLabel: 'Epic Title',
+    epicTitlePlaceholder: 'Epic name...',
+    epicDescPlaceholder: 'Epic description...',
+    colorLabel: 'Color',
+    epicStatusTodo: 'Todo',
+    createEpicBtn: '+ Create Epic',
+    epicCreated: 'Epic created!',
+    epicCreateFailed: 'Failed to create epic',
+
+    addMemberTitle: 'Add Member',
+    searchUserLabel: 'Search User',
+    searchUserPlaceholder: 'Nama atau email...',
+    selectUserLabel: 'Select User',
+    noUsersAvailable: 'No users available',
+    projectRoleLabel: 'Project Role',
+    roleMemberOption: 'Member',
+    roleManagerOption: 'Manager',
+    addMemberBtn: '+ Add Member',
+    memberAdded: 'Member added!',
+    memberAddFailed: 'Failed to add member',
+
+    accessDenied: 'Access Denied',
+    projectNotFound: 'Project Not Found',
+    accessDeniedDesc: 'You are not a member of this project. Contact the Project Manager if you believe you should have access.',
+    projectNotFoundDesc: 'The project you are looking for is not available or has been deleted.',
+    backToProjects: 'Back to Projects',
+    openBoard: 'Open Board',
+
+    projectDetailsTitle: 'Project Details',
+    fieldDivision: 'Division',
+    fieldStart: 'Start',
+    fieldEnd: 'End',
+    activeSprintTitle: 'Active Sprint',
+    noActiveSprint: 'No active sprint',
+    summaryTitle: 'Summary',
+    totalSprints: 'Total Sprints',
+    totalEpics: 'Total Epics',
+    totalMembers: 'Total Members',
+    allSprintsTitle: 'All Sprints',
+    noSprintsYet: 'No sprints yet',
+    createFirstSprint: '+ Create first sprint',
+    noEpicsYet: 'No epics yet',
+    createFirstEpic: '+ Create first epic',
+    noMembersYet: 'No members yet',
+    addFirstMember: '+ Add first member',
+    fallbackUser: 'User',
+    openKanbanBoard: 'Open Kanban Board',
+    manageTasksDragDrop: 'Manage tasks with drag and drop',
+  },
+  id: {
+    tabOverview: 'Ringkasan',
+    tabBoard: 'Papan',
+    tabSprints: 'Sprint',
+    tabEpics: 'Epik',
+    tabMembers: 'Anggota',
+
+    selectBacklogForSprintTitle: 'Pilih Backlog untuk Sprint',
+    loadingBacklogs: 'Memuat backlog...',
+    noBacklogOutsideSprint: 'Tidak ada item backlog di luar sprint',
+    ptsSuffix: 'poin',
+    selectedCount: '{count} dipilih',
+    addCount: 'Tambah ({count})',
+    backlogsAddedToSprint: '{count} backlog ditambahkan ke sprint!',
+    addBacklogFailed: 'Gagal menambahkan backlog',
+
+    sprintStarted: 'Sprint dimulai!',
+    sprintStartFailed: 'Gagal memulai sprint',
+    sprintCompleted: 'Sprint selesai!',
+    sprintCompleteFailed: 'Gagal menyelesaikan sprint',
+    startSprint: 'Mulai Sprint',
+    complete: 'Selesaikan',
+    addBacklogBtn: 'Tambah Backlog',
+    boardLinkText: 'Papan',
+
+    createNewSprintTitle: 'Buat Sprint Baru',
+    sprintNameLabel: 'Nama Sprint',
+    sprintNamePlaceholder: 'Sprint 1',
+    sprintGoalLabel: 'Tujuan Sprint',
+    sprintGoalPlaceholder: 'Tujuan sprint...',
+    startDateLabel: 'Tanggal Mulai',
+    endDateLabel: 'Tanggal Selesai',
+    createSprintBtn: '+ Buat Sprint',
+    sprintCreated: 'Sprint berhasil dibuat!',
+    sprintCreateFailed: 'Gagal membuat sprint',
+
+    addNewBacklogTitle: 'Tambah Backlog Baru',
+    backlogTitleLabel: 'Judul Backlog',
+    backlogTitlePlaceholder: 'Jelaskan backlog secara singkat...',
+    titleRequired: 'Judul wajib diisi',
+    descriptionLabel: 'Deskripsi',
+    backlogDescPlaceholder: 'Detail tambahan mengenai backlog ini...',
+    priorityLabel: 'Prioritas',
+    typeLabel: 'Tipe',
+    typeStory: 'Story',
+    typeBug: 'Bug',
+    typeFeature: 'Fitur',
+    typeTask: 'Tugas',
+    storyPointsLabel: 'Story Points',
+    estimatedHoursLabel: 'Estimasi (Jam)',
+    dueDateLabel: 'Tanggal Jatuh Tempo',
+    addBacklogSubmitBtn: '+ Tambah Backlog',
+    backlogCreated: 'Backlog berhasil dibuat!',
+    backlogCreateFailed: 'Gagal membuat backlog',
+
+    inSprint: 'Dalam sprint',
+    backlogLabel: 'Backlog',
+    noBacklogYet: 'Belum ada backlog',
+
+    createNewEpicTitle: 'Buat Epik Baru',
+    epicTitleLabel: 'Judul Epik',
+    epicTitlePlaceholder: 'Nama epik...',
+    epicDescPlaceholder: 'Deskripsi epik...',
+    colorLabel: 'Warna',
+    epicStatusTodo: 'Belum Dimulai',
+    createEpicBtn: '+ Buat Epik',
+    epicCreated: 'Epik berhasil dibuat!',
+    epicCreateFailed: 'Gagal membuat epik',
+
+    addMemberTitle: 'Tambah Anggota',
+    searchUserLabel: 'Cari Pengguna',
+    searchUserPlaceholder: 'Nama atau email...',
+    selectUserLabel: 'Pilih Pengguna',
+    noUsersAvailable: 'Tidak ada pengguna tersedia',
+    projectRoleLabel: 'Peran Proyek',
+    roleMemberOption: 'Anggota',
+    roleManagerOption: 'Manajer',
+    addMemberBtn: '+ Tambah Anggota',
+    memberAdded: 'Anggota berhasil ditambahkan!',
+    memberAddFailed: 'Gagal menambahkan anggota',
+
+    accessDenied: 'Akses Ditolak',
+    projectNotFound: 'Proyek Tidak Ditemukan',
+    accessDeniedDesc: 'Anda bukan anggota proyek ini. Hubungi Project Manager jika Anda merasa seharusnya memiliki akses.',
+    projectNotFoundDesc: 'Proyek yang Anda cari tidak tersedia atau telah dihapus.',
+    backToProjects: 'Kembali ke Proyek',
+    openBoard: 'Buka Papan',
+
+    projectDetailsTitle: 'Detail Proyek',
+    fieldDivision: 'Divisi',
+    fieldStart: 'Mulai',
+    fieldEnd: 'Selesai',
+    activeSprintTitle: 'Sprint Aktif',
+    noActiveSprint: 'Tidak ada sprint aktif',
+    summaryTitle: 'Ringkasan',
+    totalSprints: 'Total Sprint',
+    totalEpics: 'Total Epik',
+    totalMembers: 'Total Anggota',
+    allSprintsTitle: 'Semua Sprint',
+    noSprintsYet: 'Belum ada sprint',
+    createFirstSprint: '+ Buat sprint pertama',
+    noEpicsYet: 'Belum ada epik',
+    createFirstEpic: '+ Buat epik pertama',
+    noMembersYet: 'Belum ada anggota',
+    addFirstMember: '+ Tambah anggota pertama',
+    fallbackUser: 'Pengguna',
+    openKanbanBoard: 'Buka Papan Kanban',
+    manageTasksDragDrop: 'Kelola tugas dengan seret dan lepas',
+  },
+};
 
 const STATUS_META: Record<string, { dot: string; bg: string; text: string }> = {
   active: { dot: 'bg-success', bg: 'bg-success-soft', text: 'text-success-text' },
@@ -26,27 +248,28 @@ const STATUS_META: Record<string, { dot: string; bg: string; text: string }> = {
 };
 
 function StatusBadge({ status }: { status: string }) {
+  const { locale } = useLocale();
   const m = STATUS_META[status] ?? STATUS_META['planned'];
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${m.bg} ${m.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
-      {getStatusLabel(status)}
+      {getStatusLabel(status, locale)}
     </span>
   );
 }
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: 'M3 7h18M3 12h18M3 17h18' },
-  { id: 'board', label: 'Board', icon: 'M4 5h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 13h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z' },
-  { id: 'sprints', label: 'Sprints', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+  { id: 'overview', labelKey: 'tabOverview', icon: 'M3 7h18M3 12h18M3 17h18' },
+  { id: 'board', labelKey: 'tabBoard', icon: 'M4 5h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 13h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z' },
+  { id: 'sprints', labelKey: 'tabSprints', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
   {
     id: 'epics',
-    label: 'Epics',
+    labelKey: 'tabEpics',
     icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
   },
   {
     id: 'members',
-    label: 'Members',
+    labelKey: 'tabMembers',
     icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
   },
 ];
@@ -62,6 +285,7 @@ function AddBacklogToSprintModal({
   sprintId: string;
   projectId: string;
 }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -89,11 +313,11 @@ function AddBacklogToSprintModal({
       qc.invalidateQueries({ queryKey: ['sprints', projectId] });
       qc.invalidateQueries({ queryKey: ['all-stories-unassigned', projectId] });
       epics?.forEach((e: any) => qc.invalidateQueries({ queryKey: ['stories', e.id] }));
-      toast.success(`${selected.length} backlog(s) added to sprint!`);
+      toast.success(t('backlogsAddedToSprint', { count: selected.length }));
       setSelected([]);
       onClose();
     },
-    onError: () => toast.error('Failed to add backlog'),
+    onError: () => toast.error(t('addBacklogFailed')),
   });
 
   const toggle = (id: string) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -105,11 +329,11 @@ function AddBacklogToSprintModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Select Backlog for Sprint">
+    <Modal open={open} onClose={onClose} title={t('selectBacklogForSprintTitle')}>
       <div className="space-y-3">
-        {isLoading && <div className="py-8 text-center text-sm text-text-placeholder">Loading backlogs...</div>}
+        {isLoading && <div className="py-8 text-center text-sm text-text-placeholder">{t('loadingBacklogs')}</div>}
         {!isLoading && (!allStories || allStories.length === 0) && (
-          <div className="py-8 text-center text-sm text-text-placeholder">No backlog items outside of a sprint</div>
+          <div className="py-8 text-center text-sm text-text-placeholder">{t('noBacklogOutsideSprint')}</div>
         )}
         {allStories && allStories.length > 0 && (
           <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
@@ -135,7 +359,7 @@ function AddBacklogToSprintModal({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {s.story_points && (
                     <span className="text-xs font-semibold text-text-placeholder bg-border-subtle px-2 py-0.5 rounded-lg">
-                      {s.story_points} pts
+                      {s.story_points} {t('ptsSuffix')}
                     </span>
                   )}
                   {s.priority && (
@@ -147,13 +371,13 @@ function AddBacklogToSprintModal({
           </div>
         )}
         <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
-          <span className="text-xs text-text-placeholder">{selected.length} selected</span>
+          <span className="text-xs text-text-placeholder">{t('selectedCount', { count: selected.length })}</span>
           <div className="flex gap-2">
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-border-subtle transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={() => mutate()}
@@ -163,7 +387,7 @@ function AddBacklogToSprintModal({
               {isPending ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                `Add (${selected.length})`
+                t('addCount', { count: selected.length })
               )}
             </button>
           </div>
@@ -174,6 +398,8 @@ function AddBacklogToSprintModal({
 }
 
 function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const qc = useQueryClient();
   const { hasRole } = useAuthStore();
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
@@ -183,17 +409,17 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
     mutationFn: () => sprintService.start(projectId, sprint.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sprints', projectId] });
-      toast.success('Sprint started!');
+      toast.success(t('sprintStarted'));
     },
-    onError: () => toast.error('Failed to start sprint'),
+    onError: () => toast.error(t('sprintStartFailed')),
   });
   const completeMutation = useMutation({
     mutationFn: () => sprintService.complete(projectId, sprint.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sprints', projectId] });
-      toast.success('Sprint completed!');
+      toast.success(t('sprintCompleted'));
     },
-    onError: () => toast.error('Failed to complete sprint'),
+    onError: () => toast.error(t('sprintCompleteFailed')),
   });
 
   return (
@@ -208,7 +434,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            {formatDate(sprint.start_date)} – {formatDate(sprint.end_date)}
+            {formatDate(sprint.start_date, locale)} – {formatDate(sprint.end_date, locale)}
           </div>
         </div>
         <StatusBadge status={sprint.status} />
@@ -226,7 +452,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <svg viewBox="0 0 24 24" fill="white" className="w-3 h-3">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>{' '}
-              Start Sprint
+              {t('startSprint')}
             </motion.button>
           )}
           {sprint.status === 'active' && (
@@ -239,7 +465,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3 h-3">
                 <polyline points="20 6 9 17 4 12" />
               </svg>{' '}
-              Complete
+              {t('complete')}
             </motion.button>
           )}
           {sprint.status !== 'completed' && (
@@ -252,7 +478,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>{' '}
-              Add Backlog
+              {t('addBacklogBtn')}
             </motion.button>
           )}
           <Link
@@ -265,7 +491,7 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               <rect x="14" y="14" width="7" height="7" />
               <rect x="3" y="14" width="7" height="7" />
             </svg>{' '}
-            Board
+            {t('boardLinkText')}
           </Link>
         </div>
       )}
@@ -286,6 +512,7 @@ function FieldWrap({ focused, name, children }: { focused: string | null; name: 
 const fieldCls = 'w-full px-4 py-3 rounded-[6px] bg-transparent outline-none text-sm text-navy-800 placeholder:text-text-placeholder';
 
 function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId: string }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [focused, setFocused] = useState<string | null>(null);
   const { register, handleSubmit, reset } = useForm();
@@ -293,42 +520,42 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
     mutationFn: (data: any) => sprintService.create(projectId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sprints', projectId] });
-      toast.success('Sprint created!');
+      toast.success(t('sprintCreated'));
       reset();
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create sprint'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('sprintCreateFailed')),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Create New Sprint">
+    <Modal open={open} onClose={onClose} title={t('createNewSprintTitle')}>
       <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Sprint Name</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('sprintNameLabel')}</label>
           <FieldWrap focused={focused} name="name">
             <input
               {...register('name', { required: true })}
               onFocus={() => setFocused('name')}
               onBlur={() => setFocused(null)}
               className={fieldCls}
-              placeholder="Sprint 1"
+              placeholder={t('sprintNamePlaceholder')}
             />
           </FieldWrap>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Sprint Goal</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('sprintGoalLabel')}</label>
           <FieldWrap focused={focused} name="goal">
             <textarea
               {...register('goal')}
               onFocus={() => setFocused('goal')}
               onBlur={() => setFocused(null)}
               className={`${fieldCls} h-20 resize-none`}
-              placeholder="Sprint goal..."
+              placeholder={t('sprintGoalPlaceholder')}
             />
           </FieldWrap>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">Start Date</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('startDateLabel')}</label>
             <FieldWrap focused={focused} name="start">
               <input
                 {...register('start_date', { required: true })}
@@ -340,7 +567,7 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
             </FieldWrap>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">End Date</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('endDateLabel')}</label>
             <FieldWrap focused={focused} name="end">
               <input
                 {...register('end_date', { required: true })}
@@ -358,7 +585,7 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
             onClick={onClose}
             className="flex-1 py-3 rounded-[6px] border-2 border-border text-text-secondary font-semibold text-sm hover:bg-surface-2 transition-all"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <motion.button
             type="submit"
@@ -366,7 +593,7 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
             whileTap={{ scale: 0.98 }}
             className="flex-1 bg-navy-700 text-white py-3 rounded-[6px] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-navy-900 transition-all shadow-navy-700/20 disabled:opacity-70"
           >
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Create Sprint'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('createSprintBtn')}
           </motion.button>
         </div>
       </form>
@@ -375,6 +602,7 @@ function CreateSprintModal({ open, onClose, projectId }: { open: boolean; onClos
 }
 
 function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean; onClose: () => void; epicId: string; projectId: string }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const {
     register,
@@ -397,67 +625,67 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
     mutationFn: (data: any) => storyService.create(epicId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['stories', epicId] });
-      toast.success('Backlog created!');
+      toast.success(t('backlogCreated'));
       reset();
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create backlog'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('backlogCreateFailed')),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Add New Backlog">
+    <Modal open={open} onClose={onClose} title={t('addNewBacklogTitle')}>
       <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Backlog Title</label>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('backlogTitleLabel')}</label>
           <div className={fw('title')}>
             <input
               {...register('title', { required: true })}
               onFocus={() => setFocused('title')}
               onBlur={() => setFocused(null)}
               className={inp}
-              placeholder="Briefly describe the backlog..."
+              placeholder={t('backlogTitlePlaceholder')}
             />
           </div>
-          {errors.title && <p className="text-xs text-danger mt-1">Title is required</p>}
+          {errors.title && <p className="text-xs text-danger mt-1">{t('titleRequired')}</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Description</label>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('descriptionLabel')}</label>
           <div className={fw('desc')}>
             <textarea
               {...register('description')}
               onFocus={() => setFocused('desc')}
               onBlur={() => setFocused(null)}
               className={`${inp} h-20 resize-none`}
-              placeholder="Additional details about this backlog..."
+              placeholder={t('backlogDescPlaceholder')}
             />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Priority</label>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('priorityLabel')}</label>
             <div className={fw('priority')}>
               <select {...register('priority')} onFocus={() => setFocused('priority')} onBlur={() => setFocused(null)} className={inp}>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                <option value="low">{t('common.status_low')}</option>
+                <option value="medium">{t('common.status_medium')}</option>
+                <option value="high">{t('common.status_high')}</option>
+                <option value="critical">{t('common.status_critical')}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Type</label>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('typeLabel')}</label>
             <div className={fw('type')}>
               <select {...register('type')} onFocus={() => setFocused('type')} onBlur={() => setFocused(null)} className={inp}>
-                <option value="story">Story</option>
-                <option value="bug">Bug</option>
-                <option value="feature">Feature</option>
-                <option value="task">Task</option>
+                <option value="story">{t('typeStory')}</option>
+                <option value="bug">{t('typeBug')}</option>
+                <option value="feature">{t('typeFeature')}</option>
+                <option value="task">{t('typeTask')}</option>
               </select>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Story Points</label>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('storyPointsLabel')}</label>
             <div className={fw('points')}>
               <input
                 type="number"
@@ -472,7 +700,7 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Estimated (Hours)</label>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('estimatedHoursLabel')}</label>
             <div className={fw('hours')}>
               <input
                 type="number"
@@ -487,7 +715,7 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
           </div>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">Due Date</label>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('dueDateLabel')}</label>
           <div className={fw('due')}>
             <input
               type="date"
@@ -507,14 +735,14 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
             }}
             className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-border-subtle transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={isPending}
             className="px-5 py-2 rounded-[6px] text-sm font-semibold bg-navy-700 text-white hover:bg-navy-900 transition-colors disabled:opacity-60 flex items-center gap-2"
           >
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Add Backlog'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('addBacklogSubmitBtn')}
           </button>
         </div>
       </form>
@@ -523,6 +751,8 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
 }
 
 function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: boolean; onAddStory: () => void }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const [expanded, setExpanded] = useState(false);
   const { data: stories } = useQuery({
     queryKey: ['stories', e.id],
@@ -559,7 +789,7 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
                     <line x1="8" y1="2" x2="8" y2="6" />
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
-                  {formatDate(e.start_date)} – {formatDate(e.end_date)}
+                  {formatDate(e.start_date, locale)} – {formatDate(e.end_date, locale)}
                 </div>
               )}
             </div>
@@ -602,12 +832,12 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
                 <span
                   className={`text-xs px-2 py-0.5 rounded-lg font-semibold ${s.sprint_id ? 'bg-navy-700/10 text-navy-700' : 'bg-border text-text-tertiary'}`}
                 >
-                  {s.sprint_id ? 'In sprint' : 'Backlog'}
+                  {s.sprint_id ? t('inSprint') : t('backlogLabel')}
                 </span>
               </div>
             ))
           ) : (
-            <p className="text-xs text-text-placeholder text-center py-3">No backlog yet</p>
+            <p className="text-xs text-text-placeholder text-center py-3">{t('noBacklogYet')}</p>
           )}
           {canManage && (
             <button
@@ -618,7 +848,7 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Add Backlog
+              {t('addBacklogBtn')}
             </button>
           )}
         </div>
@@ -628,6 +858,7 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
 }
 
 function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose: () => void; projectId: string }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [focused, setFocused] = useState<string | null>(null);
   const { register, handleSubmit, reset } = useForm({
@@ -637,42 +868,42 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
     mutationFn: (data: any) => epicService.create(projectId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['epics', projectId] });
-      toast.success('Epic created!');
+      toast.success(t('epicCreated'));
       reset();
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create epic'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('epicCreateFailed')),
   });
   return (
-    <Modal open={open} onClose={onClose} title="Create New Epic">
+    <Modal open={open} onClose={onClose} title={t('createNewEpicTitle')}>
       <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Epic Title</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('epicTitleLabel')}</label>
           <FieldWrap focused={focused} name="title">
             <input
               {...register('title', { required: true })}
               onFocus={() => setFocused('title')}
               onBlur={() => setFocused(null)}
               className={fieldCls}
-              placeholder="Epic name..."
+              placeholder={t('epicTitlePlaceholder')}
             />
           </FieldWrap>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Description</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('descriptionLabel')}</label>
           <FieldWrap focused={focused} name="desc">
             <textarea
               {...register('description')}
               onFocus={() => setFocused('desc')}
               onBlur={() => setFocused(null)}
               className={`${fieldCls} h-20 resize-none`}
-              placeholder="Epic description..."
+              placeholder={t('epicDescPlaceholder')}
             />
           </FieldWrap>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">Color</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('colorLabel')}</label>
             <FieldWrap focused={focused} name="color">
               <div className="flex items-center gap-2 px-4 py-2">
                 <input {...register('color')} type="color" className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent" />
@@ -687,19 +918,19 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
             </FieldWrap>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">Status</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('common.status')}</label>
             <FieldWrap focused={focused} name="status">
               <select {...register('status')} onFocus={() => setFocused('status')} onBlur={() => setFocused(null)} className={fieldCls}>
-                <option value="todo">Todo</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
+                <option value="todo">{t('epicStatusTodo')}</option>
+                <option value="in_progress">{t('common.status_in_progress')}</option>
+                <option value="done">{t('common.status_done')}</option>
               </select>
             </FieldWrap>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">Start Date</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('startDateLabel')}</label>
             <FieldWrap focused={focused} name="start">
               <input
                 {...register('start_date')}
@@ -711,7 +942,7 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
             </FieldWrap>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-text-secondary mb-1.5">End Date</label>
+            <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('endDateLabel')}</label>
             <FieldWrap focused={focused} name="end">
               <input
                 {...register('end_date')}
@@ -729,7 +960,7 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
             onClick={onClose}
             className="flex-1 py-3 rounded-[6px] border-2 border-border text-text-secondary font-semibold text-sm hover:bg-surface-2 transition-all"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <motion.button
             type="submit"
@@ -737,7 +968,7 @@ function CreateEpicModal({ open, onClose, projectId }: { open: boolean; onClose:
             whileTap={{ scale: 0.98 }}
             className="flex-1 bg-navy-700 text-white py-3 rounded-[6px] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-navy-900 transition-all shadow-navy-700/20 disabled:opacity-70"
           >
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Create Epic'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('createEpicBtn')}
           </motion.button>
         </div>
       </form>
@@ -756,6 +987,7 @@ function AddMemberModal({
   projectId: string;
   existingMembers: any[];
 }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const [focused, setFocused] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -778,24 +1010,24 @@ function AddMemberModal({
     mutationFn: (data: any) => projectService.addMember(projectId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['members', projectId] });
-      toast.success('Member added!');
+      toast.success(t('memberAdded'));
       reset();
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to add member'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('memberAddFailed')),
   });
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Member">
+    <Modal open={open} onClose={onClose} title={t('addMemberTitle')}>
       <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Search User</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('searchUserLabel')}</label>
           <div className="rounded-[6px] border-2 border-border hover:border-border-button transition-all">
-            <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldCls} placeholder="Nama atau email..." />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldCls} placeholder={t('searchUserPlaceholder')} />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Select User</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('selectUserLabel')}</label>
           <FieldWrap focused={focused} name="user">
             <select
               {...register('user_id', { required: true })}
@@ -803,7 +1035,7 @@ function AddMemberModal({
               onBlur={() => setFocused(null)}
               className={fieldCls}
             >
-              {filtered.length === 0 && <option disabled>No users available</option>}
+              {filtered.length === 0 && <option disabled>{t('noUsersAvailable')}</option>}
               {filtered.map((u: any) => (
                 <option key={u.id} value={u.id}>
                   {u.full_name} - {u.email}
@@ -813,7 +1045,7 @@ function AddMemberModal({
           </FieldWrap>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">Project Role</label>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('projectRoleLabel')}</label>
           <FieldWrap focused={focused} name="role">
             <select
               {...register('role', { required: true })}
@@ -821,9 +1053,9 @@ function AddMemberModal({
               onBlur={() => setFocused(null)}
               className={fieldCls}
             >
-              <option value="member">Member</option>
-              <option value="scrum_master">Scrum Master</option>
-              <option value="manager">Manager</option>
+              <option value="member">{t('roleMemberOption')}</option>
+              <option value="scrum_master">{t('common.role_scrum_master')}</option>
+              <option value="manager">{t('roleManagerOption')}</option>
             </select>
           </FieldWrap>
         </div>
@@ -833,7 +1065,7 @@ function AddMemberModal({
             onClick={onClose}
             className="flex-1 py-3 rounded-[6px] border-2 border-border text-text-secondary font-semibold text-sm hover:bg-surface-2 transition-all"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <motion.button
             type="submit"
@@ -841,7 +1073,7 @@ function AddMemberModal({
             whileTap={{ scale: 0.98 }}
             className="flex-1 bg-navy-700 text-white py-3 rounded-[6px] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-navy-900 transition-all shadow-navy-700/20 disabled:opacity-70"
           >
-            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '+ Add Member'}
+            {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('addMemberBtn')}
           </motion.button>
         </div>
       </form>
@@ -851,6 +1083,8 @@ function AddMemberModal({
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useT(dict);
+  const { locale } = useLocale();
   const [tab, setTab] = useState('overview');
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
   const [createEpicOpen, setCreateEpicOpen] = useState(false);
@@ -908,17 +1142,15 @@ export default function ProjectDetailPage() {
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-navy-800 mb-1.5">{denied ? 'Access Denied' : 'Project Not Found'}</h2>
+          <h2 className="text-lg font-bold text-navy-800 mb-1.5">{denied ? t('accessDenied') : t('projectNotFound')}</h2>
           <p className="text-sm text-text-placeholder mb-6">
-            {denied
-              ? 'You are not a member of this project. Contact the Project Manager if you believe you should have access.'
-              : 'The project you are looking for is not available or has been deleted.'}
+            {denied ? t('accessDeniedDesc') : t('projectNotFoundDesc')}
           </p>
           <Link
             href="/projects"
             className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all"
           >
-            Back to Projects
+            {t('backToProjects')}
           </Link>
         </div>
       </AppLayout>
@@ -938,7 +1170,7 @@ export default function ProjectDetailPage() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back to Projects
+            {t('backToProjects')}
           </Link>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -965,22 +1197,22 @@ export default function ProjectDetailPage() {
                 <rect x="14" y="14" width="7" height="7" />
                 <rect x="3" y="14" width="7" height="7" />
               </svg>{' '}
-              Open Board
+              {t('openBoard')}
             </Link>
           </div>
         </div>
 
         <div className="flex gap-1 bg-border-subtle p-1 rounded-[6px] w-fit overflow-x-auto">
-          {TABS.map((t) => (
+          {TABS.map((tabItem) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-semibold transition-all whitespace-nowrap ${tab === t.id ? 'bg-white text-navy-700 ' : 'text-text-tertiary hover:text-text-secondary'}`}
+              key={tabItem.id}
+              onClick={() => setTab(tabItem.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-semibold transition-all whitespace-nowrap ${tab === tabItem.id ? 'bg-white text-navy-700 ' : 'text-text-tertiary hover:text-text-secondary'}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <path d={t.icon} />
+                <path d={tabItem.icon} />
               </svg>
-              {t.label}
+              {t(tabItem.labelKey)}
             </button>
           ))}
         </div>
@@ -997,13 +1229,13 @@ export default function ProjectDetailPage() {
               <div className="grid lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2 space-y-5">
                   <div className="bg-white rounded-[6px] border border-border-subtle p-5 ">
-                    <h3 className="font-semibold text-navy-800 mb-4">Project Details</h3>
+                    <h3 className="font-semibold text-navy-800 mb-4">{t('projectDetailsTitle')}</h3>
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { k: 'Division', v: project?.division || '—' },
-                        { k: 'Status', v: <StatusBadge status={project?.status} /> },
-                        { k: 'Start', v: formatDate(project?.start_date) },
-                        { k: 'End', v: formatDate(project?.end_date) },
+                        { k: t('fieldDivision'), v: project?.division || '—' },
+                        { k: t('common.status'), v: <StatusBadge status={project?.status} /> },
+                        { k: t('fieldStart'), v: formatDate(project?.start_date, locale) },
+                        { k: t('fieldEnd'), v: formatDate(project?.end_date, locale) },
                       ].map(({ k, v }) => (
                         <div key={k} className="bg-surface-2 rounded-[6px] px-4 py-3">
                           <div className="text-xs text-text-placeholder mb-1">{k}</div>
@@ -1014,12 +1246,12 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="bg-white rounded-[6px] border border-border-subtle p-5 ">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-navy-800">Active Sprint</h3>
+                      <h3 className="font-semibold text-navy-800">{t('activeSprintTitle')}</h3>
                       <Link
                         href={`/projects/${id}/board`}
                         className="text-xs font-semibold text-navy-700 flex items-center gap-1 hover:gap-2 transition-all"
                       >
-                        Open Board{' '}
+                        {t('openBoard')}{' '}
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
                           <path d="M5 12h14M12 5l7 7-7 7" />
                         </svg>
@@ -1036,31 +1268,31 @@ export default function ProjectDetailPage() {
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 mb-2">
                           <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        <span className="text-sm">No active sprint</span>
+                        <span className="text-sm">{t('noActiveSprint')}</span>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="bg-white rounded-[6px] border border-border-subtle p-5 ">
-                    <h3 className="font-semibold text-navy-800 mb-3">Summary</h3>
+                    <h3 className="font-semibold text-navy-800 mb-3">{t('summaryTitle')}</h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between py-2 border-b border-surface-2">
-                        <span className="text-sm text-text-tertiary">Total Sprints</span>
+                        <span className="text-sm text-text-tertiary">{t('totalSprints')}</span>
                         <span className="text-sm font-bold text-navy-800">{sprints?.length || 0}</span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-surface-2">
-                        <span className="text-sm text-text-tertiary">Total Epics</span>
+                        <span className="text-sm text-text-tertiary">{t('totalEpics')}</span>
                         <span className="text-sm font-bold text-navy-800">{epics?.length || 0}</span>
                       </div>
                       <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-text-tertiary">Total Members</span>
+                        <span className="text-sm text-text-tertiary">{t('totalMembers')}</span>
                         <span className="text-sm font-bold text-navy-800">{members?.length || 0}</span>
                       </div>
                     </div>
                   </div>
                   <div className="bg-white rounded-[6px] border border-border-subtle p-5 ">
-                    <h3 className="font-semibold text-navy-800 mb-3">All Sprints</h3>
+                    <h3 className="font-semibold text-navy-800 mb-3">{t('allSprintsTitle')}</h3>
                     <div className="space-y-2">
                       {sprints?.slice(0, 4).map((s: any) => (
                         <div key={s.id} className="flex items-center justify-between py-2 border-b border-surface-2 last:border-0">
@@ -1069,7 +1301,7 @@ export default function ProjectDetailPage() {
                         </div>
                       ))}
                       {(!sprints || sprints.length === 0) && (
-                        <div className="text-xs text-text-placeholder text-center py-3">No sprints yet</div>
+                        <div className="text-xs text-text-placeholder text-center py-3">{t('noSprintsYet')}</div>
                       )}
                     </div>
                   </div>
@@ -1086,7 +1318,7 @@ export default function ProjectDetailPage() {
                       onClick={() => setCreateSprintOpen(true)}
                       className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20"
                     >
-                      + Create Sprint
+                      {t('createSprintBtn')}
                     </motion.button>
                   </div>
                 )}
@@ -1099,13 +1331,13 @@ export default function ProjectDetailPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
                         <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span className="text-sm font-medium">No sprints yet</span>
+                      <span className="text-sm font-medium">{t('noSprintsYet')}</span>
                       {canManage && (
                         <button
                           onClick={() => setCreateSprintOpen(true)}
                           className="mt-3 text-xs text-navy-700 font-semibold hover:underline"
                         >
-                          + Create first sprint
+                          {t('createFirstSprint')}
                         </button>
                       )}
                     </div>
@@ -1124,7 +1356,7 @@ export default function ProjectDetailPage() {
                       onClick={() => setCreateEpicOpen(true)}
                       className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20"
                     >
-                      + Create Epic
+                      {t('createEpicBtn')}
                     </motion.button>
                   </div>
                 )}
@@ -1137,13 +1369,13 @@ export default function ProjectDetailPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
                         <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
                       </svg>
-                      <span className="text-sm font-medium">No epics yet</span>
+                      <span className="text-sm font-medium">{t('noEpicsYet')}</span>
                       {canAdmin && (
                         <button
                           onClick={() => setCreateEpicOpen(true)}
                           className="mt-3 text-xs text-navy-700 font-semibold hover:underline"
                         >
-                          + Create first epic
+                          {t('createFirstEpic')}
                         </button>
                       )}
                     </div>
@@ -1168,13 +1400,13 @@ export default function ProjectDetailPage() {
                       onClick={() => setAddMemberOpen(true)}
                       className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20"
                     >
-                      + Add Member
+                      {t('addMemberBtn')}
                     </motion.button>
                   </div>
                 )}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {members?.map((m: any) => {
-                    const name = m.full_name || m.user?.full_name || 'User';
+                    const name = m.full_name || m.user?.full_name || t('fallbackUser');
                     const initials = name
                       .trim()
                       .split(' ')
@@ -1182,7 +1414,11 @@ export default function ProjectDetailPage() {
                       .map((w: string) => w[0])
                       .join('')
                       .toUpperCase();
-                    const ROLE_LABELS: Record<string, string> = { manager: 'Manager', scrum_master: 'Scrum Master', member: 'Member' };
+                    const ROLE_LABELS: Record<string, string> = {
+                      manager: t('roleManagerOption'),
+                      scrum_master: t('common.role_scrum_master'),
+                      member: t('roleMemberOption'),
+                    };
                     return (
                       <div
                         key={m.user_id || m.id}
@@ -1196,7 +1432,7 @@ export default function ProjectDetailPage() {
                           <div className="text-xs text-text-placeholder mt-0.5">{m.division || '—'}</div>
                         </div>
                         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-navy-700/8 text-navy-700 flex-shrink-0">
-                          {ROLE_LABELS[m.role] || m.role || 'Member'}
+                          {ROLE_LABELS[m.role] || m.role || t('roleMemberOption')}
                         </span>
                       </div>
                     );
@@ -1206,10 +1442,10 @@ export default function ProjectDetailPage() {
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
                         <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <span className="text-sm font-medium">No members yet</span>
+                      <span className="text-sm font-medium">{t('noMembersYet')}</span>
                       {canAdmin && (
                         <button onClick={() => setAddMemberOpen(true)} className="mt-3 text-xs text-navy-700 font-semibold hover:underline">
-                          + Add first member
+                          {t('addFirstMember')}
                         </button>
                       )}
                     </div>
@@ -1234,13 +1470,13 @@ export default function ProjectDetailPage() {
                     <rect x="3" y="14" width="7" height="7" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-text-secondary mb-1">Open Kanban Board</h3>
-                <p className="text-sm text-text-placeholder mb-5">Manage tasks with drag and drop</p>
+                <h3 className="font-semibold text-text-secondary mb-1">{t('openKanbanBoard')}</h3>
+                <p className="text-sm text-text-placeholder mb-5">{t('manageTasksDragDrop')}</p>
                 <Link
                   href={`/projects/${id}/board`}
                   className="inline-flex items-center gap-2 bg-navy-700 text-white px-5 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20"
                 >
-                  Open Board
+                  {t('openBoard')}
                 </Link>
               </div>
             )}

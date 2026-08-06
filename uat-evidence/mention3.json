@@ -1,0 +1,12 @@
+{
+  "STAMP": "38849",
+  "TARGET": "Scrum Master",
+  "afterPick": "@Scrum Master ",
+  "posted": true,
+  "panelTxt": "SC\nScrum Master\nTeknologi",
+  "shots": [
+    "shots/3.4.3-3a_autocomplete-mention.png",
+    "shots/3.4.3-3b_komentar-dengan-mention.png",
+    "shots/3.4.3-3c_mention-terkirim.png"
+  ]
+}

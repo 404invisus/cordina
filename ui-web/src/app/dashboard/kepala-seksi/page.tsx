@@ -9,8 +9,44 @@ import StatCard from '@/components/ui/StatCard';
 import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { getStatusTone, getStatusLabel, STATUS_MAP } from '@/lib/status';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    title: 'Dashboard',
+    subtitle: 'Supervise team workload distribution',
+    workload: 'Workload',
+    reports: 'Reports',
+    statTotalProjects: 'Total Projects',
+    statTotalProjectsSub: 'all projects',
+    statActiveProjects: 'Active Projects',
+    statActiveProjectsSub: 'in progress',
+    statWorkloadSub: 'team distribution',
+    statReportsSub: 'project analytics',
+    projects: 'Projects',
+    activeCompleted: '{active} active · {done} completed',
+    noProjectsYet: 'No projects yet',
+  },
+  id: {
+    title: 'Dasbor',
+    subtitle: 'Awasi distribusi beban kerja tim',
+    workload: 'Beban Kerja',
+    reports: 'Laporan',
+    statTotalProjects: 'Total Proyek',
+    statTotalProjectsSub: 'semua proyek',
+    statActiveProjects: 'Proyek Aktif',
+    statActiveProjectsSub: 'sedang berjalan',
+    statWorkloadSub: 'distribusi tim',
+    statReportsSub: 'analitik proyek',
+    projects: 'Proyek',
+    activeCompleted: '{active} aktif · {done} selesai',
+    noProjectsYet: 'Belum ada proyek',
+  },
+};
 
 export default function KepalaUnitDashboard() {
+  const { locale } = useLocale();
+  const t = useT(dict);
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectService.list().then((r) => r.data.data),
@@ -26,8 +62,8 @@ export default function KepalaUnitDashboard() {
     <div className="space-y-6">
       <PageHeader
         section="OVERVIEW"
-        title="Dashboard"
-        subtitle="Supervise team workload distribution"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <div className="flex items-center gap-2">
             <Link
@@ -35,7 +71,7 @@ export default function KepalaUnitDashboard() {
               className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
             >
               <Users className="w-3 h-3" />
-              Workload
+              {t('workload')}
             </Link>
             <Link
               href="/reports"
@@ -43,17 +79,17 @@ export default function KepalaUnitDashboard() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <BarChart2 className="w-3 h-3" />
-              Reports
+              {t('reports')}
             </Link>
           </div>
         }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Projects" value={total} icon={FolderKanban} color="brand" index={0} subtitle="all projects" />
-        <StatCard title="Active Projects" value={active} icon={Activity} color="green" index={1} subtitle="in progress" />
-        <StatCard title="Workload" value="→" icon={Users} color="brand" index={2} subtitle="team distribution" />
-        <StatCard title="Reports" value="→" icon={BarChart2} color="brand" index={3} subtitle="project analytics" />
+        <StatCard title={t('statTotalProjects')} value={total} icon={FolderKanban} color="brand" index={0} subtitle={t('statTotalProjectsSub')} />
+        <StatCard title={t('statActiveProjects')} value={active} icon={Activity} color="green" index={1} subtitle={t('statActiveProjectsSub')} />
+        <StatCard title={t('workload')} value="→" icon={Users} color="brand" index={2} subtitle={t('statWorkloadSub')} />
+        <StatCard title={t('reports')} value="→" icon={BarChart2} color="brand" index={3} subtitle={t('statReportsSub')} />
       </div>
 
       <CRSummaryCard />
@@ -67,14 +103,12 @@ export default function KepalaUnitDashboard() {
         <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FolderKanban className="w-4 h-4 text-navy-700" />
-            <h2 className="text-[12.5px] font-semibold text-navy-900">Projects</h2>
+            <h2 className="text-[12.5px] font-semibold text-navy-900">{t('projects')}</h2>
           </div>
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] text-text-meta">
-              {active} active · {done} completed
-            </span>
+            <span className="font-mono text-[10px] text-text-meta">{t('activeCompleted', { active, done })}</span>
             <Link href="/projects" className="text-[11.5px] font-semibold text-navy-700 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+              {t('common.viewAll')} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -95,12 +129,14 @@ export default function KepalaUnitDashboard() {
                 <span
                   className={`flex-none text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[getStatusTone(p.status)].bg} ${STATUS_MAP[getStatusTone(p.status)].text}`}
                 >
-                  {getStatusLabel(p.status)}
+                  {getStatusLabel(p.status, locale)}
                 </span>
               </Link>
             </motion.div>
           ))}
-          {(!projects || projects.length === 0) && <div className="text-center py-12 text-text-meta text-[12px]">No projects yet</div>}
+          {(!projects || projects.length === 0) && (
+            <div className="text-center py-12 text-text-meta text-[12px]">{t('noProjectsYet')}</div>
+          )}
         </div>
       </motion.div>
     </div>

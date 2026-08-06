@@ -1,0 +1,72 @@
+[
+  {
+    "id": "3.8.1-1",
+    "scenario": "Lihat daftar pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai Administrator lalu membuka /admin/users. Halaman menampilkan seluruh pengguna terdaftar (18 pengguna) beserta kolom USER, EMAIL, DIVISION/POSITION, dan peran. Tersedia ringkasan jumlah pengguna total dan aktif/nonaktif, penyaringan berdasarkan peran (Kepala Balai, Kepala Seksi, Project Manager, Scrum Master, Staff, Administrator) dengan jumlah masing-masing, pencarian berdasarkan nama/email, serta tombol Export PDF.",
+    "shots": [
+      "shots/3.8.1-1_daftar-pengguna.png"
+    ]
+  },
+  {
+    "id": "3.8.1-2",
+    "scenario": "Tambah pengguna baru",
+    "verdict": "PASS",
+    "notes": "Melalui tombol \"Add User\" diisi nama \"Pengguna UAT 75937\", email uat75937@test.com, kata sandi (minimal 8 karakter), divisi, jabatan, dan peran Staff, lalu disimpan. Pengguna baru berhasil dibuat dan muncul pada daftar pengguna. Verifikasi kemampuan login dilakukan pada skenario 3.8.1-4.",
+    "shots": [
+      "shots/3.8.1-2a_form-tambah-pengguna.png",
+      "shots/3.8.1-2b_pengguna-baru-terdaftar.png"
+    ]
+  },
+  {
+    "id": "3.8.1-3",
+    "scenario": "Ubah role pengguna",
+    "verdict": "PASS",
+    "notes": "Pada daftar pengguna dipilih menu aksi baris -> \"Change Role\". Sistem menampilkan pilihan peran: Kepala Balai, Kepala Seksi, Project Manager, Scrum Master, Staff, dan Administrator. Peran pengguna uji diubah dari Staff menjadi Project Manager lalu disimpan. Terverifikasi di basis data svc_auth (tabel model_has_roles) bahwa peran pengguna berubah menjadi \"project_manager\", dan penghitung jumlah pengguna per peran pada halaman ikut menyesuaikan. Hak akses mengikuti peran baru sebagaimana diuji pada skenario privilege (3.8.2).",
+    "shots": [
+      "shots/3.8.1-3a_form-ubah-role.png",
+      "shots/3.8.1-3b_pilih-role-baru.png",
+      "shots/3.8.1-3c_role-terupdate.png"
+    ]
+  },
+  {
+    "id": "3.8.1-4",
+    "scenario": "Nonaktifkan / hapus pengguna",
+    "verdict": "FAIL",
+    "notes": "Menu aksi pada baris pengguna menyediakan dua opsi: \"Deactivate\" dan \"Delete\". Keduanya diuji. (a) PENGHAPUSAN — BERFUNGSI: setelah pengguna dihapus (soft delete, kolom deleted_at terisi), percobaan login ditolak dengan HTTP 401 \"Invalid credentials\". Sesuai ekspektasi. (b) PENONAKTIFAN — TIDAK BERFUNGSI: setelah aksi Deactivate dijalankan dan terverifikasi di basis data bahwa is_active = false, pengguna tersebut TETAP DAPAT LOGIN. Endpoint POST /api/v1/auth/login mengembalikan HTTP 200 beserta access_token yang sah, dan token tersebut berhasil dipakai mengakses endpoint terproteksi: GET /api/v1/auth/me mengembalikan HTTP 200 dan GET /api/v1/projects mengembalikan HTTP 200. TEMUAN KEAMANAN: status is_active tidak diperiksa pada proses autentikasi, sehingga penonaktifan akun tidak benar-benar mencabut akses. Ekspektasi dokumen (\"Pengguna tidak dapat login setelah dinonaktifkan/dihapus\") tidak terpenuhi untuk jalur penonaktifan. Perlu penambahan pemeriksaan is_active saat login dan saat validasi token. DAMPAK: akun yang dinonaktifkan — misalnya pegawai yang sudah tidak bertugas — masih dapat mengakses sistem. Perlu perbaikan sebelum go-live.",
+    "shots": [
+      "shots/3.8.1-4a_menu-nonaktifkan.png",
+      "shots/3.8.1-4b_pengguna-nonaktif.png",
+      "shots/3.8.1-4_bukti-nonaktif-masih-bisa-login.png"
+    ]
+  },
+  {
+    "id": "3.8.2-1",
+    "scenario": "Kelola privilege tambahan",
+    "verdict": "PASS",
+    "notes": "Melalui menu aksi baris pengguna dipilih \"Manage Privileges\". Sistem menampilkan 28 izin granular (antara lain project.create, project.edit, project.delete, project.manage_members, sprint.manage, sprint.view, task.create, task.edit_own) lengkap dengan deskripsi, nama teknis izin, dan penanda \"DEFAULT\" untuk izin bawaan peran. Dua izin diubah melalui sakelar: project.create diaktifkan dan project.edit dicabut. Antarmuka menandai perubahan dengan label DIBERIKAN/DICABUT. Terverifikasi di basis data svc_auth tabel user_extra_permissions: tercatat baris project.create dengan granted = true dan project.edit dengan granted = false, beserta pencatatan granted_by dan waktu. Privilege tambahan ini berlaku di luar bawaan peran.",
+    "shots": [
+      "shots/3.8.2-1a_kelola-privilege.png",
+      "shots/3.8.2-1b_privilege-diubah.png"
+    ]
+  },
+  {
+    "id": "3.8.2-2",
+    "scenario": "Reset privilege ke default",
+    "verdict": "PASS",
+    "notes": "Pada panel Manage Privileges ditekan tombol \"Reset ke default\". Seluruh penyesuaian izin dikembalikan ke bawaan peran: penanda DIBERIKAN/DICABUT hilang dari antarmuka dan seluruh izin kembali berlabel DEFAULT. Terverifikasi di basis data bahwa jumlah baris user_extra_permissions untuk pengguna tersebut kembali menjadi 0 (sebelumnya 2), sehingga hak akses sepenuhnya mengikuti peran.",
+    "shots": [
+      "shots/3.8.2-2a_sebelum-reset.png",
+      "shots/3.8.2-2b_setelah-reset.png"
+    ]
+  },
+  {
+    "id": "3.8.3-1",
+    "scenario": "Riwayat login dan aktivitas pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai Administrator lalu membuka halaman Activity Log (/admin/activity). Sistem menampilkan riwayat login dan aktivitas pengguna secara kronologis. Tersedia penyaringan berdasarkan jenis aksi — Login, Logout, Login Failed, Create CR, Sign CR, e-Sign Document, Upload Document, Add Asset — serta penyaringan berdasarkan pengguna dan rentang tanggal (dua kolom tanggal), dilengkapi pencarian bebas berdasarkan nama, email, atau deskripsi. Pengguna uji yang baru dibuat pada pengujian ini turut muncul pada daftar penyaring pengguna.",
+    "shots": [
+      "shots/3.8.3-1_riwayat-login-aktivitas.png"
+    ]
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "3.7.1-1",
+    "scenario": "Notifikasi in-app saat task ditetapkan",
+    "verdict": "PASS",
+    "notes": "Pada detail task dipilih Assign lalu ditetapkan anggota tim (Scrum Master) sebagai assignee, kemudian disimpan. Terverifikasi di basis data: tabel task_assignees mencatat anggota yang ditetapkan, dan tabel notifications mencatat notifikasi bertipe 'task.assigned' pada kanal in_app dengan status 'sent'. Notifikasi tersebut tampil pada halaman /notifications penerima. Halaman notifikasi juga menyediakan penyaringan: Needs action, Unread, All, dan Mentions, serta menampilkan kanal pengiriman yang aktif (In-app: Always on; Telegram: Connected).",
+    "shots": [
+      "shots/3.7.1-1a_detail-task.png",
+      "shots/3.7.1-1b_pilih-assignee.png",
+      "shots/3.7.1-1c_task-ditetapkan.png",
+      "shots/3.7.1-1d_daftar-notifikasi.png"
+    ]
+  },
+  {
+    "id": "3.7.1-2",
+    "scenario": "Badge unread di sidebar",
+    "verdict": "PASS",
+    "notes": "Sebelum notifikasi dibuka, menu Notifications pada sidebar menampilkan badge berisi angka notifikasi belum dibaca sebanyak 14. Angka ini konsisten dengan keterangan pada halaman notifikasi (\"14 unread\").",
+    "shots": [
+      "shots/3.7.1-2_badge-unread-sidebar.png"
+    ]
+  },
+  {
+    "id": "3.7.1-3",
+    "scenario": "Tandai notifikasi sebagai dibaca",
+    "verdict": "PASS",
+    "notes": "Pada halaman /notifications ditekan tombol \"Mark all as read\". Setelah aksi tersebut, badge angka pada menu Notifications di sidebar HILANG (sebelumnya 14), dan notifikasi berpindah status menjadi telah dibaca. Sistem juga mencantumkan keterangan bahwa notifikasi tidak ditandai terbaca secara otomatis, sehingga penandaan sepenuhnya dikendalikan pengguna.",
+    "shots": [
+      "shots/3.7.1-3_setelah-tandai-dibaca.png"
+    ]
+  },
+  {
+    "id": "3.7.2-1",
+    "scenario": "Notifikasi Telegram penugasan task",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Setelah assignee ditetapkan pada task, terverifikasi di tabel svc_notification.notifications bahwa notifikasi bertipe 'task.assigned' pada kanal telegram tercatat berstatus 'sent' beserta stempel waktu pengiriman, sejalan dengan notifikasi in_app yang juga 'sent'. Konfigurasi kanal Telegram terlihat aktif pada halaman notifikasi (\"Telegram - Connected\"). CATATAN: satu baris notifikasi telegram tertahan berstatus 'pending' untuk penerima yang belum memiliki telegram_chat_id. Sama seperti temuan pada skenario 3.3.4-1, kegagalan ini bersifat senyap (tanpa error_message dan tanpa status 'failed'), sehingga operator sulit mendeteksi notifikasi yang tidak terkirim.",
+    "shots": [
+      "shots/3.7.2-1_bukti-telegram-task.png"
+    ]
+  },
+  {
+    "id": "3.7.2-2",
+    "scenario": "Notifikasi Telegram change request",
+    "verdict": "PASS",
+    "notes": "Terverifikasi di tabel svc_notification.notifications bahwa seluruh tahapan alur change request memicu notifikasi Telegram berstatus 'sent': 'change_request.review_request' terkirim kepada penilai pertama saat CR diajukan (30 Jul 2026 09:00:58), 'change_request.rejected' terkirim saat CR ditolak (30 Jul 2026 09:03:05), dan 'change_request.approved' terkirim saat CR disetujui dan ditandatangani (31 Jul 2026 12:41:17). Setiap notifikasi juga tercatat pada kanal in_app dengan status 'sent'.",
+    "shots": [
+      "shots/3.7.2-2_bukti-telegram-change-request.png"
+    ]
+  }
+]

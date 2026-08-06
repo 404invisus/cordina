@@ -10,6 +10,7 @@ import { calendarService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useLocale, useT } from '@/lib/i18n';
 
 type View = 'month' | 'week' | 'day' | 'agenda';
 
@@ -20,7 +21,20 @@ const TYPE_CFG: Record<string, { label: string; bg: string; color: string; dot: 
   lainnya: { label: 'Other', bg: '#e9f4ee', color: '#0f6144', dot: '#0f6144' },
 };
 
+const TYPE_LABEL_ID: Record<string, string> = {
+  internal: 'Internal',
+  external: 'Eksternal',
+  cuti: 'Cuti',
+  lainnya: 'Lainnya',
+};
+
+function typeLabel(type: string, locale: 'en' | 'id'): string {
+  const key = TYPE_CFG[type] ? type : 'lainnya';
+  return locale === 'id' ? TYPE_LABEL_ID[key] : TYPE_CFG[key].label;
+}
+
 const WEEK_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const WEEK_DAYS_ID = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
 const MONTHS_EN = [
   'January',
   'February',
@@ -35,7 +49,132 @@ const MONTHS_EN = [
   'November',
   'December',
 ];
+const MONTHS_ID = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+const dict = {
+  en: {
+    eventDetails: 'Event details',
+    date: 'DATE',
+    time: 'TIME',
+    location: 'LOC',
+    participants: 'PARTICIPANTS ({count})',
+    addReport: '+ Add report',
+    status: 'STATUS',
+    upcoming: 'Upcoming',
+    ongoing: 'Ongoing',
+    done: 'Done',
+    minutes: 'MINUTES',
+    outcomes: 'OUTCOMES',
+    followUp: 'FOLLOW UP',
+    newEvent: 'New event',
+    title: 'TITLE',
+    eventTitlePlaceholder: 'Event title...',
+    type: 'TYPE',
+    internal: 'Internal',
+    external: 'External',
+    leave: 'Leave',
+    other: 'Other',
+    visibility: 'VISIBILITY',
+    public: 'Public',
+    private: 'Private',
+    start: 'START',
+    end: 'END',
+    allDay: 'All day',
+    startTime: 'START TIME',
+    endTime: 'END TIME',
+    locationLabel: 'LOCATION',
+    description: 'DESCRIPTION',
+    additionalNotesPlaceholder: 'Additional notes...',
+    saving: 'Saving…',
+    saveEvent: 'Save event',
+    eventAdded: 'Event added!',
+    failedToSave: 'Failed to save',
+    eventUpdated: 'Event updated!',
+    failed: 'Failed',
+    eventDeleted: 'Event deleted!',
+    moreCount: '+{count} more',
+    noEventsInPeriod: 'No events in this period',
+    calendar: 'Calendar',
+    agenda: 'AGENDA',
+    exportPdf: 'Export PDF',
+    conflictCount: '{count} conflict{s}',
+    invited: 'invited',
+    monthEventCount: '{month} {year} · {count} event{s} · {today} involve you today',
+    eventCount: '{count} event{s}',
+    viewDay: 'Day',
+    viewWeek: 'Week',
+    viewMonth: 'Month',
+    viewAgenda: 'Agenda',
+  },
+  id: {
+    eventDetails: 'Detail acara',
+    date: 'TANGGAL',
+    time: 'WAKTU',
+    location: 'LOKASI',
+    participants: 'PESERTA ({count})',
+    addReport: '+ Tambah laporan',
+    status: 'STATUS',
+    upcoming: 'Akan Datang',
+    ongoing: 'Berlangsung',
+    done: 'Selesai',
+    minutes: 'NOTULENSI',
+    outcomes: 'HASIL PEMBAHASAN',
+    followUp: 'TINDAK LANJUT',
+    newEvent: 'Acara baru',
+    title: 'JUDUL',
+    eventTitlePlaceholder: 'Judul acara...',
+    type: 'JENIS',
+    internal: 'Internal',
+    external: 'Eksternal',
+    leave: 'Cuti',
+    other: 'Lainnya',
+    visibility: 'VISIBILITAS',
+    public: 'Publik',
+    private: 'Privat',
+    start: 'MULAI',
+    end: 'SELESAI',
+    allDay: 'Sepanjang hari',
+    startTime: 'WAKTU MULAI',
+    endTime: 'WAKTU SELESAI',
+    locationLabel: 'LOKASI',
+    description: 'DESKRIPSI',
+    additionalNotesPlaceholder: 'Catatan tambahan...',
+    saving: 'Menyimpan…',
+    saveEvent: 'Simpan acara',
+    eventAdded: 'Acara berhasil ditambahkan!',
+    failedToSave: 'Gagal menyimpan',
+    eventUpdated: 'Acara berhasil diperbarui!',
+    failed: 'Gagal',
+    eventDeleted: 'Acara berhasil dihapus!',
+    moreCount: '+{count} lainnya',
+    noEventsInPeriod: 'Tidak ada acara pada periode ini',
+    calendar: 'Kalender',
+    agenda: 'AGENDA',
+    exportPdf: 'Ekspor PDF',
+    conflictCount: '{count} konflik',
+    invited: 'diundang',
+    monthEventCount: '{month} {year} · {count} acara · {today} melibatkan Anda hari ini',
+    eventCount: '{count} acara',
+    viewDay: 'Hari',
+    viewWeek: 'Minggu',
+    viewMonth: 'Bulan',
+    viewAgenda: 'Agenda',
+  },
+};
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -76,6 +215,8 @@ function EventPill({ event, onClick }: { event: any; onClick: () => void }) {
 }
 
 function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const cfg = TYPE_CFG[event.type] || TYPE_CFG.lainnya;
   const [editMode, setEditMode] = React.useState(false);
   const [form, setForm] = React.useState({
@@ -92,7 +233,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
         setEditMode(false);
         onClose();
       }}
-      title="Event details"
+      title={t('eventDetails')}
       size="sm"
     >
       <div className="flex flex-col gap-[10px]">
@@ -101,7 +242,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           style={{ background: cfg.bg, color: cfg.color }}
         >
           <span className="w-[5px] h-[5px] rounded-full" style={{ background: cfg.dot }} />
-          {cfg.label}
+          {typeLabel(event.type, locale)}
         </span>
 
         <div className="text-[15px] font-semibold text-navy-900">{event.title}</div>
@@ -122,7 +263,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
             </div>
           )}
           <div className="flex items-center gap-[8px] text-text-secondary">
-            <span className="font-mono text-[9.5px] text-neutral w-[32px]">DATE</span>
+            <span className="font-mono text-[9.5px] text-neutral w-[32px]">{t('date')}</span>
             <span>
               {event.start_date?.slice(0, 10)}
               {event.end_date?.slice(0, 10) !== event.start_date?.slice(0, 10) ? ` – ${event.end_date?.slice(0, 10)}` : ''}
@@ -130,7 +271,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           </div>
           {!event.all_day && event.start_time && (
             <div className="flex items-center gap-[8px] text-text-secondary">
-              <span className="font-mono text-[9.5px] text-neutral w-[32px]">TIME</span>
+              <span className="font-mono text-[9.5px] text-neutral w-[32px]">{t('time')}</span>
               <span>
                 {event.start_time}
                 {event.end_time ? ` – ${event.end_time}` : ''}
@@ -139,7 +280,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           )}
           {event.location && (
             <div className="flex items-center gap-[8px] text-text-secondary">
-              <span className="font-mono text-[9.5px] text-neutral w-[32px]">LOC</span>
+              <span className="font-mono text-[9.5px] text-neutral w-[32px]">{t('location')}</span>
               <span>{event.location}</span>
             </div>
           )}
@@ -152,7 +293,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
         {event.participants && event.participants.length > 0 && (
           <div>
             <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[6px]">
-              PARTICIPANTS ({event.participants.length})
+              {t('participants', { count: event.participants.length })}
             </div>
             <div className="flex flex-col gap-[3px]">
               {event.participants.map((p: any) => (
@@ -173,7 +314,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
                       color: p.status === 'accepted' ? '#0f6144' : p.status === 'declined' ? '#a3231c' : '#8a8f98',
                     }}
                   >
-                    {p.status || 'invited'}
+                    {p.status || t('invited')}
                   </span>
                 </div>
               ))}
@@ -183,28 +324,28 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
 
         {canDelete && !editMode && (
           <button onClick={() => setEditMode(true)} className="text-[11px] font-semibold text-navy-700 hover:underline self-start">
-            + Add report
+            {t('addReport')}
           </button>
         )}
 
         {editMode && (
           <div className="flex flex-col gap-[8px] bg-surface-2 rounded-[5px] p-[10px]">
             <div>
-              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">STATUS</label>
+              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('status')}</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
                 className="mt-1 w-full h-[30px] px-[8px] border border-border-button rounded-[4px] text-[12px] text-navy-800 bg-white focus:outline-none"
               >
-                <option value="upcoming">Upcoming</option>
-                <option value="ongoing">Ongoing</option>
-                <option value="done">Done</option>
+                <option value="upcoming">{t('upcoming')}</option>
+                <option value="ongoing">{t('ongoing')}</option>
+                <option value="done">{t('done')}</option>
               </select>
             </div>
             {(['notulensi', 'hasil_pembahasan', 'tindak_lanjut'] as const).map((field, i) => (
               <div key={field}>
                 <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">
-                  {['MINUTES', 'OUTCOMES', 'FOLLOW UP'][i]}
+                  {[t('minutes'), t('outcomes'), t('followUp')][i]}
                 </label>
                 <textarea
                   value={form[field]}
@@ -219,7 +360,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
                 onClick={() => setEditMode(false)}
                 className="flex-1 h-[30px] border border-border-button rounded-[4px] text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -228,7 +369,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
                 }}
                 className="flex-1 h-[30px] rounded-[4px] bg-navy-700 text-white text-[12px] font-semibold hover:bg-navy-900 transition-colors"
               >
-                Save
+                {t('common.save')}
               </button>
             </div>
           </div>
@@ -238,9 +379,9 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
           <div className="flex flex-col gap-[6px]">
             {(
               [
-                ['notulensi', 'MINUTES'],
-                ['hasil_pembahasan', 'OUTCOMES'],
-                ['tindak_lanjut', 'FOLLOW UP'],
+                ['notulensi', t('minutes')],
+                ['hasil_pembahasan', t('outcomes')],
+                ['tindak_lanjut', t('followUp')],
               ] as const
             ).map(([field, label]) =>
               event[field] ? (
@@ -259,7 +400,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
               onClick={() => onDelete(event.id)}
               className="flex-1 h-[32px] border border-danger-soft rounded-[5px] text-[12px] font-semibold text-danger-text hover:bg-danger-soft transition-colors"
             >
-              Delete
+              {t('common.delete')}
             </button>
           )}
           <button
@@ -269,7 +410,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
             }}
             className="flex-1 h-[32px] bg-neutral-soft rounded-[5px] text-[12px] font-semibold text-text-secondary hover:bg-border-subtle transition-colors"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>
@@ -278,6 +419,7 @@ function DetailModal({ event, onClose, onDelete, canDelete, onUpdate }: any) {
 }
 
 function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
+  const t = useT(dict);
   const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
       title: '',
@@ -334,44 +476,44 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
         onClose();
         reset();
       }}
-      title="New event"
+      title={t('newEvent')}
     >
       <form onSubmit={handleSubmit((d) => onSubmit(d, reset))} className="flex flex-col gap-[10px]">
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">TITLE</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('title')}</label>
           <input
             {...register('title', { required: true })}
             className="mt-1 w-full h-[32px] px-[10px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none focus:border-navy-700"
-            placeholder="Event title..."
+            placeholder={t('eventTitlePlaceholder')}
           />
         </div>
         <div className="grid grid-cols-2 gap-[8px]">
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">TYPE</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('type')}</label>
             <select
               {...register('type')}
               className="mt-1 w-full h-[32px] px-[8px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none appearance-none"
             >
-              <option value="internal">Internal</option>
-              <option value="external">External</option>
-              <option value="cuti">Leave</option>
-              <option value="lainnya">Other</option>
+              <option value="internal">{t('internal')}</option>
+              <option value="external">{t('external')}</option>
+              <option value="cuti">{t('leave')}</option>
+              <option value="lainnya">{t('other')}</option>
             </select>
           </div>
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">VISIBILITY</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('visibility')}</label>
             <select
               {...register('visibility')}
               className="mt-1 w-full h-[32px] px-[8px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none appearance-none"
             >
-              <option value="public">Public</option>
-              <option value="private">Private</option>
+              <option value="public">{t('public')}</option>
+              <option value="private">{t('private')}</option>
             </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-[8px]">
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">START</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('start')}</label>
             <input
               {...register('start_date', { required: true })}
               type="date"
@@ -379,7 +521,7 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
             />
           </div>
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">END</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('end')}</label>
             <input
               {...register('end_date', { required: true })}
               type="date"
@@ -390,13 +532,13 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
         <div className="flex items-center gap-[8px]">
           <input {...register('all_day')} type="checkbox" id="all_day" className="w-[13px] h-[13px] rounded accent-navy-700" />
           <label htmlFor="all_day" className="text-[12px] font-medium text-text-secondary">
-            All day
+            {t('allDay')}
           </label>
         </div>
         {!allDay && (
           <div className="grid grid-cols-2 gap-[8px]">
             <div>
-              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">START TIME</label>
+              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('startTime')}</label>
               <input
                 {...register('start_time')}
                 type="time"
@@ -404,7 +546,7 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
               />
             </div>
             <div>
-              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">END TIME</label>
+              <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('endTime')}</label>
               <input
                 {...register('end_time')}
                 type="time"
@@ -414,20 +556,20 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
           </div>
         )}
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">LOCATION</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('locationLabel')}</label>
           <input
             {...register('location')}
             className="mt-1 w-full h-[32px] px-[10px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none"
-            placeholder="Optional"
+            placeholder={t('common.optional')}
           />
         </div>
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">DESCRIPTION</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('description')}</label>
           <textarea
             {...register('description')}
             rows={2}
             className="mt-1 w-full px-[10px] py-[6px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white resize-none focus:outline-none"
-            placeholder="Additional notes..."
+            placeholder={t('additionalNotesPlaceholder')}
           />
         </div>
         <div className="flex gap-[6px] pt-[2px]">
@@ -439,7 +581,7 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
             }}
             className="flex-1 h-[34px] border border-border-button rounded-[6px] text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -447,7 +589,7 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
             className="flex-1 h-[34px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold disabled:opacity-60 transition-colors"
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
-            {isPending ? 'Saving…' : 'Save event'}
+            {isPending ? t('saving') : t('saveEvent')}
           </button>
         </div>
       </form>
@@ -456,6 +598,8 @@ function CreateModal({ open, onClose, defaultDate, onSubmit, isPending }: any) {
 }
 
 export default function CalendarPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const today = new Date();
   const [view, setView] = useState<View>('month');
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
@@ -500,25 +644,25 @@ export default function CalendarPage() {
     mutationFn: (data: any) => calendarService.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar'] });
-      toast.success('Event added!');
+      toast.success(t('eventAdded'));
       setCreateOpen(false);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSave')),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => calendarService.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar'] });
-      toast.success('Event updated!');
+      toast.success(t('eventUpdated'));
       setDetailEvent(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendarService.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar'] });
-      toast.success('Event deleted!');
+      toast.success(t('eventDeleted'));
       setDetailEvent(null);
     },
   });
@@ -552,17 +696,19 @@ export default function CalendarPage() {
     else setCurrentDate((d) => addDays(d, dir));
   };
 
+  const MONTHS = locale === 'id' ? MONTHS_ID : MONTHS_EN;
+
   const headerLabel = useMemo(() => {
-    if (view === 'month') return `${MONTHS_EN[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    if (view === 'month') return `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     if (view === 'week') {
       const sw = startOfWeekMon(currentDate);
       const ew = addDays(sw, 6);
       return sw.getMonth() === ew.getMonth()
-        ? `${sw.getDate()}–${ew.getDate()} ${MONTHS_EN[sw.getMonth()]} ${sw.getFullYear()}`
-        : `${sw.getDate()} ${MONTHS_EN[sw.getMonth()]} – ${ew.getDate()} ${MONTHS_EN[ew.getMonth()]} ${ew.getFullYear()}`;
+        ? `${sw.getDate()}–${ew.getDate()} ${MONTHS[sw.getMonth()]} ${sw.getFullYear()}`
+        : `${sw.getDate()} ${MONTHS[sw.getMonth()]} – ${ew.getDate()} ${MONTHS[ew.getMonth()]} ${ew.getFullYear()}`;
     }
-    return `${currentDate.getDate()} ${MONTHS_EN[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-  }, [view, currentDate]);
+    return `${currentDate.getDate()} ${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  }, [view, currentDate, MONTHS]);
 
   const todayEvents = useMemo(
     () =>
@@ -575,8 +721,14 @@ export default function CalendarPage() {
 
   const subtitle =
     view === 'month'
-      ? `${MONTHS_EN[currentDate.getMonth()]} ${currentDate.getFullYear()} · ${events.length} event${events.length !== 1 ? 's' : ''} · ${todayEvents.length} involve you today`
-      : `${events.length} event${events.length !== 1 ? 's' : ''}`;
+      ? t('monthEventCount', {
+          month: MONTHS[currentDate.getMonth()],
+          year: currentDate.getFullYear(),
+          count: events.length,
+          s: events.length !== 1 ? 's' : '',
+          today: todayEvents.length,
+        })
+      : t('eventCount', { count: events.length, s: events.length !== 1 ? 's' : '' });
 
   const openCreate = (date: string) => {
     setDefaultDate(date);
@@ -600,7 +752,7 @@ export default function CalendarPage() {
     return (
       <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden">
         <div className="grid border-b border-border-subtle bg-surface-2" style={{ gridTemplateColumns: 'repeat(7,1fr)' }}>
-          {WEEK_DAYS.map((d, i) => (
+          {(locale === 'id' ? WEEK_DAYS_ID : WEEK_DAYS).map((d, i) => (
             <div
               key={d}
               className="h-[28px] flex items-center px-[8px] font-mono text-[9.5px] font-semibold tracking-[0.1em] border-r border-border-subtle last:border-r-0"
@@ -647,7 +799,9 @@ export default function CalendarPage() {
                 {dayEvs.slice(0, 3).map((e: any) => (
                   <EventPill key={e.id} event={e} onClick={() => setDetailEvent(e)} />
                 ))}
-                {dayEvs.length > 3 && <div className="text-[9px] font-semibold text-neutral px-[2px]">+{dayEvs.length - 3} more</div>}
+                {dayEvs.length > 3 && (
+                  <div className="text-[9px] font-semibold text-neutral px-[2px]">{t('moreCount', { count: dayEvs.length - 3 })}</div>
+                )}
               </div>
             );
           })}
@@ -674,7 +828,7 @@ export default function CalendarPage() {
                 style={{ background: isToday ? '#eaf1f8' : undefined }}
               >
                 <span className="font-mono text-[9px] font-semibold tracking-[0.1em]" style={{ color: i >= 5 ? '#c0bcb4' : '#8a8f98' }}>
-                  {WEEK_DAYS[i]}
+                  {(locale === 'id' ? WEEK_DAYS_ID : WEEK_DAYS)[i]}
                 </span>
                 <div
                   className="w-[20px] h-[20px] rounded-full flex items-center justify-center font-mono text-[10.5px] font-semibold"
@@ -787,7 +941,7 @@ export default function CalendarPage() {
     if (sorted.length === 0) {
       return (
         <div className="bg-white border border-border rounded-[6px] py-12 flex items-center justify-center">
-          <p className="text-[12.5px] font-semibold text-neutral">No events in this period</p>
+          <p className="text-[12.5px] font-semibold text-neutral">{t('noEventsInPeriod')}</p>
         </div>
       );
     }
@@ -807,7 +961,7 @@ export default function CalendarPage() {
                 style={{ background: cfg.bg, color: cfg.color }}
               >
                 <span className="w-[4px] h-[4px] rounded-full" style={{ background: cfg.dot }} />
-                {cfg.label}
+                {typeLabel(e.type, locale)}
               </span>
               <span className="text-[12.5px] font-semibold text-navy-800 flex-1 truncate">{e.title}</span>
               {!e.all_day && e.start_time && (
@@ -823,8 +977,8 @@ export default function CalendarPage() {
   return (
     <AppLayout>
       <PageHeader
-        section="AGENDA"
-        title="Calendar"
+        section={t('agenda')}
+        title={t('calendar')}
         subtitle={subtitle}
         actions={
           <>
@@ -832,10 +986,10 @@ export default function CalendarPage() {
               onClick={() => setCurrentDate(new Date(today.getFullYear(), today.getMonth(), today.getDate()))}
               className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
             >
-              Today
+              {t('common.today')}
             </button>
             <button className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              Export PDF
+              {t('exportPdf')}
             </button>
             <button
               onClick={() => openCreate(todayStr)}
@@ -843,7 +997,7 @@ export default function CalendarPage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <Plus className="w-3 h-3" strokeWidth={2.5} />
-              New event
+              {t('newEvent')}
             </button>
           </>
         }
@@ -859,7 +1013,7 @@ export default function CalendarPage() {
               className="h-[26px] px-[10px] rounded-[4px] text-[11.5px] transition-colors"
               style={view === v ? { background: '#14406a', color: '#fff', fontWeight: 600 } : { color: '#6b7280', fontWeight: 500 }}
             >
-              {v.charAt(0).toUpperCase() + v.slice(1)}
+              {{ day: t('viewDay'), week: t('viewWeek'), month: t('viewMonth'), agenda: t('viewAgenda') }[v]}
             </button>
           ))}
         </div>
@@ -884,7 +1038,7 @@ export default function CalendarPage() {
           {Object.entries(TYPE_CFG).map(([k, v]) => (
             <span key={k} className="flex items-center gap-[5px]">
               <span className="w-[8px] h-[8px] rounded-[2px]" style={{ background: v.dot }} />
-              {v.label}
+              {typeLabel(k, locale)}
             </span>
           ))}
           {conflictDays.length > 0 && (
@@ -892,7 +1046,7 @@ export default function CalendarPage() {
               <span className="w-[1px] h-[16px] bg-border" />
               <span className="flex items-center gap-[5px] font-semibold text-danger-text">
                 <AlertTriangle className="w-[11px] h-[11px]" strokeWidth={1.8} />
-                {conflictDays.length} conflict{conflictDays.length > 1 ? 's' : ''}
+                {t('conflictCount', { count: conflictDays.length, s: conflictDays.length > 1 ? 's' : '' })}
               </span>
             </>
           )}

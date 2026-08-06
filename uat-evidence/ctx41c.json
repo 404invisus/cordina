@@ -1,0 +1,13 @@
+{
+  "status": "Completed",
+  "txt": [
+    "+ Create Sprint",
+    "Sprint UAT 627832",
+    "31 Jul 2026 – 14 Aug 2026",
+    "Completed",
+    "Sasaran sprint pengujian UAT: menyelesaikan verifikasi alur kanban.",
+    "Board"
+  ],
+  "sBefore": "shots/4.1-5a_sprint-aktif-sebelum-selesai.png",
+  "sAfter": "shots/4.1-5b_sprint-selesai.png"
+}

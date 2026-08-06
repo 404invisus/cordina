@@ -11,14 +11,8 @@ import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { getStatusTone, getStatusLabel, STATUS_MAP } from '@/lib/status';
 import { formatDate } from '@/lib/format';
-
-const ROLE_LABEL: Record<string, string> = {
-  kepala_balai: 'Product Owner',
-  kepala_seksi: 'Product Manager',
-  project_manager: 'Project Manager',
-  scrum_master: 'Scrum Master',
-  staff: 'Staff',
-};
+import { getRoleLabel } from '@/lib/utils';
+import { useLocale, useT } from '@/lib/i18n';
 
 const ROLE_COLOR: Record<string, string> = {
   kepala_balai: 'bg-amber-50 text-amber-600',
@@ -28,7 +22,48 @@ const ROLE_COLOR: Record<string, string> = {
   staff: 'bg-success-soft text-success-text',
 };
 
+const dict = {
+  en: {
+    title: 'Dashboard',
+    subtitle: 'Monitor all projects and team',
+    newProject: 'New project',
+    statTotalProjects: 'Total Projects',
+    statTeamMembers: 'Team Members',
+    statCompleted: 'Completed',
+    statusDistribution: 'Project Status Distribution',
+    totalCount: '{count} total',
+    onHold: 'On hold',
+    other: 'Other',
+    allProjects: 'All Projects',
+    noProjectsYet: 'No projects yet',
+    createFirstProject: '+ Create first project',
+    teamMembers: 'Team Members',
+    manage: 'Manage',
+    noTeamMembers: 'No team members',
+  },
+  id: {
+    title: 'Dasbor',
+    subtitle: 'Pantau semua proyek dan tim',
+    newProject: 'Proyek baru',
+    statTotalProjects: 'Total Proyek',
+    statTeamMembers: 'Anggota Tim',
+    statCompleted: 'Selesai',
+    statusDistribution: 'Distribusi Status Proyek',
+    totalCount: '{count} total',
+    onHold: 'Ditunda',
+    other: 'Lainnya',
+    allProjects: 'Semua Proyek',
+    noProjectsYet: 'Belum ada proyek',
+    createFirstProject: '+ Buat proyek pertama',
+    teamMembers: 'Anggota Tim',
+    manage: 'Kelola',
+    noTeamMembers: 'Belum ada anggota tim',
+  },
+};
+
 export default function KepalaBalaiDashboard() {
+  const { locale } = useLocale();
+  const t = useT(dict);
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectService.list().then((r) => r.data.data),
@@ -49,8 +84,8 @@ export default function KepalaBalaiDashboard() {
     <div className="space-y-6">
       <PageHeader
         section="OVERVIEW"
-        title="Dashboard"
-        subtitle="Monitor all projects and team"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Link
             href="/projects"
@@ -58,17 +93,17 @@ export default function KepalaBalaiDashboard() {
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
             <Plus className="w-3 h-3" strokeWidth={2.5} />
-            New project
+            {t('newProject')}
           </Link>
         }
       />
       <CRSummaryCard />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Projects" value={total} icon={FolderKanban} color="brand" index={0} />
-        <StatCard title="Active" value={active} icon={TrendingUp} color="green" index={1} />
-        <StatCard title="Team Members" value={users?.length || 0} icon={Users} color="brand" index={2} />
-        <StatCard title="Completed" value={completed} icon={CheckSquare} color="green" index={3} />
+        <StatCard title={t('statTotalProjects')} value={total} icon={FolderKanban} color="brand" index={0} />
+        <StatCard title={t('common.active')} value={active} icon={TrendingUp} color="green" index={1} />
+        <StatCard title={t('statTeamMembers')} value={users?.length || 0} icon={Users} color="brand" index={2} />
+        <StatCard title={t('statCompleted')} value={completed} icon={CheckSquare} color="green" index={3} />
       </div>
 
       {total > 0 && (
@@ -81,9 +116,9 @@ export default function KepalaBalaiDashboard() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-navy-700" />
-              <span className="text-[12.5px] font-semibold text-navy-900">Project Status Distribution</span>
+              <span className="text-[12.5px] font-semibold text-navy-900">{t('statusDistribution')}</span>
             </div>
-            <span className="font-mono text-[10px] text-text-meta">{total} total</span>
+            <span className="font-mono text-[10px] text-text-meta">{t('totalCount', { count: total })}</span>
           </div>
           <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
             {active > 0 && <div style={{ width: `${(active / total) * 100}%` }} className="bg-success transition-all" />}
@@ -93,10 +128,10 @@ export default function KepalaBalaiDashboard() {
           </div>
           <div className="flex items-center gap-4 mt-2.5">
             {[
-              { label: 'Active', val: active, bg: '#137a52' },
-              { label: 'Completed', val: completed, bg: '#14406a' },
-              { label: 'On hold', val: onHold, bg: '#8a8f98' },
-              { label: 'Other', val: total - active - completed - onHold, bg: '#c0bcb4' },
+              { label: t('common.active'), val: active, bg: '#137a52' },
+              { label: t('statCompleted'), val: completed, bg: '#14406a' },
+              { label: t('onHold'), val: onHold, bg: '#8a8f98' },
+              { label: t('other'), val: total - active - completed - onHold, bg: '#c0bcb4' },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-1.5 text-[11px] text-text-tertiary">
                 <div className="w-2 h-2 rounded-full" style={{ background: item.bg }} />
@@ -112,10 +147,10 @@ export default function KepalaBalaiDashboard() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
             <div className="flex items-center gap-2">
               <FolderKanban className="w-4 h-4 text-navy-700" />
-              <h2 className="text-[12.5px] font-semibold text-navy-900">All Projects</h2>
+              <h2 className="text-[12.5px] font-semibold text-navy-900">{t('allProjects')}</h2>
             </div>
             <Link href="/projects" className="text-[11.5px] font-semibold text-navy-700 flex items-center gap-1 hover:gap-2 transition-all">
-              View all <ArrowRight className="w-3 h-3" />
+              {t('common.viewAll')} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
@@ -136,14 +171,14 @@ export default function KepalaBalaiDashboard() {
                       </div>
                       <div className="flex items-center gap-1 text-[11px] text-text-placeholder mt-0.5">
                         <Clock className="w-3 h-3" />
-                        {formatDate(p.start_date)} – {formatDate(p.end_date)}
+                        {formatDate(p.start_date, locale)} – {formatDate(p.end_date, locale)}
                       </div>
                     </div>
                   </div>
                   <span
                     className={`flex-none text-[10.5px] font-semibold px-2 py-0.5 rounded-full ${STATUS_MAP[getStatusTone(p.status)].bg} ${STATUS_MAP[getStatusTone(p.status)].text}`}
                   >
-                    {getStatusLabel(p.status)}
+                    {getStatusLabel(p.status, locale)}
                   </span>
                 </Link>
               </motion.div>
@@ -151,9 +186,9 @@ export default function KepalaBalaiDashboard() {
             {(!projects || projects.length === 0) && (
               <div className="flex flex-col items-center justify-center py-12 text-text-meta">
                 <FolderKanban className="w-8 h-8 mb-2 opacity-40" />
-                <span className="text-[12px]">No projects yet</span>
+                <span className="text-[12px]">{t('noProjectsYet')}</span>
                 <Link href="/projects" className="mt-3 text-[11.5px] text-navy-700 font-semibold hover:underline">
-                  + Create first project
+                  {t('createFirstProject')}
                 </Link>
               </div>
             )}
@@ -164,13 +199,13 @@ export default function KepalaBalaiDashboard() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-navy-700" />
-              <h2 className="text-[12.5px] font-semibold text-navy-900">Team Members</h2>
+              <h2 className="text-[12.5px] font-semibold text-navy-900">{t('teamMembers')}</h2>
             </div>
             <Link
               href="/admin/users"
               className="text-[11.5px] font-semibold text-navy-700 flex items-center gap-1 hover:gap-2 transition-all"
             >
-              Manage <ArrowRight className="w-3 h-3" />
+              {t('manage')} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
@@ -206,7 +241,7 @@ export default function KepalaBalaiDashboard() {
                   <span
                     className={`flex-none text-[10px] font-semibold px-2 py-0.5 rounded-[3px] ${ROLE_COLOR[role] ?? 'bg-border-subtle text-text-tertiary'}`}
                   >
-                    {ROLE_LABEL[role] ?? role}
+                    {getRoleLabel(role, locale)}
                   </span>
                 </motion.div>
               );
@@ -214,7 +249,7 @@ export default function KepalaBalaiDashboard() {
             {(!users || users.length === 0) && (
               <div className="flex flex-col items-center justify-center py-12 text-text-meta">
                 <Users className="w-8 h-8 mb-2 opacity-40" />
-                <span className="text-[12px]">No team members</span>
+                <span className="text-[12px]">{t('noTeamMembers')}</span>
               </div>
             )}
           </div>

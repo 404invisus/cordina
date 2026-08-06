@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { getStatusTone, getStatusLabel, STATUS_MAP } from '@/lib/status';
 import { formatDate } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
+import { useLocale, useT } from '@/lib/i18n';
 
 const PRIORITY_DOT: Record<string, string> = {
   critical: 'bg-danger',
@@ -19,8 +20,49 @@ const PRIORITY_DOT: Record<string, string> = {
   low: 'bg-success',
 };
 
+const dict = {
+  en: {
+    title: 'Dashboard',
+    welcome: 'Welcome, {name}',
+    newSprint: 'New Sprint',
+    statTotalProjects: 'Total Projects',
+    activeCount: '{count} active',
+    statMyTasks: 'My Tasks',
+    completedCount: '{count} completed',
+    statInProgress: 'In Progress',
+    beingWorkedOn: 'being worked on',
+    statToDo: 'To Do',
+    waitingToStart: 'waiting to start',
+    projects: 'Projects',
+    noProjectsYet: 'No projects yet',
+    myTasks: 'My Tasks',
+    noDueDate: 'No due date',
+    noTasksAssigned: 'No tasks assigned',
+  },
+  id: {
+    title: 'Dasbor',
+    welcome: 'Selamat datang, {name}',
+    newSprint: 'Sprint Baru',
+    statTotalProjects: 'Total Proyek',
+    activeCount: '{count} aktif',
+    statMyTasks: 'Tugas Saya',
+    completedCount: '{count} selesai',
+    statInProgress: 'Sedang Berjalan',
+    beingWorkedOn: 'sedang dikerjakan',
+    statToDo: 'Belum Dimulai',
+    waitingToStart: 'menunggu dimulai',
+    projects: 'Proyek',
+    noProjectsYet: 'Belum ada proyek',
+    myTasks: 'Tugas Saya',
+    noDueDate: 'Tidak ada tenggat',
+    noTasksAssigned: 'Tidak ada tugas yang ditetapkan',
+  },
+};
+
 export default function ProjectManagerDashboard() {
   const { user } = useAuthStore();
+  const { locale } = useLocale();
+  const t = useT(dict);
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectService.list().then((r) => r.data.data),
@@ -41,8 +83,8 @@ export default function ProjectManagerDashboard() {
     <div className="space-y-6">
       <PageHeader
         section="OVERVIEW"
-        title="Dashboard"
-        subtitle={`Welcome, ${user?.full_name}`}
+        title={t('title')}
+        subtitle={t('welcome', { name: user?.full_name ?? '' })}
         actions={
           <Link
             href="/projects"
@@ -50,30 +92,30 @@ export default function ProjectManagerDashboard() {
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
             <Plus className="w-3 h-3" strokeWidth={2.5} />
-            New Sprint
+            {t('newSprint')}
           </Link>
         }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Projects"
+          title={t('statTotalProjects')}
           value={projects?.length || 0}
           icon={FolderKanban}
           color="brand"
           index={0}
-          subtitle={`${activeProjects.length} active`}
+          subtitle={t('activeCount', { count: activeProjects.length })}
         />
         <StatCard
-          title="My Tasks"
+          title={t('statMyTasks')}
           value={myTasks?.length || 0}
           icon={CheckSquare}
           color="green"
           index={1}
-          subtitle={`${done.length} completed`}
+          subtitle={t('completedCount', { count: done.length })}
         />
-        <StatCard title="In Progress" value={inProgress.length} icon={Clock} color="brand" index={2} subtitle="being worked on" />
-        <StatCard title="To Do" value={todo.length} icon={ListTodo} color="brand" index={3} subtitle="waiting to start" />
+        <StatCard title={t('statInProgress')} value={inProgress.length} icon={Clock} color="brand" index={2} subtitle={t('beingWorkedOn')} />
+        <StatCard title={t('statToDo')} value={todo.length} icon={ListTodo} color="brand" index={3} subtitle={t('waitingToStart')} />
       </div>
 
       <CRSummaryCard />
@@ -88,10 +130,10 @@ export default function ProjectManagerDashboard() {
           <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FolderKanban className="w-4 h-4 text-navy-700" />
-              <h2 className="text-[12.5px] font-semibold text-navy-900">Projects</h2>
+              <h2 className="text-[12.5px] font-semibold text-navy-900">{t('projects')}</h2>
             </div>
             <Link href="/projects" className="text-[11.5px] font-semibold text-navy-700 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+              {t('common.viewAll')} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="divide-y divide-border-subtle">
@@ -115,12 +157,14 @@ export default function ProjectManagerDashboard() {
                   <span
                     className={`flex-none text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full ml-3 ${STATUS_MAP[getStatusTone(p.status)].bg} ${STATUS_MAP[getStatusTone(p.status)].text}`}
                   >
-                    {getStatusLabel(p.status)}
+                    {getStatusLabel(p.status, locale)}
                   </span>
                 </Link>
               </motion.div>
             ))}
-            {(!projects || projects.length === 0) && <div className="text-center py-10 text-text-meta text-[12px]">No projects yet</div>}
+            {(!projects || projects.length === 0) && (
+              <div className="text-center py-10 text-text-meta text-[12px]">{t('noProjectsYet')}</div>
+            )}
           </div>
         </motion.div>
 
@@ -133,32 +177,36 @@ export default function ProjectManagerDashboard() {
           <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-navy-700" />
-              <h2 className="text-[12.5px] font-semibold text-navy-900">My Tasks</h2>
+              <h2 className="text-[12.5px] font-semibold text-navy-900">{t('myTasks')}</h2>
             </div>
             <Link href="/tasks" className="text-[11.5px] font-semibold text-navy-700 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
+              {t('common.viewAll')} <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="divide-y divide-border-subtle">
-            {myTasks?.slice(0, 6).map((t: any, i: number) => (
-              <motion.div key={t.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 + i * 0.05 }}>
-                <Link href={`/tasks/${t.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-surface-2 group transition-colors">
-                  <span className={`w-2 h-2 rounded-full flex-none ${PRIORITY_DOT[t.priority] || 'bg-text-meta'}`} />
+            {myTasks?.slice(0, 6).map((task: any, i: number) => (
+              <motion.div key={task.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 + i * 0.05 }}>
+                <Link href={`/tasks/${task.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-surface-2 group transition-colors">
+                  <span className={`w-2 h-2 rounded-full flex-none ${PRIORITY_DOT[task.priority] || 'bg-text-meta'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="text-[12.5px] font-semibold text-navy-800 group-hover:text-navy-700 transition-colors truncate">
-                      {t.title}
+                      {task.title}
                     </div>
-                    <div className="text-[11px] text-text-placeholder">{t.due_date ? formatDate(t.due_date) : 'No due date'}</div>
+                    <div className="text-[11px] text-text-placeholder">
+                      {task.due_date ? formatDate(task.due_date, locale) : t('noDueDate')}
+                    </div>
                   </div>
                   <span
-                    className={`flex-none text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[getStatusTone(t.status)].bg} ${STATUS_MAP[getStatusTone(t.status)].text}`}
+                    className={`flex-none text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[getStatusTone(task.status)].bg} ${STATUS_MAP[getStatusTone(task.status)].text}`}
                   >
-                    {getStatusLabel(t.status)}
+                    {getStatusLabel(task.status, locale)}
                   </span>
                 </Link>
               </motion.div>
             ))}
-            {(!myTasks || myTasks.length === 0) && <div className="text-center py-10 text-text-meta text-[12px]">No tasks assigned</div>}
+            {(!myTasks || myTasks.length === 0) && (
+              <div className="text-center py-10 text-text-meta text-[12px]">{t('noTasksAssigned')}</div>
+            )}
           </div>
         </motion.div>
       </div>

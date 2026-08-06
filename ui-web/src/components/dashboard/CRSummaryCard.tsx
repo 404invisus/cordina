@@ -3,17 +3,40 @@ import { useQuery } from '@tanstack/react-query';
 import { FileText, Clock, CheckCircle2, XCircle, Wrench, ChevronRight } from 'lucide-react';
 import { changeRequestService } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useT } from '@/lib/i18n';
 
 const STATUS_CONFIG = [
-  { key: 'draft', label: 'Draft', color: 'bg-border-subtle text-text-secondary', icon: FileText },
-  { key: 'submitted', label: 'Submitted', color: 'bg-pending-soft text-pending-text', icon: Clock },
-  { key: 'approved', label: 'Approved', color: 'bg-success-soft text-success-text', icon: CheckCircle2 },
-  { key: 'rejected', label: 'Rejected', color: 'bg-danger-soft text-danger-text', icon: XCircle },
-  { key: 'implemented', label: 'Implemented', color: 'bg-info-soft text-info-text', icon: Wrench },
+  { key: 'draft', color: 'bg-border-subtle text-text-secondary', icon: FileText },
+  { key: 'submitted', color: 'bg-pending-soft text-pending-text', icon: Clock },
+  { key: 'approved', color: 'bg-success-soft text-success-text', icon: CheckCircle2 },
+  { key: 'rejected', color: 'bg-danger-soft text-danger-text', icon: XCircle },
+  { key: 'implemented', color: 'bg-info-soft text-info-text', icon: Wrench },
 ];
+
+const dict = {
+  en: {
+    changeRequest: 'Change Request',
+    totalCr: '{count} total CR',
+    draft: 'Draft',
+    submitted: 'Submitted',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    implemented: 'Implemented',
+  },
+  id: {
+    changeRequest: 'Permintaan Perubahan',
+    totalCr: '{count} total CR',
+    draft: 'Draf',
+    submitted: 'Diajukan',
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+    implemented: 'Diterapkan',
+  },
+};
 
 export default function CRSummaryCard() {
   const router = useRouter();
+  const t = useT(dict);
   const { data, isLoading } = useQuery({
     queryKey: ['cr-summary'],
     queryFn: () => changeRequestService.summary().then((r) => r.data.data),
@@ -45,19 +68,19 @@ export default function CRSummaryCard() {
             <FileText className="w-4 h-4 text-navy-700" />
           </div>
           <div>
-            <div className="text-sm font-bold text-navy-800">Change Request</div>
-            <div className="text-xs text-text-placeholder">{total} total CR</div>
+            <div className="text-sm font-bold text-navy-800">{t('changeRequest')}</div>
+            <div className="text-xs text-text-placeholder">{t('totalCr', { count: total })}</div>
           </div>
         </div>
         <button
           onClick={() => router.push('/change-management')}
           className="flex items-center gap-1 text-xs text-navy-700 font-semibold hover:underline"
         >
-          View all <ChevronRight className="w-3 h-3" />
+          {t('common.viewAll')} <ChevronRight className="w-3 h-3" />
         </button>
       </div>
       <div className="grid grid-cols-5 gap-2">
-        {STATUS_CONFIG.map(({ key, label, color }) => (
+        {STATUS_CONFIG.map(({ key, color }) => (
           <button
             key={key}
             onClick={() => router.push(`/change-management?status=${key}`)}
@@ -66,7 +89,7 @@ export default function CRSummaryCard() {
             <div className={`text-xl font-bold mb-1 ${byStatus[key] > 0 ? 'text-navy-800' : 'text-border-button'}`}>
               {byStatus[key] || 0}
             </div>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${color}`}>{label}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${color}`}>{t(key)}</span>
           </button>
         ))}
       </div>

@@ -1,0 +1,30 @@
+{
+  "stTxt": [
+    "FILES",
+    "Storage",
+    "Working files only — signed records live in Official Documents",
+    "Upload",
+    "0.0 MB of 50 GB used",
+    "Institution quota · 1 files",
+    "Task attachments",
+    "CR attachments",
+    "Signature specimens",
+    "Other",
+    "All files",
+    "FILE",
+    "TYPE",
+    "UPLOADED BY",
+    "DATE",
+    "Test sign.pdf",
+    "15.2 KB",
+    "PDF",
+    "—",
+    "31 Jul 2026",
+    "Showing 1 of 1 files"
+  ],
+  "shots": {
+    "sStore0": "shots/4.3-1a_storage-sebelum-upload.png",
+    "sPick": "shots/4.3-1b_pilih-berkas.png",
+    "sUploaded": "shots/4.3-1c_berkas-terunggah.png"
+  }
+}

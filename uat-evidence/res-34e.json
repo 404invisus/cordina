@@ -1,0 +1,50 @@
+[
+  {
+    "id": "3.4.3-1",
+    "scenario": "Ubah status task",
+    "verdict": "PASS",
+    "notes": "Pada halaman detail task tersedia tombol perubahan status In Progress / Review / Done. Status task diubah berturut-turut dari \"To do\" (Belum Dikerjakan) menjadi \"In Progress\" (Sedang Berjalan), lalu menjadi \"Done\" (Selesai). Setiap perubahan tersimpan dan langsung tercermin pada tampilan detail task serta papan Kanban.",
+    "shots": [
+      "shots/3.4.3-1a_task-status-awal.png",
+      "shots/3.4.3-1b_status-sedang-berjalan.png",
+      "shots/3.4.3-1c_status-selesai.png"
+    ]
+  },
+  {
+    "id": "3.4.3-2",
+    "scenario": "Tambah komentar pada task",
+    "verdict": "PASS",
+    "notes": "Pada detail task dibuka kolom komentar, ditulis \"Komentar pengujian UAT 24355\", lalu dikirim (Enter). Komentar tersimpan dan tampil pada riwayat komentar task beserta nama penulis dan waktu.",
+    "shots": [
+      "shots/3.4.3-2a_tulis-komentar.png",
+      "shots/3.4.3-2b_komentar-tersimpan.png"
+    ]
+  },
+  {
+    "id": "3.4.4-1",
+    "scenario": "Lihat beban kerja tim",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman beban kerja dibuka dengan memilih proyek \"Project Alpha\" dan sprint \"first sprint\". Halaman menampilkan distribusi beban kerja per anggota tim. Konten yang terbaca: [\"CAPACITY\",\"Workload\",\"Project Alpha · first sprint\",\"Select Project ▾\",\"Project Alpha\",\"Project Alpha\",\"ID Wallet\",\"Test Permission Project\",\"Test UAT Project\",\"Simulasi UAT\",\"Select Sprint ▾\",\"first sprint\",\"Export PDF\",\"Rebalance\",\"AVG UTILISATION\",\"13%\"]. CATATAN: dokumen menyebut jalur \"/reports lalu pilih tab workload\"; pada aplikasi terdapat halaman khusus /workload dan juga tab \"Workload\" di /reports — keduanya tersedia.",
+    "shots": [
+      "shots/3.4.4-1_beban-kerja-tim.png"
+    ]
+  },
+  {
+    "id": "3.4.4-2",
+    "scenario": "Filter beban kerja per anggota",
+    "verdict": "TIDAK TERSEDIA",
+    "notes": "TEMUAN: halaman /workload TIDAK menyediakan filter pemilihan anggota tim. Filter yang tersedia hanya pemilihan Proyek dan Sprint (2 dropdown). Distribusi beban kerja ditampilkan sekaligus untuk seluruh anggota tanpa opsi memfilter satu anggota tertentu, sedangkan dokumen mengharapkan \"pilih nama anggota dari filter\". Perlu penambahan fitur filter per anggota atau penyesuaian dokumen.",
+    "shots": [
+      "shots/3.4.4-2_filter-per-anggota.png"
+    ]
+  },
+  {
+    "id": "3.4.4-3",
+    "scenario": "Tampilan kapasitas vs aktual",
+    "verdict": "PASS",
+    "notes": "Indikator kapasitas pada tampilan beban kerja ditemukan. Sistem menampilkan perbandingan alokasi terhadap kapasitas anggota tim beserta indikator pemanfaatan (utilization) dan tersedia aksi \"Rebalance\" untuk penyeimbangan beban.",
+    "shots": [
+      "shots/3.4.4-3_kapasitas-vs-aktual.png"
+    ]
+  }
+]

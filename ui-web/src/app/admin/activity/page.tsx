@@ -19,19 +19,81 @@ import {
 import AppLayout from '@/components/layout/AppLayout';
 import { adminActivityService, adminUserService } from '@/lib/api';
 import { formatDateTime as formatDate } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n';
 
-const ACTION_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  login: { label: 'Login', icon: LogIn, color: 'text-success-text bg-success-soft' },
-  logout: { label: 'Logout', icon: LogOut, color: 'text-text-secondary bg-border-subtle' },
-  login_failed: { label: 'Login Failed', icon: AlertCircle, color: 'text-danger-text bg-danger-soft' },
-  'cr.created': { label: 'Create CR', icon: FileText, color: 'text-info-text bg-info-soft' },
-  'cr.signed': { label: 'Sign CR', icon: PenLine, color: 'text-navy-700 bg-navy-700/8' },
-  'tte.signed': { label: 'e-Sign Document', icon: PenLine, color: 'text-navy-700 bg-navy-700/8' },
-  'document.uploaded': { label: 'Upload Document', icon: Upload, color: 'text-amber-600 bg-amber-50' },
-  'asset.created': { label: 'Add Asset', icon: Package, color: 'text-teal-600 bg-teal-50' },
+const ACTION_CONFIG: Record<string, { labelKey: string; icon: any; color: string }> = {
+  login: { labelKey: 'actionLogin', icon: LogIn, color: 'text-success-text bg-success-soft' },
+  logout: { labelKey: 'actionLogout', icon: LogOut, color: 'text-text-secondary bg-border-subtle' },
+  login_failed: { labelKey: 'actionLoginFailed', icon: AlertCircle, color: 'text-danger-text bg-danger-soft' },
+  'cr.created': { labelKey: 'actionCrCreated', icon: FileText, color: 'text-info-text bg-info-soft' },
+  'cr.signed': { labelKey: 'actionCrSigned', icon: PenLine, color: 'text-navy-700 bg-navy-700/8' },
+  'tte.signed': { labelKey: 'actionTteSigned', icon: PenLine, color: 'text-navy-700 bg-navy-700/8' },
+  'document.uploaded': { labelKey: 'actionDocumentUploaded', icon: Upload, color: 'text-amber-600 bg-amber-50' },
+  'asset.created': { labelKey: 'actionAssetCreated', icon: Package, color: 'text-teal-600 bg-teal-50' },
+};
+
+const dict = {
+  en: {
+    title: 'Activity Log',
+    subtitle: 'User login and activity history',
+    searchPlaceholder: 'Search by name, email, or description...',
+    allActions: 'All Actions',
+    allUsers: 'All Users',
+    period: 'Period:',
+    to: 'to',
+    statTotalActivity: 'Total Activity',
+    statLoginsToday: 'Logins Today',
+    statFailedLogins: 'Failed Logins',
+    statDocumentsSigned: 'Documents Signed',
+    colTime: 'Time',
+    colUser: 'User',
+    colAction: 'Action',
+    colDescription: 'Description',
+    colIp: 'IP',
+    colStatus: 'Status',
+    noActivity: 'No activity yet',
+    actionLogin: 'Login',
+    actionLogout: 'Logout',
+    actionLoginFailed: 'Login Failed',
+    actionCrCreated: 'Create CR',
+    actionCrSigned: 'Sign CR',
+    actionTteSigned: 'e-Sign Document',
+    actionDocumentUploaded: 'Upload Document',
+    actionAssetCreated: 'Add Asset',
+  },
+  id: {
+    title: 'Log Aktivitas',
+    subtitle: 'Riwayat login dan aktivitas pengguna',
+    searchPlaceholder: 'Cari berdasarkan nama, email, atau deskripsi...',
+    allActions: 'Semua Aktivitas',
+    allUsers: 'Semua Pengguna',
+    period: 'Periode:',
+    to: 'hingga',
+    statTotalActivity: 'Total Aktivitas',
+    statLoginsToday: 'Login Hari Ini',
+    statFailedLogins: 'Login Gagal',
+    statDocumentsSigned: 'Dokumen Ditandatangani',
+    colTime: 'Waktu',
+    colUser: 'Pengguna',
+    colAction: 'Aktivitas',
+    colDescription: 'Deskripsi',
+    colIp: 'IP',
+    colStatus: 'Status',
+    noActivity: 'Belum ada aktivitas',
+    actionLogin: 'Login',
+    actionLogout: 'Logout',
+    actionLoginFailed: 'Login Gagal',
+    actionCrCreated: 'Buat CR',
+    actionCrSigned: 'Tanda Tangan CR',
+    actionTteSigned: 'Tanda Tangan Elektronik Dokumen',
+    actionDocumentUploaded: 'Unggah Dokumen',
+    actionAssetCreated: 'Tambah Aset',
+  },
 };
 
 export default function AdminActivityPage() {
+  const { locale } = useLocale();
+  const t = useT(dict);
   const [search, setSearch] = useState('');
   const [action, setAction] = useState('');
   const [from, setFrom] = useState('');
@@ -69,8 +131,8 @@ export default function AdminActivityPage() {
             <Activity className="w-5 h-5 text-text-secondary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-900">Activity Log</h1>
-            <p className="text-sm text-text-placeholder mt-0.5">User login and activity history</p>
+            <h1 className="text-2xl font-bold text-navy-900">{t('title')}</h1>
+            <p className="text-sm text-text-placeholder mt-0.5">{t('subtitle')}</p>
           </div>
         </div>
       </div>
@@ -83,7 +145,7 @@ export default function AdminActivityPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 bg-transparent text-sm outline-none text-text-secondary placeholder:text-text-placeholder"
-              placeholder="Search by name, email, or description..."
+              placeholder={t('searchPlaceholder')}
             />
           </div>
           <select
@@ -91,10 +153,10 @@ export default function AdminActivityPage() {
             onChange={(e) => setAction(e.target.value)}
             className="px-3 py-2 rounded-[6px] border border-border text-sm text-text-secondary bg-white focus:outline-none focus:ring-2 focus:ring-border"
           >
-            <option value="">All Actions</option>
+            <option value="">{t('allActions')}</option>
             {Object.entries(ACTION_CONFIG).map(([k, v]) => (
               <option key={k} value={k}>
-                {v.label}
+                {t(v.labelKey)}
               </option>
             ))}
           </select>
@@ -103,7 +165,7 @@ export default function AdminActivityPage() {
             onChange={(e) => setUserId(e.target.value)}
             className="px-3 py-2 rounded-[6px] border border-border text-sm text-text-secondary bg-white focus:outline-none focus:ring-2 focus:ring-border"
           >
-            <option value="">All Users</option>
+            <option value="">{t('allUsers')}</option>
             {(usersData || []).map((u: any) => (
               <option key={u.id} value={u.id}>
                 {u.full_name}
@@ -112,14 +174,14 @@ export default function AdminActivityPage() {
           </select>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-text-placeholder uppercase tracking-wider">Period:</span>
+          <span className="text-xs font-semibold text-text-placeholder uppercase tracking-wider">{t('period')}</span>
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             className="px-3 py-1.5 rounded-[6px] border border-border text-sm text-text-secondary focus:outline-none"
           />
-          <span className="text-xs text-text-placeholder">to</span>
+          <span className="text-xs text-text-placeholder">{t('to')}</span>
           <input
             type="date"
             value={to}
@@ -137,7 +199,7 @@ export default function AdminActivityPage() {
               }}
               className="px-3 py-1.5 rounded-[6px] border border-border text-xs font-semibold text-text-tertiary hover:bg-surface-2"
             >
-              Clear filters
+              {t('common.clearFilters')}
             </button>
           )}
         </div>
@@ -145,16 +207,16 @@ export default function AdminActivityPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: 'Total Activity', value: data?.total || 0, color: 'text-text-secondary' },
+          { label: t('statTotalActivity'), value: data?.total || 0, color: 'text-text-secondary' },
           {
-            label: 'Logins Today',
+            label: t('statLoginsToday'),
             value: logs.filter((l: any) => l.action === 'login' && new Date(l.created_at).toDateString() === new Date().toDateString())
               .length,
             color: 'text-success-text',
           },
-          { label: 'Failed Logins', value: logs.filter((l: any) => l.action === 'login_failed').length, color: 'text-danger-text' },
+          { label: t('statFailedLogins'), value: logs.filter((l: any) => l.action === 'login_failed').length, color: 'text-danger-text' },
           {
-            label: 'Documents Signed',
+            label: t('statDocumentsSigned'),
             value: logs.filter((l: any) => ['cr.signed', 'tte.signed'].includes(l.action)).length,
             color: 'text-navy-700',
           },
@@ -171,13 +233,13 @@ export default function AdminActivityPage() {
           <div className="w-8 h-8 border-2 border-border border-t-text-secondary rounded-full animate-spin" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-20 text-text-placeholder text-sm">No activity yet</div>
+        <div className="text-center py-20 text-text-placeholder text-sm">{t('noActivity')}</div>
       ) : (
         <div className="bg-white rounded-[6px] border border-border-subtle overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border-subtle bg-surface-2/50">
-                {['Time', 'User', 'Action', 'Description', 'IP', 'Status'].map((h) => (
+                {[t('colTime'), t('colUser'), t('colAction'), t('colDescription'), t('colIp'), t('colStatus')].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-text-placeholder uppercase tracking-wider">
                     {h}
                   </th>
@@ -186,23 +248,21 @@ export default function AdminActivityPage() {
             </thead>
             <tbody>
               {logs.map((log: any) => {
-                const conf = ACTION_CONFIG[log.action] || {
-                  label: log.action,
-                  icon: Activity,
-                  color: 'text-text-secondary bg-border-subtle',
-                };
-                const Icon = conf.icon;
+                const conf = ACTION_CONFIG[log.action];
+                const label = conf ? t(conf.labelKey) : log.action;
+                const Icon = conf?.icon || Activity;
+                const color = conf?.color || 'text-text-secondary bg-border-subtle';
                 return (
                   <motion.tr key={log.id} layout className="border-b border-surface-2 hover:bg-surface-2/50 transition-colors">
-                    <td className="px-4 py-3 text-xs text-text-tertiary whitespace-nowrap">{formatDate(log.created_at)}</td>
+                    <td className="px-4 py-3 text-xs text-text-tertiary whitespace-nowrap">{formatDate(log.created_at, locale)}</td>
                     <td className="px-4 py-3">
                       <div className="text-sm font-medium text-navy-800">{log.full_name || '-'}</div>
                       <div className="text-xs text-text-placeholder">{log.email || '-'}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${conf.color}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${color}`}>
                         <Icon className="w-3 h-3" />
-                        {conf.label}
+                        {label}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate">{log.description}</td>

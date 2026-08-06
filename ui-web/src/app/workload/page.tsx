@@ -11,6 +11,7 @@ import { workloadService, projectService, sprintService } from '@/lib/api';
 import { BurndownChart, VelocityChart } from '@/components/charts/WorkloadCharts';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n';
 
 type CapacityLevel = 'overloaded' | 'near_limit' | 'healthy' | 'available';
 
@@ -21,12 +22,112 @@ function capacityLevel(pct: number): CapacityLevel {
   return 'available';
 }
 
-const CAPACITY_BADGE: Record<CapacityLevel, { label: string; bg: string; color: string; dot: string }> = {
-  overloaded: { label: 'Overloaded', bg: '#fdeceb', color: '#a3231c', dot: '#b3261e' },
-  near_limit: { label: 'Near limit', bg: '#fbf3e0', color: '#8a6209', dot: '#c9971b' },
-  healthy: { label: 'Healthy', bg: '#e9f4ee', color: '#0f6144', dot: '#137a52' },
-  available: { label: 'Available', bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98' },
+const dict = {
+  en: {
+    section: 'CAPACITY',
+    title: 'Workload',
+    subtitleSelect: 'Select a project and sprint to view team capacity',
+    projectFallback: 'Project',
+    selectProjectOption: 'Select Project ▾',
+    selectSprintOption: 'Select Sprint ▾',
+    sprintOption: 'Sprint ▾',
+    allMembersOption: 'All Members ▾',
+    memberOption: 'Member ▾',
+    exportPdf: 'Export PDF',
+    rebalance: 'Rebalance',
+    emptyTitle: 'Select a project and sprint',
+    emptySubtitle: 'Choose from the dropdowns above to view team workload data',
+    statAvgUtilTitle: 'Avg Utilisation',
+    statHighLoad: 'high load',
+    statWithinRange: 'within range',
+    statOverloadedTitle: 'Overloaded',
+    statAbove100: 'above 100%',
+    statAvailableTitle: 'Available',
+    statUnder40: 'under 40%',
+    statVelocityTitle: 'Sprint Velocity',
+    statStoryPoints: 'story points',
+    burndownTitle: 'Burndown - {sprint}',
+    sprintFallback: 'Sprint',
+    legendActual: 'Actual',
+    legendIdeal: 'Ideal',
+    velocityTitle: 'Velocity',
+    ptsPerSprint: 'pts / sprint',
+    noVelocityData: 'No velocity data',
+    workloadPerMember: 'Workload per member',
+    membersSorted: '{count} members · sorted by load',
+    colMember: 'MEMBER',
+    colTasks: 'TASKS',
+    colLogged: 'LOGGED',
+    colLoad: 'LOAD',
+    colCapacity: 'CAPACITY',
+    capacityOverloaded: 'Overloaded',
+    capacityNearLimit: 'Near limit',
+    capacityHealthy: 'Healthy',
+    capacityAvailable: 'Available',
+  },
+  id: {
+    section: 'KAPASITAS',
+    title: 'Beban Kerja',
+    subtitleSelect: 'Pilih proyek dan sprint untuk melihat kapasitas tim',
+    projectFallback: 'Proyek',
+    selectProjectOption: 'Pilih Proyek ▾',
+    selectSprintOption: 'Pilih Sprint ▾',
+    sprintOption: 'Sprint ▾',
+    allMembersOption: 'Semua Anggota ▾',
+    memberOption: 'Anggota ▾',
+    exportPdf: 'Ekspor PDF',
+    rebalance: 'Seimbangkan Ulang',
+    emptyTitle: 'Pilih proyek dan sprint',
+    emptySubtitle: 'Pilih dari menu tarik-turun di atas untuk melihat data beban kerja tim',
+    statAvgUtilTitle: 'Rata-rata Utilisasi',
+    statHighLoad: 'beban tinggi',
+    statWithinRange: 'dalam batas normal',
+    statOverloadedTitle: 'Kelebihan Beban',
+    statAbove100: 'di atas 100%',
+    statAvailableTitle: 'Tersedia',
+    statUnder40: 'di bawah 40%',
+    statVelocityTitle: 'Velositas Sprint',
+    statStoryPoints: 'story point',
+    burndownTitle: 'Burndown - {sprint}',
+    sprintFallback: 'Sprint',
+    legendActual: 'Aktual',
+    legendIdeal: 'Ideal',
+    velocityTitle: 'Velositas',
+    ptsPerSprint: 'poin / sprint',
+    noVelocityData: 'Tidak ada data velositas',
+    workloadPerMember: 'Beban kerja per anggota',
+    membersSorted: '{count} anggota · diurutkan berdasarkan beban',
+    colMember: 'ANGGOTA',
+    colTasks: 'TUGAS',
+    colLogged: 'TERCATAT',
+    colLoad: 'BEBAN',
+    colCapacity: 'KAPASITAS',
+    capacityOverloaded: 'Kelebihan Beban',
+    capacityNearLimit: 'Mendekati Batas',
+    capacityHealthy: 'Sehat',
+    capacityAvailable: 'Tersedia',
+  },
 };
+
+const CAPACITY_STYLE: Record<CapacityLevel, { bg: string; color: string; dot: string }> = {
+  overloaded: { bg: '#fdeceb', color: '#a3231c', dot: '#b3261e' },
+  near_limit: { bg: '#fbf3e0', color: '#8a6209', dot: '#c9971b' },
+  healthy: { bg: '#e9f4ee', color: '#0f6144', dot: '#137a52' },
+  available: { bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98' },
+};
+
+function capacityLabel(level: CapacityLevel, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  switch (level) {
+    case 'overloaded':
+      return t('capacityOverloaded');
+    case 'near_limit':
+      return t('capacityNearLimit');
+    case 'healthy':
+      return t('capacityHealthy');
+    case 'available':
+      return t('capacityAvailable');
+  }
+}
 
 const CAPACITY_BAR: Record<CapacityLevel, string> = {
   overloaded: '#b3261e',
@@ -45,6 +146,7 @@ function memberInitials(name: string) {
 }
 
 export default function WorkloadPage() {
+  const t = useT(dict);
   const { hasRole } = useAuthStore();
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSprint, setSelectedSprint] = useState('');
@@ -89,8 +191,8 @@ export default function WorkloadPage() {
 
   const subtitle =
     selectedSprint && selectedSprintObj
-      ? `${selectedProjectObj?.name || 'Project'} · ${selectedSprintObj.name}`
-      : 'Select a project and sprint to view team capacity';
+      ? `${selectedProjectObj?.name || t('projectFallback')} · ${selectedSprintObj.name}`
+      : t('subtitleSelect');
 
   /* ── Derived stats ── */
   const loadPcts = data.map((r) => (r.estimated_hours > 0 ? Math.round((r.actual_hours / r.estimated_hours) * 100) : 0));
@@ -102,8 +204,8 @@ export default function WorkloadPage() {
   return (
     <AppLayout>
       <PageHeader
-        section="CAPACITY"
-        title="Workload"
+        section={t('section')}
+        title={t('title')}
         subtitle={subtitle}
         actions={
           <>
@@ -118,7 +220,7 @@ export default function WorkloadPage() {
                 }}
                 className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none"
               >
-                <option value="">Select Project ▾</option>
+                <option value="">{t('selectProjectOption')}</option>
                 {projects?.map((p: any) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -139,7 +241,7 @@ export default function WorkloadPage() {
                 disabled={!selectedProject}
                 className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">{selectedProject ? 'Select Sprint ▾' : 'Sprint ▾'}</option>
+                <option value="">{selectedProject ? t('selectSprintOption') : t('sprintOption')}</option>
                 {sprints?.map((s: any) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -158,7 +260,7 @@ export default function WorkloadPage() {
                   disabled={!selectedSprint || allRows.length === 0}
                   className="h-[34px] pl-[11px] pr-[26px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary appearance-none cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="">{selectedSprint ? 'All Members ▾' : 'Member ▾'}</option>
+                  <option value="">{selectedSprint ? t('allMembersOption') : t('memberOption')}</option>
                   {allRows.map((r: any) => (
                     <option key={r.user_id} value={r.user_id}>
                       {r.full_name}
@@ -170,13 +272,13 @@ export default function WorkloadPage() {
             )}
 
             <button className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              Export PDF
+              {t('exportPdf')}
             </button>
             <button
               className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold"
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
-              Rebalance
+              {t('rebalance')}
             </button>
           </>
         }
@@ -187,8 +289,8 @@ export default function WorkloadPage() {
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <EmptyState
               icon={BarChart2}
-              title="Select a project and sprint"
-              subtitle="Choose from the dropdowns above to view team workload data"
+              title={t('emptyTitle')}
+              subtitle={t('emptySubtitle')}
             />
           </motion.div>
         ) : isLoading ? (
@@ -203,36 +305,36 @@ export default function WorkloadPage() {
             <div className="grid grid-cols-4 gap-3">
               <StatCard
                 index={0}
-                title="Avg Utilisation"
+                title={t('statAvgUtilTitle')}
                 value={`${avgUtil}%`}
-                subtitle={avgUtil > 80 ? 'high load' : 'within range'}
+                subtitle={avgUtil > 80 ? t('statHighLoad') : t('statWithinRange')}
                 icon={Activity}
                 color="brand"
                 progress={Math.min(100, avgUtil)}
               />
               <StatCard
                 index={1}
-                title="Overloaded"
+                title={t('statOverloadedTitle')}
                 value={overloaded}
-                subtitle="above 100%"
+                subtitle={t('statAbove100')}
                 icon={AlertTriangle}
                 color="red"
                 progress={Math.min(100, overloaded * 12)}
               />
               <StatCard
                 index={2}
-                title="Available"
+                title={t('statAvailableTitle')}
                 value={available}
-                subtitle="under 40%"
+                subtitle={t('statUnder40')}
                 icon={Users}
                 color="green"
                 progress={Math.min(100, available * 12)}
               />
               <StatCard
                 index={3}
-                title="Sprint Velocity"
+                title={t('statVelocityTitle')}
                 value={sprintVelocity}
-                subtitle="story points"
+                subtitle={t('statStoryPoints')}
                 icon={TrendingUp}
                 color="green"
                 progress={100}
@@ -244,15 +346,15 @@ export default function WorkloadPage() {
               {/* Burndown */}
               <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden" style={{ height: 300 }}>
                 <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                  <span className="text-[12.5px] font-semibold text-navy-900">Burndown - {selectedSprintObj?.name || 'Sprint'}</span>
+                  <span className="text-[12.5px] font-semibold text-navy-900">{t('burndownTitle', { sprint: selectedSprintObj?.name || t('sprintFallback') })}</span>
                   <div className="ml-auto flex items-center gap-[10px] text-[10px] text-neutral font-mono">
                     <span className="flex items-center gap-[4px]">
                       <span className="inline-block w-3 h-[2px] bg-navy-700" />
-                      Actual
+                      {t('legendActual')}
                     </span>
                     <span className="flex items-center gap-[4px]">
                       <span className="inline-block w-3 h-0 border-t-2 border-dashed border-text-meta" />
-                      Ideal
+                      {t('legendIdeal')}
                     </span>
                   </div>
                 </div>
@@ -264,14 +366,14 @@ export default function WorkloadPage() {
               {/* Velocity */}
               <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden" style={{ height: 300 }}>
                 <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                  <span className="text-[12.5px] font-semibold text-navy-900">Velocity</span>
-                  <span className="ml-auto font-mono text-[9.5px] text-text-meta">pts / sprint</span>
+                  <span className="text-[12.5px] font-semibold text-navy-900">{t('velocityTitle')}</span>
+                  <span className="ml-auto font-mono text-[9.5px] text-text-meta">{t('ptsPerSprint')}</span>
                 </div>
                 <div className="flex-1 px-[15px] py-[8px] min-h-0">
                   {velocity && selectedProject ? (
                     <VelocityChart data={velocity} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-[11px] text-neutral">No velocity data</div>
+                    <div className="flex items-center justify-center h-full text-[11px] text-neutral">{t('noVelocityData')}</div>
                   )}
                 </div>
               </div>
@@ -281,8 +383,8 @@ export default function WorkloadPage() {
             {canViewAll && data.length > 0 && (
               <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden">
                 <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                  <span className="text-[12.5px] font-semibold text-navy-900">Workload per member</span>
-                  <span className="ml-auto text-[11px] text-neutral">{data.length} members · sorted by load</span>
+                  <span className="text-[12.5px] font-semibold text-navy-900">{t('workloadPerMember')}</span>
+                  <span className="ml-auto text-[11px] text-neutral">{t('membersSorted', { count: data.length })}</span>
                 </div>
 
                 {/* Table header */}
@@ -290,7 +392,7 @@ export default function WorkloadPage() {
                   className="grid px-[15px] h-[30px] items-center border-b border-border-subtle bg-surface-2"
                   style={{ gridTemplateColumns: '1fr 96px 88px 88px 150px 100px' }}
                 >
-                  {['MEMBER', 'TASKS', 'LOGGED', 'LOAD', '', 'CAPACITY'].map((h, i) => (
+                  {[t('colMember'), t('colTasks'), t('colLogged'), t('colLoad'), '', t('colCapacity')].map((h, i) => (
                     <div
                       key={i}
                       className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral"
@@ -311,7 +413,8 @@ export default function WorkloadPage() {
                   .map((row: any, i: number) => {
                     const loadPct = row.estimated_hours > 0 ? Math.round((row.actual_hours / row.estimated_hours) * 100) : 0;
                     const level = capacityLevel(loadPct);
-                    const badge = CAPACITY_BADGE[level];
+                    const badge = CAPACITY_STYLE[level];
+                    const badgeLabel = capacityLabel(level, t);
                     const barColor = CAPACITY_BAR[level];
 
                     return (
@@ -365,7 +468,7 @@ export default function WorkloadPage() {
                             style={{ background: badge.bg, color: badge.color }}
                           >
                             <span className="w-[5px] h-[5px] rounded-full" style={{ background: badge.dot }} />
-                            {badge.label}
+                            {badgeLabel}
                           </span>
                         </div>
                       </motion.div>

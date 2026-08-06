@@ -8,11 +8,171 @@ import { useAuthStore } from '@/store/authStore';
 import { getRoleLabel } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
+import { useLocale, useT } from '@/lib/i18n';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+
+const dict = {
+  en: {
+    pageTitle: 'Settings',
+    pageSubtitle: 'Manage your preferences and profile',
+    tabProfile: 'Profile',
+    tabNotifications: 'Notifications',
+    tabSecurity: 'Security',
+    division: 'Division',
+    position: 'Position',
+    esignTitle: 'Electronic Signature (e-Sign)',
+    esignDesc: 'This information is used when you are designated as a document signatory',
+    nikLabel: 'NIK',
+    nikPlaceholder: '16 digit NIK',
+    signatureSpecimen: 'Signature Specimen',
+    specimenAlt: 'Signature specimen',
+    specimenSavedMsg: 'Specimen saved. Upload a new file to replace it.',
+    specimenFormatHint: 'PNG/JPG format, transparent background recommended',
+    saving: 'Saving...',
+    saveEsignData: 'Save e-Sign Data',
+    esignSavedToast: 'e-Sign data saved!',
+    failedToSave: 'Failed to save',
+    telegramNotifTitle: 'Telegram Notifications',
+    telegramNotifDesc: 'Receive real-time task notifications',
+    connected: 'Connected',
+    telegramChatId: 'Telegram Chat ID',
+    telegramPlaceholder: 'e.g. 123456789',
+    telegramSavedToast: 'Telegram Chat ID saved!',
+    howToGetChatId: 'How to get your Chat ID:',
+    telegramStep1: 'Open Telegram and search for @BLPIDWorkloadBot',
+    telegramStep2: 'Send /start to the bot',
+    telegramStep3: 'Copy the ID provided and paste it above',
+    connectedWithChatId: 'Connected with Chat ID:',
+    notifSettingsTitle: 'Notification Settings',
+    notifSettingsDesc: 'Choose which notifications you want to receive',
+    colType: 'Type',
+    colTelegram: 'Telegram',
+    colInApp: 'In-App',
+    'task.assigned.label': 'Task Assigned',
+    'task.assigned.desc': 'When a task is assigned to you',
+    'task.commented.label': 'Task Comment',
+    'task.commented.desc': 'When a new comment is added to your task',
+    'sprint.started.label': 'Sprint Started',
+    'sprint.started.desc': 'When a new sprint begins',
+    'sprint.completed.label': 'Sprint Completed',
+    'sprint.completed.desc': 'When a sprint is completed',
+    'calendar.event_created.label': 'New Event',
+    'calendar.event_created.desc': 'When a new calendar event is created',
+    'calendar.event_assigned.label': 'Added to Event',
+    'calendar.event_assigned.desc': 'When you are added to a calendar event',
+    'calendar.deadline_reminder.label': 'Event Reminder',
+    'calendar.deadline_reminder.desc': 'Reminder 1 day and day-of for events',
+    'tte.sign_requested.label': 'Signature Request',
+    'tte.sign_requested.desc': 'When you are asked to sign an e-Sign document',
+    'tte.all_signed.label': 'Document Fully Signed',
+    'tte.all_signed.desc': 'When all signatories have completed signing',
+    'tte.distributed.label': 'Document Distributed',
+    'tte.distributed.desc': 'When an e-Sign document is sent to you',
+    'change_request.submitted.label': 'New CR Submitted',
+    'change_request.submitted.desc': 'When a new Change Request needs review',
+    'change_request.approved.label': 'CR Approved',
+    'change_request.approved.desc': 'When your Change Request is approved',
+    'change_request.rejected.label': 'CR Rejected',
+    'change_request.rejected.desc': 'When your Change Request is rejected',
+    pwRule0: 'At least 12 characters',
+    pwRule1: 'Upper and lowercase letters',
+    pwRule2: 'At least 1 number',
+    pwRule3: 'At least 1 symbol',
+    changePasswordTitle: 'Change Password',
+    changePasswordDesc: 'You will be signed out after changing your password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    confirmNewPassword: 'Confirm New Password',
+    showPassword: 'Show password',
+    passwordsMatch: 'Passwords match',
+    changePasswordBtn: 'Change Password',
+    passwordChangedToast: 'Password changed. Please sign in again.',
+    failedChangePassword: 'Failed to change password',
+    languageDesc: 'Choose the display language for the application',
+  },
+  id: {
+    pageTitle: 'Pengaturan',
+    pageSubtitle: 'Kelola preferensi dan profil Anda',
+    tabProfile: 'Profil',
+    tabNotifications: 'Notifikasi',
+    tabSecurity: 'Keamanan',
+    division: 'Divisi',
+    position: 'Jabatan',
+    esignTitle: 'Tanda Tangan Elektronik (e-Sign)',
+    esignDesc: 'Informasi ini digunakan ketika Anda ditetapkan sebagai penanda tangan dokumen',
+    nikLabel: 'NIK',
+    nikPlaceholder: 'NIK 16 digit',
+    signatureSpecimen: 'Spesimen Tanda Tangan',
+    specimenAlt: 'Spesimen tanda tangan',
+    specimenSavedMsg: 'Spesimen tersimpan. Unggah berkas baru untuk menggantinya.',
+    specimenFormatHint: 'Format PNG/JPG, latar belakang transparan disarankan',
+    saving: 'Menyimpan...',
+    saveEsignData: 'Simpan Data e-Sign',
+    esignSavedToast: 'Data e-Sign berhasil disimpan!',
+    failedToSave: 'Gagal menyimpan',
+    telegramNotifTitle: 'Notifikasi Telegram',
+    telegramNotifDesc: 'Terima notifikasi tugas secara real-time',
+    connected: 'Terhubung',
+    telegramChatId: 'Telegram Chat ID',
+    telegramPlaceholder: 'contoh: 123456789',
+    telegramSavedToast: 'Telegram Chat ID berhasil disimpan!',
+    howToGetChatId: 'Cara mendapatkan Chat ID Anda:',
+    telegramStep1: 'Buka Telegram dan cari @BLPIDWorkloadBot',
+    telegramStep2: 'Kirim /start ke bot tersebut',
+    telegramStep3: 'Salin ID yang diberikan dan tempel di atas',
+    connectedWithChatId: 'Terhubung dengan Chat ID:',
+    notifSettingsTitle: 'Pengaturan Notifikasi',
+    notifSettingsDesc: 'Pilih notifikasi yang ingin Anda terima',
+    colType: 'Jenis',
+    colTelegram: 'Telegram',
+    colInApp: 'Dalam Aplikasi',
+    'task.assigned.label': 'Tugas Ditetapkan',
+    'task.assigned.desc': 'Ketika sebuah tugas ditetapkan untuk Anda',
+    'task.commented.label': 'Komentar Tugas',
+    'task.commented.desc': 'Ketika komentar baru ditambahkan pada tugas Anda',
+    'sprint.started.label': 'Sprint Dimulai',
+    'sprint.started.desc': 'Ketika sprint baru dimulai',
+    'sprint.completed.label': 'Sprint Selesai',
+    'sprint.completed.desc': 'Ketika sebuah sprint selesai',
+    'calendar.event_created.label': 'Acara Baru',
+    'calendar.event_created.desc': 'Ketika acara kalender baru dibuat',
+    'calendar.event_assigned.label': 'Ditambahkan ke Acara',
+    'calendar.event_assigned.desc': 'Ketika Anda ditambahkan ke acara kalender',
+    'calendar.deadline_reminder.label': 'Pengingat Acara',
+    'calendar.deadline_reminder.desc': 'Pengingat 1 hari sebelumnya dan pada hari-H acara',
+    'tte.sign_requested.label': 'Permintaan Tanda Tangan',
+    'tte.sign_requested.desc': 'Ketika Anda diminta menandatangani dokumen e-Sign',
+    'tte.all_signed.label': 'Dokumen Selesai Ditandatangani',
+    'tte.all_signed.desc': 'Ketika semua penanda tangan telah menyelesaikan tanda tangan',
+    'tte.distributed.label': 'Dokumen Didistribusikan',
+    'tte.distributed.desc': 'Ketika dokumen e-Sign dikirimkan kepada Anda',
+    'change_request.submitted.label': 'CR Baru Diajukan',
+    'change_request.submitted.desc': 'Ketika Change Request baru perlu ditinjau',
+    'change_request.approved.label': 'CR Disetujui',
+    'change_request.approved.desc': 'Ketika Change Request Anda disetujui',
+    'change_request.rejected.label': 'CR Ditolak',
+    'change_request.rejected.desc': 'Ketika Change Request Anda ditolak',
+    pwRule0: 'Minimal 12 karakter',
+    pwRule1: 'Huruf besar dan huruf kecil',
+    pwRule2: 'Minimal 1 angka',
+    pwRule3: 'Minimal 1 simbol',
+    changePasswordTitle: 'Ubah Kata Sandi',
+    changePasswordDesc: 'Anda akan keluar setelah mengubah kata sandi',
+    currentPassword: 'Kata Sandi Saat Ini',
+    newPassword: 'Kata Sandi Baru',
+    confirmNewPassword: 'Konfirmasi Kata Sandi Baru',
+    showPassword: 'Tampilkan kata sandi',
+    passwordsMatch: 'Kata sandi cocok',
+    changePasswordBtn: 'Ubah Kata Sandi',
+    passwordChangedToast: 'Kata sandi berhasil diubah. Silakan masuk kembali.',
+    failedChangePassword: 'Gagal mengubah kata sandi',
+    languageDesc: 'Pilih bahasa tampilan untuk aplikasi',
+  },
+};
 
 const TABS = [
   {
     id: 'profile',
-    label: 'Profile',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
@@ -22,7 +182,6 @@ const TABS = [
   },
   {
     id: 'notif',
-    label: 'Notifications',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -32,7 +191,6 @@ const TABS = [
   },
   {
     id: 'security',
-    label: 'Security',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
         <rect x="3" y="11" width="18" height="11" rx="2" />
@@ -61,22 +219,23 @@ function getInitials(name: string) {
 }
 
 const NOTIF_TYPES = [
-  { key: 'task.assigned', label: 'Task Assigned', desc: 'When a task is assigned to you' },
-  { key: 'task.commented', label: 'Task Comment', desc: 'When a new comment is added to your task' },
-  { key: 'sprint.started', label: 'Sprint Started', desc: 'When a new sprint begins' },
-  { key: 'sprint.completed', label: 'Sprint Completed', desc: 'When a sprint is completed' },
-  { key: 'calendar.event_created', label: 'New Event', desc: 'When a new calendar event is created' },
-  { key: 'calendar.event_assigned', label: 'Added to Event', desc: 'When you are added to a calendar event' },
-  { key: 'calendar.deadline_reminder', label: 'Event Reminder', desc: 'Reminder 1 day and day-of for events' },
-  { key: 'tte.sign_requested', label: 'Signature Request', desc: 'When you are asked to sign an e-Sign document' },
-  { key: 'tte.all_signed', label: 'Document Fully Signed', desc: 'When all signatories have completed signing' },
-  { key: 'tte.distributed', label: 'Document Distributed', desc: 'When an e-Sign document is sent to you' },
-  { key: 'change_request.submitted', label: 'New CR Submitted', desc: 'When a new Change Request needs review' },
-  { key: 'change_request.approved', label: 'CR Approved', desc: 'When your Change Request is approved' },
-  { key: 'change_request.rejected', label: 'CR Rejected', desc: 'When your Change Request is rejected' },
+  { key: 'task.assigned' },
+  { key: 'task.commented' },
+  { key: 'sprint.started' },
+  { key: 'sprint.completed' },
+  { key: 'calendar.event_created' },
+  { key: 'calendar.event_assigned' },
+  { key: 'calendar.deadline_reminder' },
+  { key: 'tte.sign_requested' },
+  { key: 'tte.all_signed' },
+  { key: 'tte.distributed' },
+  { key: 'change_request.submitted' },
+  { key: 'change_request.approved' },
+  { key: 'change_request.rejected' },
 ];
 
 function NotifSettings() {
+  const t = useT(dict);
   const qc = useQueryClient();
   const { data: settings, isLoading } = useQuery({
     queryKey: ['notif-settings'],
@@ -108,19 +267,19 @@ function NotifSettings() {
 
   return (
     <div className="bg-white rounded-[6px] border border-border-subtle p-6">
-      <h3 className="font-bold text-navy-800 mb-1">Notification Settings</h3>
-      <p className="text-xs text-text-placeholder mb-5">Choose which notifications you want to receive</p>
+      <h3 className="font-bold text-navy-800 mb-1">{t('notifSettingsTitle')}</h3>
+      <p className="text-xs text-text-placeholder mb-5">{t('notifSettingsDesc')}</p>
       <div className="space-y-1">
         <div className="grid grid-cols-3 gap-2 px-3 pb-2">
-          <div className="col-span-1 text-xs font-semibold text-text-placeholder uppercase tracking-wider">Type</div>
-          <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider text-center">Telegram</div>
-          <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider text-center">In-App</div>
+          <div className="col-span-1 text-xs font-semibold text-text-placeholder uppercase tracking-wider">{t('colType')}</div>
+          <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider text-center">{t('colTelegram')}</div>
+          <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider text-center">{t('colInApp')}</div>
         </div>
-        {NOTIF_TYPES.map(({ key, label, desc }) => (
+        {NOTIF_TYPES.map(({ key }) => (
           <div key={key} className="grid grid-cols-3 gap-2 items-center px-3 py-3 rounded-[6px] hover:bg-surface-2 transition-colors">
             <div>
-              <div className="text-sm font-semibold text-text-secondary">{label}</div>
-              <div className="text-xs text-text-placeholder">{desc}</div>
+              <div className="text-sm font-semibold text-text-secondary">{t(`${key}.label`)}</div>
+              <div className="text-xs text-text-placeholder">{t(`${key}.desc`)}</div>
             </div>
             {['telegram', 'in_app'].map((channel) => {
               const enabled = isEnabled(key, channel);
@@ -145,13 +304,14 @@ function NotifSettings() {
 }
 
 const PW_RULES = [
-  { label: 'At least 12 characters', test: (v: string) => v.length >= 12 },
-  { label: 'Upper and lowercase letters', test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
-  { label: 'At least 1 number', test: (v: string) => /[0-9]/.test(v) },
-  { label: 'At least 1 symbol', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
+  { key: 'pwRule0', test: (v: string) => v.length >= 12 },
+  { key: 'pwRule1', test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
+  { key: 'pwRule2', test: (v: string) => /[0-9]/.test(v) },
+  { key: 'pwRule3', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
 ];
 
 function SecuritySettings() {
+  const t = useT(dict);
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -171,7 +331,7 @@ function SecuritySettings() {
         password_confirmation: confirm,
       }),
     onSuccess: () => {
-      toast.success('Password changed. Please sign in again.');
+      toast.success(t('passwordChangedToast'));
       setCurrent('');
       setNext('');
       setConfirm('');
@@ -185,7 +345,7 @@ function SecuritySettings() {
     },
     onError: (e: any) => {
       setErrors(e?.response?.data?.errors || {});
-      toast.error(e?.response?.data?.message || 'Failed to change password');
+      toast.error(e?.response?.data?.message || t('failedChangePassword'));
     },
   });
 
@@ -209,13 +369,13 @@ function SecuritySettings() {
 
   return (
     <div className="bg-white rounded-[6px] border border-border-subtle p-6 max-w-lg">
-      <h3 className="font-bold text-navy-800 mb-1">Change Password</h3>
-      <p className="text-xs text-text-placeholder mb-5">You will be signed out after changing your password</p>
+      <h3 className="font-bold text-navy-800 mb-1">{t('changePasswordTitle')}</h3>
+      <p className="text-xs text-text-placeholder mb-5">{t('changePasswordDesc')}</p>
 
       <div className="space-y-4">
-        {field('Current Password', current, setCurrent, 'current_password')}
-        {field('New Password', next, setNext, 'password')}
-        {field('Confirm New Password', confirm, setConfirm, 'password_confirmation')}
+        {field(t('currentPassword'), current, setCurrent, 'current_password')}
+        {field(t('newPassword'), next, setNext, 'password')}
+        {field(t('confirmNewPassword'), confirm, setConfirm, 'password_confirmation')}
 
         <label className="flex items-center gap-2 text-xs text-text-tertiary cursor-pointer select-none">
           <input
@@ -224,19 +384,19 @@ function SecuritySettings() {
             onChange={(e) => setShow(e.target.checked)}
             className="rounded border-border-button text-navy-700 focus:ring-navy-700/20"
           />
-          Show password
+          {t('showPassword')}
         </label>
 
         {next.length > 0 && (
           <div className="bg-surface-2 rounded-[6px] p-3.5 space-y-1.5">
             {PW_RULES.map((r, i) => (
-              <div key={r.label} className={`flex items-center gap-2 text-xs ${passed[i] ? 'text-success-text' : 'text-text-placeholder'}`}>
+              <div key={r.key} className={`flex items-center gap-2 text-xs ${passed[i] ? 'text-success-text' : 'text-text-placeholder'}`}>
                 <span
                   className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${passed[i] ? 'bg-success-soft' : 'bg-border'}`}
                 >
                   {passed[i] ? '\u2713' : ''}
                 </span>
-                {r.label}
+                {t(r.key)}
               </div>
             ))}
             {confirm.length > 0 && (
@@ -246,7 +406,7 @@ function SecuritySettings() {
                 >
                   {matched ? '\u2713' : '\u00d7'}
                 </span>
-                Passwords match
+                {t('passwordsMatch')}
               </div>
             )}
           </div>
@@ -257,7 +417,7 @@ function SecuritySettings() {
           disabled={!canSubmit || mutation.isPending}
           className="w-full px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
-          {mutation.isPending ? 'Saving...' : 'Change Password'}
+          {mutation.isPending ? t('saving') : t('changePasswordBtn')}
         </button>
       </div>
     </div>
@@ -266,11 +426,19 @@ function SecuritySettings() {
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore();
+  const { locale, setLocale } = useLocale();
+  const t = useT(dict);
   const [telegramId, setTelegramId] = useState(user?.telegram_chat_id || '');
   const [nik, setNik] = useState(user?.nik || '');
   const [specimenFile, setSpecimenFile] = useState<File | null>(null);
   const [specimenBlobUrl, setSpecimenBlobUrl] = useState<string | null>(null);
   const [tab, setTab] = useState('profile');
+
+  const TAB_LABELS: Record<string, string> = {
+    profile: t('tabProfile'),
+    notif: t('tabNotifications'),
+    security: t('tabSecurity'),
+  };
 
   useEffect(() => {
     authService
@@ -310,19 +478,19 @@ export default function SettingsPage() {
     },
     onSuccess: (res: any) => {
       updateUser({ nik, tte_specimen_url: res.data?.data?.tte_specimen_url || user?.tte_specimen_url });
-      toast.success('e-Sign data saved!');
+      toast.success(t('esignSavedToast'));
       setSpecimenFile(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSave')),
   });
 
   const telegramMutation = useMutation({
     mutationFn: (id: string) => authService.setTelegram(id),
     onSuccess: () => {
       updateUser({ telegram_chat_id: telegramId });
-      toast.success('Telegram Chat ID saved!');
+      toast.success(t('telegramSavedToast'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToSave')),
   });
 
   return (
@@ -335,22 +503,22 @@ export default function SettingsPage() {
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-navy-900">Settings</h1>
-          <p className="text-sm text-text-placeholder mt-0.5">Manage your preferences and profile</p>
+          <h1 className="text-2xl font-bold text-navy-900">{t('pageTitle')}</h1>
+          <p className="text-sm text-text-placeholder mt-0.5">{t('pageSubtitle')}</p>
         </div>
       </div>
 
       <div className="flex gap-6 items-start">
         <div className="w-48 flex-shrink-0">
           <nav className="space-y-1">
-            {TABS.map((t) => (
+            {TABS.map((tabItem) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[6px] text-sm font-semibold transition-all text-left ${tab === t.id ? 'bg-navy-700/8 text-navy-700' : 'text-text-tertiary hover:bg-border-subtle hover:text-text-secondary'}`}
+                key={tabItem.id}
+                onClick={() => setTab(tabItem.id)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[6px] text-sm font-semibold transition-all text-left ${tab === tabItem.id ? 'bg-navy-700/8 text-navy-700' : 'text-text-tertiary hover:bg-border-subtle hover:text-text-secondary'}`}
               >
-                {t.icon}
-                {t.label}
+                {tabItem.icon}
+                {TAB_LABELS[tabItem.id]}
               </button>
             ))}
           </nav>
@@ -395,7 +563,7 @@ export default function SettingsPage() {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${user?.is_active ? 'bg-success-soft text-success-text' : 'bg-danger-soft text-danger-text'}`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${user?.is_active ? 'bg-success' : 'bg-danger'}`} />
-                          {user?.is_active ? 'Active' : 'Inactive'}
+                          {user?.is_active ? t('common.active') : t('common.inactive')}
                         </span>
                       </div>
                     </div>
@@ -403,7 +571,7 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       {
-                        label: 'Division',
+                        label: t('division'),
                         value: user?.division || '—',
                         icon: (
                           <svg
@@ -419,7 +587,7 @@ export default function SettingsPage() {
                         ),
                       },
                       {
-                        label: 'Position',
+                        label: t('position'),
                         value: user?.position || '—',
                         icon: (
                           <svg
@@ -448,36 +616,51 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                <div className="bg-white rounded-[6px] border border-border-subtle p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="font-bold text-navy-800 mb-1">{t('common.language')}</h3>
+                      <p className="text-xs text-text-placeholder">{t('languageDesc')}</p>
+                    </div>
+                    <SegmentedControl
+                      options={[
+                        { value: 'en', label: 'English' },
+                        { value: 'id', label: 'Bahasa Indonesia' },
+                      ]}
+                      value={locale}
+                      onChange={setLocale}
+                    />
+                  </div>
+                </div>
+
                 <div className="bg-white rounded-[6px] border border-border-subtle p-6 space-y-4">
                   <div>
-                    <h3 className="font-bold text-navy-800 mb-1">Electronic Signature (e-Sign)</h3>
-                    <p className="text-xs text-text-placeholder">
-                      This information is used when you are designated as a document signatory
-                    </p>
+                    <h3 className="font-bold text-navy-800 mb-1">{t('esignTitle')}</h3>
+                    <p className="text-xs text-text-placeholder">{t('esignDesc')}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-1.5">NIK</label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('nikLabel')}</label>
                     <input
                       value={nik}
                       onChange={(e) => setNik(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 font-mono placeholder:text-border-button focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-                      placeholder="16 digit NIK"
+                      placeholder={t('nikPlaceholder')}
                       maxLength={16}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-text-secondary mb-1.5">Signature Specimen</label>
+                    <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('signatureSpecimen')}</label>
                     {user?.tte_specimen_url && (
                       <div className="mb-3 p-3 bg-surface-2 rounded-[6px] border border-border-subtle flex items-center gap-3">
                         <img
                           src={specimenBlobUrl ?? undefined}
-                          alt="Signature specimen"
+                          alt={t('specimenAlt')}
                           className="h-12 object-contain rounded"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
                         />
-                        <div className="text-xs text-text-tertiary">Specimen saved. Upload a new file to replace it.</div>
+                        <div className="text-xs text-text-tertiary">{t('specimenSavedMsg')}</div>
                       </div>
                     )}
                     <input
@@ -486,7 +669,7 @@ export default function SettingsPage() {
                       onChange={(e) => setSpecimenFile(e.target.files?.[0] || null)}
                       className="w-full text-sm text-text-tertiary file:mr-3 file:py-2 file:px-4 file:rounded-[6px] file:border-0 file:text-sm file:font-semibold file:bg-navy-700/8 file:text-navy-700 hover:file:bg-navy-700/15 transition-all"
                     />
-                    <p className="text-xs text-text-placeholder mt-1.5">PNG/JPG format, transparent background recommended</p>
+                    <p className="text-xs text-text-placeholder mt-1.5">{t('specimenFormatHint')}</p>
                   </div>
 
                   <button
@@ -494,7 +677,7 @@ export default function SettingsPage() {
                     disabled={tteMutation.isPending || (!nik && !specimenFile)}
                     className="px-5 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-all"
                   >
-                    {tteMutation.isPending ? 'Saving...' : 'Save e-Sign Data'}
+                    {tteMutation.isPending ? t('saving') : t('saveEsignData')}
                   </button>
                 </div>
 
@@ -518,20 +701,20 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-navy-800">Telegram Notifications</h3>
-                      <p className="text-xs text-text-placeholder">Receive real-time task notifications</p>
+                      <h3 className="font-bold text-navy-800">{t('telegramNotifTitle')}</h3>
+                      <p className="text-xs text-text-placeholder">{t('telegramNotifDesc')}</p>
                     </div>
                     {user?.telegram_chat_id && (
                       <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-success-soft text-success-text">
                         <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                        Connected
+                        {t('connected')}
                       </span>
                     )}
                   </div>
 
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-semibold text-text-secondary mb-1.5">Telegram Chat ID</label>
+                      <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('telegramChatId')}</label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <svg
@@ -547,7 +730,7 @@ export default function SettingsPage() {
                             value={telegramId}
                             onChange={(e) => setTelegramId(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 rounded-[6px] border border-border text-sm text-text-secondary placeholder:text-border-button focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all font-mono"
-                            placeholder="e.g. 123456789"
+                            placeholder={t('telegramPlaceholder')}
                           />
                         </div>
                         <button
@@ -555,19 +738,15 @@ export default function SettingsPage() {
                           disabled={telegramMutation.isPending || !telegramId}
                           className="px-5 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-all whitespace-nowrap"
                         >
-                          {telegramMutation.isPending ? 'Saving...' : 'Save'}
+                          {telegramMutation.isPending ? t('saving') : t('common.save')}
                         </button>
                       </div>
                     </div>
 
                     <div className="p-4 bg-surface-2 rounded-[6px] border border-border-subtle">
-                      <p className="text-xs font-semibold text-text-secondary mb-2">How to get your Chat ID:</p>
+                      <p className="text-xs font-semibold text-text-secondary mb-2">{t('howToGetChatId')}</p>
                       <ol className="text-xs text-text-tertiary space-y-1.5">
-                        {[
-                          'Open Telegram and search for @BLPIDWorkloadBot',
-                          'Send /start to the bot',
-                          'Copy the ID provided and paste it above',
-                        ].map((s, i) => (
+                        {[t('telegramStep1'), t('telegramStep2'), t('telegramStep3')].map((s, i) => (
                           <li key={i} className="flex items-start gap-2">
                             <span className="w-4 h-4 rounded-full bg-navy-700/10 text-navy-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                               {i + 1}

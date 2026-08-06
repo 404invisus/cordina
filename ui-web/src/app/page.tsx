@@ -2,8 +2,16 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: { heroPrefix: 'Where work', heroHighlight: 'connects', cta: 'Open ConnectOne' },
+  id: { heroPrefix: 'Tempat kerja', heroHighlight: 'terhubung', cta: 'Buka ConnectOne' },
+};
 
 export default function LandingPage() {
+  const { locale, setLocale } = useLocale();
+  const t = useT(dict);
   return (
     <div className="min-h-screen bg-navy-900 relative overflow-hidden font-sans flex flex-col">
       {/* Ambient glow */}
@@ -28,6 +36,21 @@ export default function LandingPage() {
           <img src="/logo-only-white.png" alt="" width={24} height={24} className="object-contain" />
           <span className="text-white font-semibold text-[14px] tracking-tight">ConnectOne</span>
         </div>
+        <div className="ml-auto flex items-center gap-1 text-[11px] font-semibold">
+          <button
+            onClick={() => setLocale('en')}
+            className={`px-2 py-1 rounded-sm transition-colors ${locale === 'en' ? 'text-white' : 'text-white/35 hover:text-white/60'}`}
+          >
+            EN
+          </button>
+          <span className="text-white/20">/</span>
+          <button
+            onClick={() => setLocale('id')}
+            className={`px-2 py-1 rounded-sm transition-colors ${locale === 'id' ? 'text-white' : 'text-white/35 hover:text-white/60'}`}
+          >
+            ID
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}
@@ -39,7 +62,7 @@ export default function LandingPage() {
           className="font-display font-semibold text-white leading-[1.05] tracking-[-0.03em]"
           style={{ fontSize: 'clamp(2.6rem, 6.5vw, 5rem)' }}
         >
-          Where work <span className="text-gold-500">connects</span>
+          {t('heroPrefix')} <span className="text-gold-500">{t('heroHighlight')}</span>
         </motion.h1>
 
         <motion.div
@@ -52,7 +75,7 @@ export default function LandingPage() {
             href="/login"
             className="inline-flex items-center gap-2 bg-white text-navy-900 px-7 py-3 text-[13.5px] font-semibold rounded-sm hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-azure-400 transition-all duration-150"
           >
-            Open ConnectOne
+            {t('cta')}
           </Link>
         </motion.div>
       </div>

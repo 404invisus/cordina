@@ -1,7 +1,28 @@
 'use client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    remaining: 'Remaining',
+    ideal: 'Ideal',
+    total: 'Total',
+    completed: 'Completed',
+    noEstimatedHours: 'No estimated hours yet',
+    addEstimatedHours: 'Add estimated hours to tasks to view the burndown chart',
+  },
+  id: {
+    remaining: 'Sisa',
+    ideal: 'Ideal',
+    total: 'Total',
+    completed: 'Selesai',
+    noEstimatedHours: 'Belum ada jam estimasi',
+    addEstimatedHours: 'Tambahkan jam estimasi pada tugas untuk melihat grafik burndown',
+  },
+};
 
 export function BurndownChart({ data, workloadData }: { data: any; workloadData?: any[] }) {
+  const t = useT(dict);
   if (!data) return null;
   const { sprint, total_points, completed_by_day } = data;
 
@@ -62,8 +83,8 @@ export function BurndownChart({ data, workloadData }: { data: any; workloadData?
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-2">
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
-        <p className="text-sm">No estimated hours yet</p>
-        <p className="text-xs mt-1">Add estimated hours to tasks to view the burndown chart</p>
+        <p className="text-sm">{t('noEstimatedHours')}</p>
+        <p className="text-xs mt-1">{t('addEstimatedHours')}</p>
       </div>
     );
   }
@@ -75,14 +96,15 @@ export function BurndownChart({ data, workloadData }: { data: any; workloadData?
         <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#a6a094' }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 11, fill: '#a6a094' }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={{ backgroundColor: '#0d2b48', border: 'none', borderRadius: '6px', color: '#ffffff', fontSize: 12 }} />
-        <Line type="monotone" dataKey="remaining" stroke="#14406a" strokeWidth={2.5} dot={false} name="Remaining" connectNulls={false} />
-        <Line type="monotone" dataKey="ideal" stroke="#c0bcb4" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Ideal" />
+        <Line type="monotone" dataKey="remaining" stroke="#14406a" strokeWidth={2.5} dot={false} name={t('remaining')} connectNulls={false} />
+        <Line type="monotone" dataKey="ideal" stroke="#c0bcb4" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name={t('ideal')} />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
 export function VelocityChart({ data }: { data: any[] }) {
+  const t = useT(dict);
   if (!data || data.length === 0) return null;
   const chartData = data.map((s: any) => ({
     name: s.sprint_name?.slice(0, 12) || s.name?.slice(0, 12),
@@ -97,8 +119,8 @@ export function VelocityChart({ data }: { data: any[] }) {
         <YAxis tick={{ fontSize: 11, fill: '#a6a094' }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={{ backgroundColor: '#0d2b48', border: 'none', borderRadius: '6px', color: '#ffffff', fontSize: 12 }} />
         <Legend />
-        <Bar dataKey="total" fill="#eceae4" radius={[6, 6, 0, 0]} name="Total" />
-        <Bar dataKey="completed" fill="#14406a" radius={[6, 6, 0, 0]} name="Completed" />
+        <Bar dataKey="total" fill="#eceae4" radius={[6, 6, 0, 0]} name={t('total')} />
+        <Bar dataKey="completed" fill="#14406a" radius={[6, 6, 0, 0]} name={t('completed')} />
       </BarChart>
     </ResponsiveContainer>
   );

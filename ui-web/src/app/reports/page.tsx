@@ -9,6 +9,7 @@ import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
 import { reportService, reportExportService, projectService, sprintService } from '@/lib/api';
 import { FileBarChart2, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLocale, useT } from '@/lib/i18n';
 
 const REPORT_TABS = [
   { id: 'workload', label: 'Workload', needsSprint: true },
@@ -17,6 +18,120 @@ const REPORT_TABS = [
   { id: 'velocity', label: 'Velocity', needsSprint: false },
   { id: 'portfolio', label: 'Portfolio', needsSprint: false },
 ];
+
+const TAB_LABEL_KEY: Record<string, string> = {
+  workload: 'tabWorkload',
+  sprint: 'tabSprint',
+  time: 'tabTime',
+  velocity: 'tabVelocity',
+  portfolio: 'tabPortfolio',
+};
+
+function tabLabel(id: string | undefined, t: ReturnType<typeof useT>): string {
+  if (!id || !TAB_LABEL_KEY[id]) return '';
+  return t(TAB_LABEL_KEY[id]);
+}
+
+const dict = {
+  en: {
+    reporting: 'REPORTING',
+    reports: 'Reports',
+    subtitle: 'Same layout on screen and in the exported PDF',
+    schedule: 'Schedule',
+    exporting: 'Exporting…',
+    exportPdf: 'Export PDF',
+    exportFailed: 'Export failed',
+    tabWorkload: 'Workload',
+    tabSprint: 'Sprint',
+    tabTime: 'Time tracking',
+    tabVelocity: 'Velocity',
+    tabPortfolio: 'Portfolio',
+    requiredLabel: 'REQUIRED',
+    chooseProject: 'Project: choose one',
+    chooseSprintToContinue: 'Sprint: choose one to continue',
+    chooseProjectToContinue: 'Choose a project to continue',
+    reportNeedsSprint: '{label} report needs a sprint',
+    chooseDateRangeToContinue: 'Choose a date range to continue',
+    noReportToPreview: 'No report to preview',
+    selectFiltersToGenerate: 'Select filters above to generate a report',
+    livePreviewLabel: 'LIVE PREVIEW: EXACTLY WHAT THE PDF CONTAINS',
+    a4Portrait: 'A4 · PORTRAIT',
+    project: 'Project',
+    reportOf: '{label} Report',
+    generatedInline: 'Generated {date}',
+    filtered: 'Filtered:',
+    taskDistribution: 'TASK DISTRIBUTION',
+    total: 'Total',
+    done: 'Done',
+    progressPerMember: 'PROGRESS PER MEMBER',
+    totalTasks: 'TOTAL TASKS',
+    completedLabel: 'COMPLETED',
+    completionLabel: 'COMPLETION',
+    statusBreakdown: 'STATUS BREAKDOWN',
+    timeLogEntries: 'TIME LOG - {count} entries',
+    colTask: 'TASK',
+    colSprint: 'SPRINT',
+    colHrs: 'HRS',
+    colDate: 'DATE',
+    velocityPerSprint: 'VELOCITY PER SPRINT',
+    planned: 'Planned',
+    completed: 'Completed',
+    exportLabel: 'EXPORT',
+    scope: 'SCOPE',
+    sprintWord: 'Sprint',
+    dateRange: 'Date range',
+    generatedLabel: 'Generated',
+  },
+  id: {
+    reporting: 'PELAPORAN',
+    reports: 'Laporan',
+    subtitle: 'Tata letak yang sama di layar dan pada PDF yang diekspor',
+    schedule: 'Jadwalkan',
+    exporting: 'Mengekspor…',
+    exportPdf: 'Ekspor PDF',
+    exportFailed: 'Ekspor gagal',
+    tabWorkload: 'Beban Kerja',
+    tabSprint: 'Sprint',
+    tabTime: 'Pelacakan Waktu',
+    tabVelocity: 'Kecepatan',
+    tabPortfolio: 'Portofolio',
+    requiredLabel: 'WAJIB',
+    chooseProject: 'Proyek: pilih salah satu',
+    chooseSprintToContinue: 'Sprint: pilih salah satu untuk melanjutkan',
+    chooseProjectToContinue: 'Pilih proyek untuk melanjutkan',
+    reportNeedsSprint: 'Laporan {label} memerlukan sprint',
+    chooseDateRangeToContinue: 'Pilih rentang tanggal untuk melanjutkan',
+    noReportToPreview: 'Tidak ada laporan untuk ditinjau',
+    selectFiltersToGenerate: 'Pilih filter di atas untuk membuat laporan',
+    livePreviewLabel: 'PRATINJAU LANGSUNG: SAMA PERSIS DENGAN ISI PDF',
+    a4Portrait: 'A4 · POTRET',
+    project: 'Proyek',
+    reportOf: 'Laporan {label}',
+    generatedInline: 'Dibuat {date}',
+    filtered: 'Difilter:',
+    taskDistribution: 'DISTRIBUSI TUGAS',
+    total: 'Total',
+    done: 'Selesai',
+    progressPerMember: 'PROGRES PER ANGGOTA',
+    totalTasks: 'TOTAL TUGAS',
+    completedLabel: 'SELESAI',
+    completionLabel: 'PENYELESAIAN',
+    statusBreakdown: 'RINCIAN STATUS',
+    timeLogEntries: 'LOG WAKTU - {count} entri',
+    colTask: 'TUGAS',
+    colSprint: 'SPRINT',
+    colHrs: 'JAM',
+    colDate: 'TANGGAL',
+    velocityPerSprint: 'KECEPATAN PER SPRINT',
+    planned: 'Direncanakan',
+    completed: 'Selesai',
+    exportLabel: 'EKSPOR',
+    scope: 'CAKUPAN',
+    sprintWord: 'Sprint',
+    dateRange: 'Rentang tanggal',
+    generatedLabel: 'Dibuat',
+  },
+};
 
 const TOOLTIP_STYLE = {
   backgroundColor: '#0d2b48',
@@ -54,6 +169,8 @@ function SelectorBtn({ label, value, empty }: { label: string; value: string; em
 }
 
 export default function ReportsPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const [tab, setTab] = useState('sprint');
   const [exportLoading, setExportLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState('');
@@ -95,7 +212,7 @@ export default function ReportsPage() {
     enabled: !!selectedProject && tab === 'velocity',
   });
 
-  const currentTab = REPORT_TABS.find((t) => t.id === tab);
+  const currentTab = REPORT_TABS.find((rt) => rt.id === tab);
   const needsSprint = currentTab?.needsSprint ?? false;
   const isLoading = wLoading || sLoading || tLoading || vLoading;
   const hasData =
@@ -111,11 +228,11 @@ export default function ReportsPage() {
   const missingSprint = needsSprint && !selectedSprint;
 
   const hintText = missingProject
-    ? 'Choose a project to continue'
+    ? t('chooseProjectToContinue')
     : missingSprint
-      ? `${currentTab?.label} report needs a sprint`
+      ? t('reportNeedsSprint', { label: tabLabel(currentTab?.id, t) })
       : tab === 'time' && (!dateFrom || !dateTo)
-        ? 'Choose a date range to continue'
+        ? t('chooseDateRangeToContinue')
         : null;
 
   const handleExport = async () => {
@@ -137,7 +254,7 @@ export default function ReportsPage() {
         await downloadBlob(new Blob([res.data], { type: 'application/pdf' }), `report_time_${now}.pdf`);
       }
     } catch {
-      toast.error('Export failed');
+      toast.error(t('exportFailed'));
     }
     setExportLoading(false);
   };
@@ -145,13 +262,13 @@ export default function ReportsPage() {
   return (
     <AppLayout>
       <PageHeader
-        section="REPORTING"
-        title="Reports"
-        subtitle="Same layout on screen and in the exported PDF"
+        section={t('reporting')}
+        title={t('reports')}
+        subtitle={t('subtitle')}
         actions={
           <>
             <button className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              Schedule
+              {t('schedule')}
             </button>
             <button
               onClick={handleExport}
@@ -160,7 +277,7 @@ export default function ReportsPage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <FileBarChart2 className="w-3 h-3" strokeWidth={2} />
-              {exportLoading ? 'Exporting…' : 'Export PDF'}
+              {exportLoading ? t('exporting') : t('exportPdf')}
             </button>
           </>
         }
@@ -170,17 +287,17 @@ export default function ReportsPage() {
       <div className="bg-white border border-border rounded-[6px] flex items-center px-[15px] py-[9px] gap-[12px] flex-wrap">
         {/* Tabs */}
         <div className="flex gap-[5px]">
-          {REPORT_TABS.map((t) => (
+          {REPORT_TABS.map((rt) => (
             <button
-              key={t.id}
+              key={rt.id}
               onClick={() => {
-                setTab(t.id);
+                setTab(rt.id);
                 setSelectedMember(null);
               }}
               className="h-[26px] px-[10px] rounded-[4px] text-[11.5px] transition-colors"
-              style={tab === t.id ? { background: '#14406a', color: '#fff', fontWeight: 600 } : { color: '#6b7280', fontWeight: 500 }}
+              style={tab === rt.id ? { background: '#14406a', color: '#fff', fontWeight: 600 } : { color: '#6b7280', fontWeight: 500 }}
             >
-              {t.label}
+              {tabLabel(rt.id, t)}
             </button>
           ))}
         </div>
@@ -188,7 +305,7 @@ export default function ReportsPage() {
         <div className="w-[1px] h-[20px] bg-border-subtle flex-none" />
 
         {/* REQUIRED label */}
-        <span className="font-mono text-[10.5px] font-semibold text-neutral tracking-[0.06em] flex-none">REQUIRED</span>
+        <span className="font-mono text-[10.5px] font-semibold text-neutral tracking-[0.06em] flex-none">{t('requiredLabel')}</span>
 
         {/* Project selector */}
         <div className="relative">
@@ -201,7 +318,7 @@ export default function ReportsPage() {
             }}
             className="h-[30px] pl-[10px] pr-[22px] border border-border-input rounded-[6px] text-[11.5px] font-semibold text-navy-800 appearance-none bg-white focus:outline-none cursor-pointer"
           >
-            <option value="">Project: choose one</option>
+            <option value="">{t('chooseProject')}</option>
             {projects?.map((p: any) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -224,7 +341,7 @@ export default function ReportsPage() {
               className="h-[30px] pl-[10px] pr-[22px] rounded-[6px] text-[11.5px] font-semibold appearance-none bg-gold-100 focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ border: '1.5px solid #c9971b', color: selectedSprint ? '#12283c' : '#8a6209' }}
             >
-              <option value="">Sprint: choose one to continue</option>
+              <option value="">{t('chooseSprintToContinue')}</option>
               {sprints?.map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -271,8 +388,8 @@ export default function ReportsPage() {
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <EmptyState
               icon={FileBarChart2}
-              title="No report to preview"
-              subtitle={hintText || 'Select filters above to generate a report'}
+              title={t('noReportToPreview')}
+              subtitle={hintText || t('selectFiltersToGenerate')}
             />
           </motion.div>
         ) : (
@@ -287,9 +404,9 @@ export default function ReportsPage() {
             <div className="flex-1 bg-white border border-border rounded-[6px] flex flex-col overflow-hidden min-w-0">
               <div className="h-[34px] flex-none flex items-center justify-between px-[14px] border-b border-border-subtle bg-surface-2">
                 <span className="font-mono text-[10px] font-semibold tracking-[0.12em] text-neutral">
-                  LIVE PREVIEW: EXACTLY WHAT THE PDF CONTAINS
+                  {t('livePreviewLabel')}
                 </span>
-                <span className="font-mono text-[10px] text-text-meta">A4 · PORTRAIT</span>
+                <span className="font-mono text-[10px] text-text-meta">{t('a4Portrait')}</span>
               </div>
 
               <div className="flex-1 overflow-y-auto p-[22px_26px] flex flex-col gap-[16px]">
@@ -300,14 +417,14 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex flex-col gap-[2px] flex-1">
                     <div className="text-[12px] font-bold text-navy-900 tracking-[0.02em]">ConnectOne</div>
-                    <div className="text-[11px] text-text-secondary">{selectedProjectObj?.name || 'Project'}</div>
+                    <div className="text-[11px] text-text-secondary">{selectedProjectObj?.name || t('project')}</div>
                     <div className="font-mono text-[9.5px] text-text-placeholder">
-                      {currentTab?.label} Report · {selectedSprintObj?.name || new Date().getFullYear()}
+                      {t('reportOf', { label: tabLabel(tab, t) })} · {selectedSprintObj?.name || new Date().getFullYear()}
                     </div>
                   </div>
                   <div className="text-right font-mono text-[9.5px] text-text-placeholder">
-                    <div>Generated {new Date().toLocaleDateString('en-GB')}</div>
-                    <div className="text-navy-900 font-semibold text-[11px] mt-[2px]">{currentTab?.label}</div>
+                    <div>{t('generatedInline', { date: new Date().toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-GB') })}</div>
+                    <div className="text-navy-900 font-semibold text-[11px] mt-[2px]">{tabLabel(tab, t)}</div>
                   </div>
                 </div>
 
@@ -316,7 +433,7 @@ export default function ReportsPage() {
                   <div className="flex flex-col gap-[16px]">
                     {selectedMember && (
                       <div className="flex items-center gap-[6px]">
-                        <span className="text-[11px] text-neutral">Filtered:</span>
+                        <span className="text-[11px] text-neutral">{t('filtered')}</span>
                         <button
                           onClick={() => setSelectedMember(null)}
                           className="inline-flex items-center gap-[5px] text-[11px] font-semibold text-navy-700 bg-info-soft px-[8px] h-[22px] rounded-[3px] hover:bg-info-soft transition-colors"
@@ -330,7 +447,7 @@ export default function ReportsPage() {
                     <div className="grid grid-cols-2 gap-[14px]">
                       <div>
                         <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[10px]">
-                          TASK DISTRIBUTION
+                          {t('taskDistribution')}
                         </div>
                         <ResponsiveContainer width="100%" height={200}>
                           <BarChart data={workloadReport || []} barGap={4}>
@@ -341,7 +458,7 @@ export default function ReportsPage() {
                             <Bar
                               dataKey="total_tasks"
                               radius={[3, 3, 0, 0]}
-                              name="Total"
+                              name={t('total')}
                               cursor="pointer"
                               onClick={(d: any) => setSelectedMember((prev) => (prev === d.user_id ? null : d.user_id))}
                             >
@@ -352,7 +469,7 @@ export default function ReportsPage() {
                             <Bar
                               dataKey="completed"
                               radius={[3, 3, 0, 0]}
-                              name="Done"
+                              name={t('done')}
                               cursor="pointer"
                               onClick={(d: any) => setSelectedMember((prev) => (prev === d.user_id ? null : d.user_id))}
                             >
@@ -366,7 +483,7 @@ export default function ReportsPage() {
 
                       <div>
                         <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[10px]">
-                          PROGRESS PER MEMBER
+                          {t('progressPerMember')}
                         </div>
                         <div className="flex flex-col gap-[10px]">
                           {(workloadReport || [])
@@ -414,10 +531,10 @@ export default function ReportsPage() {
                   <div className="flex flex-col gap-[16px]">
                     <div className="grid grid-cols-3 gap-[10px]">
                       {[
-                        { label: 'TOTAL TASKS', value: sprintReport.total_tasks, color: '#14406a' },
-                        { label: 'COMPLETED', value: sprintReport.done_tasks, color: '#137a52' },
+                        { label: t('totalTasks'), value: sprintReport.total_tasks, color: '#14406a' },
+                        { label: t('completedLabel'), value: sprintReport.done_tasks, color: '#137a52' },
                         {
-                          label: 'COMPLETION',
+                          label: t('completionLabel'),
                           value: `${Math.round((sprintReport.done_tasks / sprintReport.total_tasks) * 100 || 0)}%`,
                           color: '#8a6209',
                         },
@@ -438,7 +555,7 @@ export default function ReportsPage() {
                     </div>
 
                     <div>
-                      <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[8px]">STATUS BREAKDOWN</div>
+                      <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[8px]">{t('statusBreakdown')}</div>
                       <div className="flex flex-wrap gap-[10px]">
                         {Object.entries(sprintReport.by_status || {}).map(([status, count]: any, i: number) => (
                           <div key={status} className="flex items-center gap-[6px] px-[10px] h-[28px] rounded-[4px] bg-surface-2">
@@ -459,14 +576,14 @@ export default function ReportsPage() {
                 {tab === 'time' && timeReport && (
                   <div>
                     <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[8px]">
-                      TIME LOG - {timeReport.length} entries
+                      {t('timeLogEntries', { count: timeReport.length })}
                     </div>
                     {/* Table header */}
                     <div
                       className="grid px-[10px] h-[28px] items-center bg-surface-2 border border-border-subtle rounded-t-[4px]"
                       style={{ gridTemplateColumns: '1fr 100px 70px 90px' }}
                     >
-                      {['TASK', 'SPRINT', 'HRS', 'DATE'].map((h) => (
+                      {[t('colTask'), t('colSprint'), t('colHrs'), t('colDate')].map((h) => (
                         <div key={h} className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">
                           {h}
                         </div>
@@ -495,15 +612,15 @@ export default function ReportsPage() {
                 {/* ── Velocity report ── */}
                 {tab === 'velocity' && velocityReport && (
                   <div>
-                    <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[10px]">VELOCITY PER SPRINT</div>
+                    <div className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral mb-[10px]">{t('velocityPerSprint')}</div>
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={velocityReport} barGap={4}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#eceae4" vertical={false} />
                         <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#8a8f98' }} axisLine={false} tickLine={false} />
                         <YAxis tick={{ fontSize: 10, fill: '#8a8f98' }} axisLine={false} tickLine={false} />
                         <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: '#f5f4f2' }} />
-                        <Bar dataKey="total_points" fill="#eceae4" radius={[3, 3, 0, 0]} name="Planned" />
-                        <Bar dataKey="completed_points" fill="#14406a" radius={[3, 3, 0, 0]} name="Completed" />
+                        <Bar dataKey="total_points" fill="#eceae4" radius={[3, 3, 0, 0]} name={t('planned')} />
+                        <Bar dataKey="completed_points" fill="#14406a" radius={[3, 3, 0, 0]} name={t('completed')} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -515,7 +632,7 @@ export default function ReportsPage() {
             <div className="w-[230px] flex-none flex flex-col gap-[10px]">
               <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden">
                 <div className="h-[36px] flex-none flex items-center px-[13px] border-b border-border-subtle">
-                  <span className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">EXPORT</span>
+                  <span className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('exportLabel')}</span>
                 </div>
                 <div className="p-[12px]">
                   <button
@@ -524,37 +641,39 @@ export default function ReportsPage() {
                     className="w-full h-[34px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold disabled:opacity-50 transition-opacity"
                     style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
                   >
-                    {exportLoading ? 'Exporting…' : 'Export PDF'}
+                    {exportLoading ? t('exporting') : t('exportPdf')}
                   </button>
                 </div>
               </div>
 
               {/* Report info */}
               <div className="bg-white border border-border rounded-[6px] p-[12px] flex flex-col gap-[6px]">
-                <div className="font-mono text-[9px] font-semibold tracking-[0.1em] text-neutral mb-[2px]">SCOPE</div>
+                <div className="font-mono text-[9px] font-semibold tracking-[0.1em] text-neutral mb-[2px]">{t('scope')}</div>
                 {selectedProjectObj && (
                   <div className="flex flex-col gap-[1px]">
-                    <span className="text-[10.5px] text-neutral">Project</span>
+                    <span className="text-[10.5px] text-neutral">{t('project')}</span>
                     <span className="text-[12px] font-semibold text-navy-800 leading-tight">{selectedProjectObj.name}</span>
                   </div>
                 )}
                 {selectedSprintObj && (
                   <div className="flex flex-col gap-[1px]">
-                    <span className="text-[10.5px] text-neutral">Sprint</span>
+                    <span className="text-[10.5px] text-neutral">{t('sprintWord')}</span>
                     <span className="text-[12px] font-semibold text-navy-800">{selectedSprintObj.name}</span>
                   </div>
                 )}
                 {tab === 'time' && dateFrom && dateTo && (
                   <div className="flex flex-col gap-[1px]">
-                    <span className="text-[10.5px] text-neutral">Date range</span>
+                    <span className="text-[10.5px] text-neutral">{t('dateRange')}</span>
                     <span className="font-mono text-[11px] text-navy-800">
                       {dateFrom} – {dateTo}
                     </span>
                   </div>
                 )}
                 <div className="flex flex-col gap-[1px]">
-                  <span className="text-[10.5px] text-neutral">Generated</span>
-                  <span className="font-mono text-[11px] text-navy-800">{new Date().toLocaleDateString('en-GB')}</span>
+                  <span className="text-[10.5px] text-neutral">{t('generatedLabel')}</span>
+                  <span className="font-mono text-[11px] text-navy-800">
+                    {new Date().toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-GB')}
+                  </span>
                 </div>
               </div>
             </div>

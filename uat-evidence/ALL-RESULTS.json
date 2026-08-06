@@ -1,0 +1,662 @@
+[
+  {
+    "id": "3.1-1",
+    "scenario": "Login dengan kredensial valid",
+    "verdict": "PASS",
+    "notes": "Login pm@test.com (role project_manager) berhasil dan sistem melakukan redirect otomatis ke /dashboard/project-manager, yaitu dashboard yang sesuai dengan role pengguna. Tidak ditemukan error konsol maupun HTTP selama proses login.",
+    "shots": [
+      "shots/3.1-1_login-valid-redirect.png"
+    ]
+  },
+  {
+    "id": "3.1-2",
+    "scenario": "Login dengan password salah",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Sistem menolak login: backend membalas HTTP 401 (terverifikasi) dan pengguna tetap ditahan di halaman login. Pesan error yang ditampilkan: \"Invalid credentials\". CATATAN KETIDAKSESUAIAN: dokumen mengharapkan pesan \"Email atau password salah\" dalam Bahasa Indonesia, sedangkan aplikasi menampilkan pesan dalam Bahasa Inggris.",
+    "shots": [
+      "shots/3.1-2_login-password-salah.png"
+    ]
+  },
+  {
+    "id": "3.1-3",
+    "scenario": "Logout dari sistem",
+    "verdict": "PASS",
+    "notes": "Klik \"Sign Out\" pada panel profil mengakhiri sesi dan mengalihkan pengguna ke /login. Verifikasi tambahan: percobaan membuka kembali halaman terproteksi /dashboard/project-manager setelah logout dialihkan otomatis ke /login, membuktikan token sesi tidak dapat digunakan kembali.",
+    "shots": [
+      "shots/3.1-3a_sebelum-logout.png",
+      "shots/3.1-3b_setelah-logout.png",
+      "shots/3.1-3c_akses-ulang-ditolak.png"
+    ]
+  },
+  {
+    "id": "3.2-1",
+    "scenario": "Dashboard Kepala Balai / Product Owner",
+    "verdict": "PASS",
+    "notes": "Login po@test.com diarahkan ke /dashboard/kepala-balai. Ekspektasi konten: ringkasan semua proyek, grafik, dan aktivitas tim. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Monitor all projects and team\",\"New project\",\"Change Request\",\"10 total CR\",\"View all\",\"0\",\"Draft\",\"4\",\"Submitted\",\"5\",\"Approved\",\"1\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-1_dashboard-po.png"
+    ]
+  },
+  {
+    "id": "3.2-2",
+    "scenario": "Dashboard Kepala Seksi / Product Manager",
+    "verdict": "PASS",
+    "notes": "Login pdm@test.com diarahkan ke /dashboard/kepala-seksi. Ekspektasi konten: sprint aktif, task, dan workload tim. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Supervise team workload distribution\",\"Workload\",\"Reports\",\"TOTAL PROJECTS\",\"0\",\"all projects\",\"ACTIVE PROJECTS\",\"0\",\"in progress\",\"WORKLOAD\",\"→\",\"team distribution\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-2_dashboard-pdm.png"
+    ]
+  },
+  {
+    "id": "3.2-3",
+    "scenario": "Dashboard Project Manager",
+    "verdict": "PASS",
+    "notes": "Login pm@test.com diarahkan ke /dashboard/project-manager. Ekspektasi konten: task dan jadwal, serta progress pekerjaan. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Welcome, Project Manager\",\"New Sprint\",\"TOTAL PROJECTS\",\"2\",\"2 active\",\"MY TASKS\",\"0\",\"0 completed\",\"IN PROGRESS\",\"0\",\"being worked on\",\"TO DO\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-3_dashboard-pm.png"
+    ]
+  },
+  {
+    "id": "3.2-4",
+    "scenario": "Dashboard Scrum Master",
+    "verdict": "PASS",
+    "notes": "Login sm@test.com diarahkan ke /dashboard/scrum-master. Ekspektasi konten: task dan jadwal, serta progress pekerjaan. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Manage sprints and monitor burndown\",\"Workload\",\"TOTAL PROJECTS\",\"2\",\"all projects\",\"ACTIVE PROJECTS\",\"2\",\"in progress\",\"COMPLETED\",\"0\",\"finished\",\"WORKLOAD\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-4_dashboard-sm.png"
+    ]
+  },
+  {
+    "id": "3.2-5",
+    "scenario": "Dashboard Staff",
+    "verdict": "PASS",
+    "notes": "Login staff@test.com diarahkan ke /dashboard/staff. Ekspektasi konten: task pribadi dan jadwal terdekat. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Hello, Staff Satu\",\"Tasks assigned to you\",\"All Tasks\",\"Change Request\",\"7 total CR\",\"View all\",\"0\",\"Draft\",\"4\",\"Submitted\",\"2\",\"Approved\",\"1\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-5_dashboard-staff.png"
+    ]
+  },
+  {
+    "id": "3.3.1-1",
+    "scenario": "Lihat kalender bulanan/mingguan",
+    "verdict": "PASS",
+    "notes": "Halaman /calendar menyediakan toggle tampilan Day / Week / Month / Agenda. Pada tampilan Month periode yang ditampilkan adalah \"July 2026\"; setelah beralih ke Week periode berubah menjadi \"27 July – 2 August 2026\" dan grid tanggal menyesuaikan. Kegiatan tampil pada tanggal yang sesuai di kedua tampilan.",
+    "shots": [
+      "shots/3.3.1-1a_kalender-bulanan.png",
+      "shots/3.3.1-1b_kalender-mingguan.png"
+    ]
+  },
+  {
+    "id": "3.3.1-2",
+    "scenario": "Privasi kalender antar pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai pengguna berbeda (staff@test.com) lalu membuka /calendar. Kalender hanya menampilkan kegiatan yang relevan/dibagikan sesuai hak akses: acara publik \"UAT Rapat Publik 594097\" terlihat, sedangkan acara privat milik pengguna lain \"UAT Rapat Privat 594097\" tidak terlihat. Catatan: sistem tidak menyediakan fitur \"membuka kalender milik pengguna lain\" secara eksplisit; pemisahan privasi dilakukan melalui kombinasi visibility (public/private) dan daftar peserta.",
+    "shots": [
+      "shots/3.3.3-2c_pengguna-lain-bukan-peserta.png"
+    ]
+  },
+  {
+    "id": "3.3.2-1",
+    "scenario": "Tambah agenda kegiatan",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Kegiatan \"UAT Rapat Publik 594097\" dibuat melalui /calendar -> \"New event\" dan tampil di kalender. Seluruh isian tersimpan: judul, tipe, visibility, tanggal 2026-07-31, waktu 09:00-11:00, lokasi, dan deskripsi. CATATAN KETIDAKSESUAIAN: form \"New event\" di /calendar TIDAK memiliki field peserta, sedangkan dokumen mengharapkan pengisian peserta pada langkah ini. Pengelolaan peserta hanya tersedia di /admin/calendar (khusus administrator).",
+    "shots": [
+      "shots/3.3.2-1a_form-tambah-kegiatan.png",
+      "shots/3.3.2-1b_kegiatan-muncul-di-kalender.png"
+    ]
+  },
+  {
+    "id": "3.3.2-2",
+    "scenario": "Edit agenda kegiatan",
+    "verdict": "PASS (dengan catatan penting)",
+    "notes": "Diuji melalui /admin/calendar: kegiatan dibuka, tombol Edit (ikon pensil) pada panel detail menampilkan modal \"Edit Event\" dengan seluruh data terisi otomatis. Judul diubah menjadi \"UAT Agenda Peserta 069487 [DIUBAH]\", lokasi menjadi \"Ruang Rapat Lantai 5 (lokasi diubah)\", dan tanggal dipindah ke 2026-08-01, lalu Save. Perubahan TERSIMPAN dan terverifikasi dua cara: (a) query basis data svc_workload.calendar_events menunjukkan judul, tanggal, dan lokasi baru dengan updated_at lebih baru dari created_at, dan (b) kegiatan tampil dengan judul baru di kalender pada periode August 2026. Tidak ada error HTTP. CATATAN KETIDAKSESUAIAN PENTING: pada halaman /calendar — jalur yang disebut dokumen (\"Klik kegiatan di kalender, pilih Edit\") — TIDAK TERSEDIA tombol Edit untuk data kegiatan. Modal \"Event details\" di sana hanya menyediakan tombol \"+ Add report\" yang mengubah status, notulensi, hasil pembahasan, dan tindak lanjut; judul, tanggal, waktu, dan lokasi tidak dapat diubah. Perubahan data inti kegiatan hanya dapat dilakukan administrator melalui /admin/calendar.",
+    "shots": [
+      "shots/3.3.2-2a_detail-kegiatan.png",
+      "shots/3.3.2-2b_form-edit-kegiatan.png",
+      "shots/3.3.2-2c_perubahan-tersimpan.png"
+    ]
+  },
+  {
+    "id": "3.3.2-3",
+    "scenario": "Hapus agenda kegiatan",
+    "verdict": "PASS",
+    "notes": "Kegiatan \"UAT Rapat Privat 594097\" dibuka dari kalender, dipilih Delete, lalu dikonfirmasi. Setelah penghapusan kegiatan tersebut sudah tidak tampil lagi di kalender.",
+    "shots": [
+      "shots/3.3.2-3a_detail-sebelum-hapus.png",
+      "shots/3.3.2-3b_setelah-hapus.png"
+    ]
+  },
+  {
+    "id": "3.3.3-1",
+    "scenario": "Undang beberapa peserta sekaligus",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Melalui /admin/calendar dibuat kegiatan \"UAT Agenda Peserta 069487\" dengan memilih 3 peserta sekaligus dari daftar anggota organisasi (Staff Satu, Kepala Seksi, Scrum Master). Seluruh peserta (3/3) terverifikasi tersimpan dan tampil pada panel detail kegiatan, serta kegiatan muncul di kalender masing-masing peserta. Sistem juga menyediakan pemilihan berbasis grup melalui \"Participant Groups\". CATATAN KETIDAKSESUAIAN: pemilihan peserta hanya tersedia di /admin/calendar (khusus administrator); halaman /calendar yang digunakan pengguna umum tidak memiliki field peserta.",
+    "shots": [
+      "shots/3.3.3-1a_form-pilih-banyak-peserta.png",
+      "shots/3.3.3-1b_kegiatan-tersimpan.png",
+      "shots/3.3.3-1c_daftar-peserta-terdaftar.png"
+    ]
+  },
+  {
+    "id": "3.3.3-2",
+    "scenario": "Acara publik vs privat",
+    "verdict": "PASS",
+    "notes": "Dibuat dua acara oleh pm@test.com: \"UAT Rapat Publik 594097\" (Public) dan \"UAT Rapat Privat 594097\" (Private). Dilihat oleh pemilik keduanya tampil (publik=1, privat=1). Dilihat oleh staff@test.com yang bukan peserta: acara publik TAMPIL, acara privat TIDAK TAMPIL. Perilaku sesuai ekspektasi — acara publik terlihat seluruh pengguna sedangkan acara privat hanya terlihat peserta yang diundang.",
+    "shots": [
+      "shots/3.3.3-2a_form-acara-privat.png",
+      "shots/3.3.3-2b_pemilik-melihat-kedua-acara.png",
+      "shots/3.3.3-2c_pengguna-lain-bukan-peserta.png"
+    ]
+  },
+  {
+    "id": "3.3.4-1",
+    "scenario": "Notifikasi Telegram acara kalender",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Dibuat kegiatan dengan peserta melalui /admin/calendar. Terverifikasi pada tabel svc_notification.notifications: notifikasi bertipe calendar.event_created channel telegram berstatus 'sent' untuk acara publik — terkirim ke grup Telegram organisasi melalui TELEGRAM_GROUP_CHAT_ID; dan notifikasi calendar.event_assigned channel telegram berstatus 'sent' untuk peserta yang memiliki telegram_chat_id — terkirim ke chat pribadi peserta yang diundang. Notifikasi in_app juga tercatat 'sent' untuk seluruh peserta. TEMUAN: peserta yang belum memiliki telegram_chat_id (pdm@test.com, sm@test.com) menghasilkan baris notifikasi telegram yang tertahan berstatus 'pending' tanpa error_message dan tanpa status 'failed'/'skipped'. Kegagalan senyap seperti ini menyulitkan operator mendeteksi notifikasi yang tidak terkirim; disarankan memberi status eksplisit (mis. 'skipped: telegram_chat_id belum diisi').",
+    "shots": [
+      "shots/3.3.4-1_bukti-notifikasi-telegram.png"
+    ]
+  },
+  {
+    "id": "3.3.4-2",
+    "scenario": "Pengingat agenda H-1 dan H-0",
+    "verdict": "PASS",
+    "notes": "Perintah terjadwal 'calendar:remind-deadlines' (dijalankan harian pukul 07:00 oleh container pm_workload_scheduler) dieksekusi manual. Hasil: agenda bertanggal 2026-07-30 (hari pelaksanaan) memicu pengingat H-0 dan agenda bertanggal 2026-07-31 (besok) memicu pengingat H-1; kolom reminder_h0_sent_at dan reminder_h1_sent_at terisi. Agenda bertanggal 2026-08-01 (H-2) benar TIDAK dikirimi pengingat. Notifikasi calendar.deadline_reminder channel telegram tercatat 'sent'. Eksekusi ulang perintah tidak mengirim pengingat kedua kali, membuktikan mekanisme anti-duplikat berjalan. Catatan sama seperti 3.3.4-1 berlaku untuk peserta tanpa telegram_chat_id.",
+    "shots": [
+      "shots/3.3.4-2_bukti-pengingat-h1-h0.png"
+    ]
+  },
+  {
+    "id": "3.4.1-1",
+    "scenario": "Buat proyek baru",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Melalui /projects -> \"New project\" diisi nama \"Proyek UAT 627832\", deskripsi lingkup dan tujuan, tanggal mulai 2026-07-30, tanggal selesai 2026-09-28, serta divisi. Proyek baru berhasil tersimpan dan muncul di daftar proyek. CATATAN KETIDAKSESUAIAN: form pembuatan proyek TIDAK memiliki field \"tetapkan PM\" seperti disebut dokumen. Field yang tersedia hanya NAME, DESCRIPTION, START DATE, END DATE, dan DIVISION. Penetapan Project Manager dilakukan terpisah melalui penambahan anggota proyek beserta perannya (lihat 3.4.1-4).",
+    "shots": [
+      "shots/3.4.1-1a_form-buat-proyek.png",
+      "shots/3.4.1-1b_proyek-baru-di-daftar.png"
+    ]
+  },
+  {
+    "id": "3.4.1-2",
+    "scenario": "Lihat daftar proyek",
+    "verdict": "PASS",
+    "notes": "Halaman /projects menampilkan seluruh proyek yang dapat diakses beserta metadata (nama, status, progress, periode, divisi), dilengkapi kolom pencarian dan filter status. Proyek yang tampil antara lain: Proyek UAT 627832.",
+    "shots": [
+      "shots/3.4.1-2_daftar-proyek.png"
+    ]
+  },
+  {
+    "id": "3.4.1-3",
+    "scenario": "Detail proyek",
+    "verdict": "PASS",
+    "notes": "Klik proyek membuka halaman detail /projects/{id} yang menampilkan informasi proyek (nama, deskripsi, status, periode, progress) beserta tab: Overview, Board, Sprints, Epics, dan Members. Tab Members memuat daftar anggota proyek, tab Sprints memuat sprint, dan tab Board menampilkan papan Kanban task.",
+    "shots": [
+      "shots/3.4.1-3_detail-proyek.png"
+    ]
+  },
+  {
+    "id": "3.4.1-4",
+    "scenario": "Tambah anggota proyek",
+    "verdict": "PASS",
+    "notes": "Pada halaman detail proyek \"Proyek UAT 627832\" dibuka tab Members -> \"Add Member\" -> pilih pengguna dari daftar (tersedia pencarian nama/email dan pemilihan peran). Anggota yang berhasil terdaftar di proyek: Kepala Seksi, Project Manager, Staff Satu (3 anggota). Daftar anggota beserta perannya tampil pada tab Members.",
+    "shots": [
+      "shots/3.4.1-4a_tab-anggota.png",
+      "shots/3.4.1-4c_anggota-terdaftar.png"
+    ]
+  },
+  {
+    "id": "3.4.2-1",
+    "scenario": "Tambah Epic ke proyek",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Pada detail proyek \"Proyek UAT 627832\" dibuka tab Epics -> \"Create Epic\", diisi judul \"Epic UAT 627832\", deskripsi, status, dan periode, lalu disimpan (respons HTTP 201). Epic muncul di daftar Epic proyek sesuai hierarki Proyek > Epic > Backlog/Task, lengkap dengan penanda status dan rentang tanggal. CATATAN CACAT MINOR: dropdown Status pada form tampil KOSONG saat modal dibuka, karena nilai bawaan form adalah \"active\" sedangkan opsi yang tersedia hanya [\"todo\",\"in_progress\",\"done\"] — nilai bawaan tidak cocok dengan opsi manapun (terverifikasi: nilai select = \"\" saat modal dibuka). Data tetap tersimpan karena backend menormalkan status menjadi \"open\", sehingga terdapat tiga kosakata status yang tidak konsisten antara nilai bawaan form, opsi dropdown, dan nilai yang tersimpan di basis data.",
+    "shots": [
+      "shots/3.4.2-1a_tab-epic.png",
+      "shots/3.4.2-1b_form-tambah-epic.png",
+      "shots/3.4.2-1c_epic-di-daftar.png"
+    ]
+  },
+  {
+    "id": "3.4.2-2",
+    "scenario": "Tambah Backlog (User Story)",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Pada tab Epics, kartu Epic \"Epic UAT 627832\" diperluas lalu ditekan \"Add Backlog\". Item backlog \"Backlog UAT 627832\" diisi judul, tipe Story, dan story point 5, lalu disimpan. Item muncul di daftar backlog di bawah Epic induknya dengan penanda \"Backlog\" (belum masuk sprint) dan tanpa assignee. CATATAN KETIDAKSESUAIAN: dokumen menyebut \"Buka tab Backlog\", namun aplikasi TIDAK memiliki tab Backlog tersendiri. Backlog hanya dapat dibuat dari dalam kartu Epic pada tab Epics (kartu harus diperluas terlebih dahulu), sehingga epic induk terpilih secara implisit dari kartu tempat tombol ditekan — tidak ada dropdown pemilihan epic seperti tersirat pada langkah dokumen.",
+    "shots": [
+      "shots/3.4.2-2a_epic-diperluas.png",
+      "shots/3.4.2-2b_form-tambah-backlog.png",
+      "shots/3.4.2-2c_backlog-di-daftar.png"
+    ]
+  },
+  {
+    "id": "3.4.3-1",
+    "scenario": "Ubah status task",
+    "verdict": "PASS",
+    "notes": "Pada halaman detail task tersedia tombol perubahan status In Progress / Review / Done. Status task diubah berturut-turut dari \"To do\" (Belum Dikerjakan) menjadi \"In Progress\" (Sedang Berjalan), lalu menjadi \"Done\" (Selesai). Setiap perubahan tersimpan dan langsung tercermin pada tampilan detail task serta papan Kanban.",
+    "shots": [
+      "shots/3.4.3-1a_task-status-awal.png",
+      "shots/3.4.3-1b_status-sedang-berjalan.png",
+      "shots/3.4.3-1c_status-selesai.png"
+    ]
+  },
+  {
+    "id": "3.4.3-2",
+    "scenario": "Tambah komentar pada task",
+    "verdict": "PASS",
+    "notes": "Pada detail task dibuka kolom komentar, ditulis \"Komentar pengujian UAT 24355\", lalu dikirim (Enter). Komentar tersimpan dan tampil pada riwayat komentar task beserta nama penulis dan waktu.",
+    "shots": [
+      "shots/3.4.3-2a_tulis-komentar.png",
+      "shots/3.4.3-2b_komentar-tersimpan.png"
+    ]
+  },
+  {
+    "id": "3.4.3-3",
+    "scenario": "Mention anggota tim di komentar",
+    "verdict": "PASS",
+    "notes": "Pada kolom komentar task diketik \"@Scr\"; sistem menampilkan daftar saran mention berisi anggota proyek (tampil: \"Scrum Master - Teknologi\"). Setelah anggota dipilih, teks \"@Scrum Master \" tersisip otomatis ke komentar, lalu komentar dikirim. Terverifikasi di basis data: kolom mentions pada tabel comments terisi user_id anggota yang disebut ([\"11f8b7d5-9edd-4424-8270-0d651f53c644\"]), dan tabel notifications mencatat notifikasi bertipe 'task.mentioned' berstatus 'sent' pada kanal in_app maupun telegram. CATATAN PERILAKU: daftar saran mention hanya memuat ANGGOTA PROYEK tempat task berada, bukan seluruh pengguna sistem. Mengetik nama pengguna yang bukan anggota proyek menghasilkan \"No users found\". Perilaku ini wajar secara keamanan, namun perlu diketahui penguji agar tidak dianggap kegagalan.",
+    "shots": [
+      "shots/3.4.3-3a_autocomplete-mention.png",
+      "shots/3.4.3-3b_komentar-dengan-mention.png",
+      "shots/3.4.3-3c_mention-terkirim.png"
+    ]
+  },
+  {
+    "id": "3.4.4-1",
+    "scenario": "Lihat beban kerja tim",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman beban kerja dibuka dengan memilih proyek \"Project Alpha\" dan sprint \"first sprint\". Halaman menampilkan distribusi beban kerja per anggota tim. Konten yang terbaca: [\"CAPACITY\",\"Workload\",\"Project Alpha · first sprint\",\"Select Project ▾\",\"Project Alpha\",\"Project Alpha\",\"ID Wallet\",\"Test Permission Project\",\"Test UAT Project\",\"Simulasi UAT\",\"Select Sprint ▾\",\"first sprint\",\"Export PDF\",\"Rebalance\",\"AVG UTILISATION\",\"13%\"]. CATATAN: dokumen menyebut jalur \"/reports lalu pilih tab workload\"; pada aplikasi terdapat halaman khusus /workload dan juga tab \"Workload\" di /reports — keduanya tersedia.",
+    "shots": [
+      "shots/3.4.4-1_beban-kerja-tim.png"
+    ]
+  },
+  {
+    "id": "3.4.4-2",
+    "scenario": "Filter beban kerja per anggota",
+    "verdict": "PASS",
+    "notes": "PERBAIKAN DITERAPKAN DAN DIUJI ULANG. Temuan awal: halaman /workload hanya menyediakan penyaring Proyek dan Sprint, tanpa opsi memilih anggota. Perbaikan: ditambahkan dropdown pemilihan anggota yang terisi otomatis dari daftar anggota pada sprint terpilih. Pilihan bawaan \"All Members\" menampilkan seluruh anggota, dan dropdown otomatis dikosongkan ketika proyek atau sprint diganti. Hasil pengujian ulang: setelah proyek dan sprint dipilih, halaman kini menampilkan 3 penyaring (Proyek, Sprint, dan Anggota) dengan opsi anggota [\"All Members ▾\", \"Staff Satu\"]. Setelah anggota \"Staff Satu\" dipilih, tampilan menyesuaikan menjadi hanya anggota tersebut — termasuk kartu ringkasan AVG UTILISATION, OVERLOADED, dan AVAILABLE yang ikut dihitung ulang untuk anggota terpilih.",
+    "shots": [
+      "shots/3.4.4-2a_beban-kerja-semua-anggota.png",
+      "shots/3.4.4-2b_filter-satu-anggota.png"
+    ]
+  },
+  {
+    "id": "3.4.4-3",
+    "scenario": "Tampilan kapasitas vs aktual",
+    "verdict": "PASS",
+    "notes": "Indikator kapasitas pada tampilan beban kerja ditemukan. Sistem menampilkan perbandingan alokasi terhadap kapasitas anggota tim beserta indikator pemanfaatan (utilization) dan tersedia aksi \"Rebalance\" untuk penyeimbangan beban.",
+    "shots": [
+      "shots/3.4.4-3_kapasitas-vs-aktual.png"
+    ]
+  },
+  {
+    "id": "3.4.5-1",
+    "scenario": "Generate laporan proyek",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman /reports dibuka, dipilih proyek \"Project Alpha\" dan sprint \"first sprint\". Laporan tersusun dan tampil di layar mencakup ringkasan progress, sprint, dan statistik task. Tersedia lima jenis laporan: Workload, Sprint, Time tracking, Velocity, dan Portfolio. CATATAN KETIDAKSESUAIAN: tidak ada tombol berlabel \"Generate\" seperti pada dokumen — laporan tersusun otomatis setelah proyek dan sprint dipilih. Selain itu laporan WAJIB memilih sprint; bila hanya proyek yang dipilih sistem menampilkan pesan \"Sprint: choose one to continue\" dan \"No report to preview\".",
+    "shots": [
+      "shots/3.4.5-1_laporan-proyek.png"
+    ]
+  },
+  {
+    "id": "3.4.5-2",
+    "scenario": "Ekspor laporan ke PDF",
+    "verdict": "PASS",
+    "notes": "Tombol \"Export PDF\" pada halaman laporan menghasilkan berkas \"report_sprint_2026-07-30.pdf\" berukuran 216.237 byte. Berkas terverifikasi berformat PDF sah (header %PDF) dan memuat data laporan sesuai tampilan layar.",
+    "shots": [
+      "shots/3.4.5-2_export-pdf.png"
+    ]
+  },
+  {
+    "id": "3.4.5-3",
+    "scenario": "Laporan kinerja anggota",
+    "verdict": "PASS",
+    "notes": "Pada halaman laporan dipilih jenis laporan \"Workload\" dengan proyek dan sprint terpilih. Sistem menampilkan rekap pekerjaan per anggota tim beserta jumlah task dan status penyelesaiannya. Konten terbaca: [\"REPORTING\",\"Reports\",\"Same layout on screen and in the exported PDF\",\"Schedule\",\"Export PDF\",\"Workload\",\"Sprint\",\"Time tracking\",\"Velocity\",\"Portfolio\",\"REQUIRED\",\"Project: choose one\",\"Project Alpha\",\"Project Alpha\",\"ID Wallet\",\"Test Permission Project\",\"Test UAT Project\",\"Simulasi UAT\"].",
+    "shots": [
+      "shots/3.4.5-3_laporan-kinerja-anggota.png"
+    ]
+  },
+  {
+    "id": "3.5.1-1",
+    "scenario": "Ajukan change request baru",
+    "verdict": "PASS (dengan catatan penting)",
+    "notes": "Melalui /change-management -> \"New request\" diajukan CR berjudul \"CR UAT Setujui 61396\". Form memuat judul, usulan perubahan, rincian langkah pelaksanaan, latar belakang/alasan, risiko yang mungkin terjadi, langkah mitigasi, risiko bila perubahan tidak dilaksanakan, dan rencana penanganan kegagalan (rollback); disertai prioritas (High), tipe perubahan (Normal/Standard/Emergency), rencana waktu pelaksanaan, pelaksana, penilai/reviewer berurutan (Scrum Master), dan penandatangan (Project Manager). Sistem mewajibkan minimal 1 penilai dan tepat 1 penandatangan. CATATAN KETIDAKSESUAIAN PENTING: menekan \"Save\" TIDAK langsung mengajukan CR — CR tersimpan dengan status \"draft\" (terverifikasi di basis data: status=draft, current_step=0) dan penilai BELUM menerima notifikasi. Pengaju harus menekan tombol \"Submit\" terpisah pada kartu CR agar status berubah menjadi \"submitted\" dengan current_step=1 dan alur persetujuan dimulai. Dokumen menyatakan \"CR baru tersimpan dengan status awal dan reviewer pertama mendapat notifikasi\" dalam satu langkah, sehingga langkah pengujian perlu ditambahi aksi Submit.",
+    "shots": [
+      "shots/3.5.1-1b_form-ajukan-cr.png",
+      "shots/3.5.1-1d_cr-status-draft.png",
+      "shots/3.5.1-1e_cr-setelah-submit.png"
+    ]
+  },
+  {
+    "id": "3.5.2-1",
+    "scenario": "Review dan setujui CR (reviewer)",
+    "verdict": "PASS",
+    "notes": "Login sebagai penilai (sm@test.com / Scrum Master). CR \"CR UAT Setujui 61396\" muncul pada tab \"Awaiting me\", dibuka, lalu dipilih Setujui dengan catatan persetujuan. Terverifikasi di basis data: current_step CR berubah dari 1 menjadi 2, status tetap \"submitted\" karena alur berlanjut. Riwayat aktivitas mencatat \"Ditinjau oleh Scrum Master\" beserta waktunya, dan tahap berikutnya beralih ke penandatanganan oleh Project Manager dengan penanda \"TTE - Menunggu\". Perilaku sesuai ekspektasi alur persetujuan bertingkat.",
+    "shots": [
+      "shots/3.5.2-1a_cr-menunggu-persetujuan.png",
+      "shots/3.5.2-1b_form-persetujuan.png",
+      "shots/3.5.2-1c_status-setelah-disetujui.png"
+    ]
+  },
+  {
+    "id": "3.5.2-2",
+    "scenario": "Tolak CR (reviewer)",
+    "verdict": "PASS",
+    "notes": "Login sebagai penilai (pdm@test.com / Kepala Seksi). CR \"CR UAT Tolak 61396\" dibuka lalu dipilih Tolak. Sistem menampilkan dialog penolakan dengan kolom catatan bertanda wajib (\"Rejection note (required)\") — tombol konfirmasi \"Reject CR\" baru aktif setelah catatan diisi. Setelah dikonfirmasi, terverifikasi di basis data bahwa status CR berubah menjadi \"rejected\" dan alur persetujuan berhenti. Notifikasi kepada pengaju tercatat pada sistem notifikasi (lihat 3.7).",
+    "shots": [
+      "shots/3.5.2-2a_cr-sebelum-ditolak.png",
+      "shots/3.5.2-2b_form-penolakan.png",
+      "shots/3.5.2-2c_status-ditolak.png"
+    ]
+  },
+  {
+    "id": "3.5.3-1",
+    "scenario": "Riwayat dan audit trail CR",
+    "verdict": "PASS",
+    "notes": "Detail CR \"CR UAT Setujui 61396\" yang telah melalui beberapa tahap dibuka melalui \"View progress\". Sistem menampilkan alur tahapan (Step 2/2) beserta bagian \"Riwayat Aktivitas\" yang mencatat kronologi lengkap: \"CR Dibuat oleh Kepala Balai\" (30 Jul 2026, 08:54), \"Ditinjau oleh Scrum Master\" (30 Jul 2026, 09:00), serta tahap \"Penandatangan: Project Manager - TTE - Menunggu\". Setiap entri memuat pelaku dan waktu. Pencatatan juga tersimpan pada tabel cr_activity_logs dan cr_approvals.",
+    "shots": [
+      "shots/3.5.3-1_riwayat-audit-trail.png"
+    ]
+  },
+  {
+    "id": "3.5.4-1",
+    "scenario": "Filter CR berdasarkan status dan periode",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman daftar CR menyediakan penyaringan status melalui tab: All, Awaiting me, In flight, Submitted by me, dan Closed. Saat tab \"All\" dipilih daftar menampilkan 13 hasil; setelah tab \"Closed\" dipilih daftar menyusut menjadi 1 hasil yang sesuai status tersebut, lengkap dengan penghitung jumlah hasil. CATATAN KETIDAKSESUAIAN: dokumen menyebut penyaringan \"status dan rentang tanggal\", namun halaman ini TIDAK menyediakan filter rentang tanggal/periode — penyaringan hanya berdasarkan status. Perlu penambahan filter periode atau penyesuaian dokumen.",
+    "shots": [
+      "shots/3.5.4-1a_daftar-sebelum-filter.png",
+      "shots/3.5.4-1b_daftar-terfilter.png"
+    ]
+  },
+  {
+    "id": "3.6.1-1",
+    "scenario": "Tanda tangan dokumen via TTE",
+    "verdict": "PASS",
+    "notes": "Pengujian dilakukan pada dua jalur dan keduanya berhasil menandatangani secara elektronik melalui layanan BSrE yang sesungguhnya (bukan simulasi). (a) Jalur Change Request: setelah penilai menyetujui, penandatangan (Project Manager) membuka CR \"CR UAT Setujui 61396\", memilih Tanda Tangani, dan memasukkan passphrase. Terverifikasi di basis data: status CR berubah menjadi \"approved\", baris cr_approvals dengan role \"signer\" berubah menjadi \"approved\" beserta acted_at, dan kolom signed_document_id terisi. (b) Jalur dokumen mandiri (/esign): berkas PDF diunggah, judul diisi, passphrase dimasukkan, lalu ditandatangani. Terverifikasi di basis data svc_storage.esign_documents: dokumen \"Dokumen UAT TTE 48194\" tercatat dengan signed_at terisi. Catatan teknis: sistem memanggil endpoint pemanasan (/esign/warmup) sebelum menandatangani; pemanasan mengembalikan status upstream \"ok\". Passphrase tidak disimpan sistem.",
+    "shots": [
+      "shots/3.6.1-1a_cr-menunggu-tanda-tangan.png",
+      "shots/3.6.1-1b_dialog-tanda-tangan.png",
+      "shots/3.6.1-1c_hasil-tanda-tangan.png"
+    ]
+  },
+  {
+    "id": "3.6.2-1",
+    "scenario": "Multi penanda tangan berurutan",
+    "verdict": "PASS",
+    "notes": "PERBAIKAN DITERAPKAN DAN DIUJI ULANG. Temuan awal: permintaan POST /api/v1/tte-sign-requests/{id}/sign menggantung lalu gagal HTTP 504 setelah 60 detik dan tidak ada tanda tangan tersimpan. Penyebab: pemanggil mengirim parameter bernama \"appearance\" ke layanan esign-api, padahal layanan tersebut membaca parameter bernama \"tampilan\". Karena parameter tidak dikenali, layanan memakai mode tampilan bawaan yang membuat permintaan ke BSrE menggantung hingga batas waktu. Perbaikan: nama parameter diseragamkan menjadi \"tampilan\" pada seluruh pemanggil (TteSignRequestController, EsignController, dan ChangeRequestController). Hasil pengujian ulang: dokumen \"tes dokumen UAT\" dengan 4 penandatangan ditandatangani berurutan sesuai daftar — urutan ke-1 Kepala Balai, ke-2 Kepala Seksi, ke-3 Scrum Master, ke-4 Project Manager — masing-masing berhasil (HTTP 200) dalam waktu sekitar 1,4 sampai 1,9 detik. Status dokumen berubah menjadi \"Fully Signed\" dengan penanda \"4/4 signed\". Penegakan urutan juga terverifikasi: penandatangan urutan ke-3 yang mencoba menandatangani sebelum gilirannya ditolak dengan pesan \"Belum giliran Anda menandatangani (urutan ke-3)\" (HTTP 422). Tab Audit Trail mencatat keempat penandatanganan lengkap dengan nama penandatangan, urutan, dan waktunya.",
+    "shots": [
+      "shots/3.6.2-1d_semua-penandatangan-selesai.png",
+      "shots/3.6.2-1e_urutan-penandatangan-lengkap.png",
+      "shots/3.6.2-1f_audit-trail.png",
+      "shots/3.6.2-1_bukti-perbaikan-multi-signer.png"
+    ]
+  },
+  {
+    "id": "3.6.3-1",
+    "scenario": "Verifikasi keaslian dokumen TTE",
+    "verdict": "PASS",
+    "notes": "Pada daftar dokumen tertandatangani di /esign dipilih aksi \"Verify\" untuk dokumen hasil pengujian. Sistem mengirimkan dokumen ke layanan verifikasi BSrE dan menerima respons HTTP 200 dengan hasil: conclusion = \"VALID\", description = \"Dokumen valid, Sertifikat yang digunakan terpercaya\", dan signatureCount = 1, disertai rincian informasi tanda tangan (fieldName \"Signature1\" beserta identifier tanda tangan). Layanan juga mengembalikan peringatan informatif dari BSrE bahwa algoritma RSA dengan panjang kunci 2048 bit tidak lagi dianggap andal untuk pembuatan tanda tangan — peringatan ini berasal dari BSrE dan perlu ditindaklanjuti bersama penyedia sertifikat, bukan cacat aplikasi.",
+    "shots": [
+      "shots/3.6.3-1a_daftar-dokumen-tte.png",
+      "shots/3.6.3-1b_hasil-verifikasi.png"
+    ]
+  },
+  {
+    "id": "3.6.4-1",
+    "scenario": "Riwayat dokumen tertandatangani",
+    "verdict": "PASS",
+    "notes": "Halaman /esign menampilkan daftar/riwayat dokumen yang telah ditandatangani secara elektronik, memuat kolom FILE, SIGNED (waktu penandatanganan), SIGNATURE (jenis tanda tangan: VISIBLE/INVISIBLE), dan ACTIONS. Dokumen hasil pengujian \"Dokumen UAT TTE 48194\" tercatat pada daftar. Halaman juga menampilkan ringkasan: jumlah dokumen ditandatangani, jumlah tanda tangan visible, invisible, serta status NIK penandatangan (\"Active - ready to sign\").",
+    "shots": [
+      "shots/3.6.4-1_riwayat-dokumen-tte.png"
+    ]
+  },
+  {
+    "id": "3.6.4-2",
+    "scenario": "Unduh dokumen yang sudah ditandatangani",
+    "verdict": "PASS",
+    "notes": "Pada baris dokumen di halaman /esign dipilih aksi Unduh. Berkas \"signed_Dokumen UAT TTE 48194.pdf\" berhasil diunduh berukuran 466.932 byte dan terverifikasi berformat PDF sah (header %PDF), yaitu dokumen yang telah dibubuhi tanda tangan elektronik BSrE.",
+    "shots": [
+      "shots/3.6.4-2_unduh-dokumen.png"
+    ]
+  },
+  {
+    "id": "3.7.1-1",
+    "scenario": "Notifikasi in-app saat task ditetapkan",
+    "verdict": "PASS",
+    "notes": "Pada detail task dipilih Assign lalu ditetapkan anggota tim (Scrum Master) sebagai assignee, kemudian disimpan. Terverifikasi di basis data: tabel task_assignees mencatat anggota yang ditetapkan, dan tabel notifications mencatat notifikasi bertipe 'task.assigned' pada kanal in_app dengan status 'sent'. Notifikasi tersebut tampil pada halaman /notifications penerima. Halaman notifikasi juga menyediakan penyaringan: Needs action, Unread, All, dan Mentions, serta menampilkan kanal pengiriman yang aktif (In-app: Always on; Telegram: Connected).",
+    "shots": [
+      "shots/3.7.1-1a_detail-task.png",
+      "shots/3.7.1-1b_pilih-assignee.png",
+      "shots/3.7.1-1c_task-ditetapkan.png",
+      "shots/3.7.1-1d_daftar-notifikasi.png"
+    ]
+  },
+  {
+    "id": "3.7.1-2",
+    "scenario": "Badge unread di sidebar",
+    "verdict": "PASS",
+    "notes": "Sebelum notifikasi dibuka, menu Notifications pada sidebar menampilkan badge berisi angka notifikasi belum dibaca sebanyak 14. Angka ini konsisten dengan keterangan pada halaman notifikasi (\"14 unread\").",
+    "shots": [
+      "shots/3.7.1-2_badge-unread-sidebar.png"
+    ]
+  },
+  {
+    "id": "3.7.1-3",
+    "scenario": "Tandai notifikasi sebagai dibaca",
+    "verdict": "PASS",
+    "notes": "Pada halaman /notifications ditekan tombol \"Mark all as read\". Setelah aksi tersebut, badge angka pada menu Notifications di sidebar HILANG (sebelumnya 14), dan notifikasi berpindah status menjadi telah dibaca. Sistem juga mencantumkan keterangan bahwa notifikasi tidak ditandai terbaca secara otomatis, sehingga penandaan sepenuhnya dikendalikan pengguna.",
+    "shots": [
+      "shots/3.7.1-3_setelah-tandai-dibaca.png"
+    ]
+  },
+  {
+    "id": "3.7.2-1",
+    "scenario": "Notifikasi Telegram penugasan task",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Setelah assignee ditetapkan pada task, terverifikasi di tabel svc_notification.notifications bahwa notifikasi bertipe 'task.assigned' pada kanal telegram tercatat berstatus 'sent' beserta stempel waktu pengiriman, sejalan dengan notifikasi in_app yang juga 'sent'. Konfigurasi kanal Telegram terlihat aktif pada halaman notifikasi (\"Telegram - Connected\"). CATATAN: satu baris notifikasi telegram tertahan berstatus 'pending' untuk penerima yang belum memiliki telegram_chat_id. Sama seperti temuan pada skenario 3.3.4-1, kegagalan ini bersifat senyap (tanpa error_message dan tanpa status 'failed'), sehingga operator sulit mendeteksi notifikasi yang tidak terkirim.",
+    "shots": [
+      "shots/3.7.2-1_bukti-telegram-task.png"
+    ]
+  },
+  {
+    "id": "3.7.2-2",
+    "scenario": "Notifikasi Telegram change request",
+    "verdict": "PASS",
+    "notes": "Terverifikasi di tabel svc_notification.notifications bahwa seluruh tahapan alur change request memicu notifikasi Telegram berstatus 'sent': 'change_request.review_request' terkirim kepada penilai pertama saat CR diajukan (30 Jul 2026 09:00:58), 'change_request.rejected' terkirim saat CR ditolak (30 Jul 2026 09:03:05), dan 'change_request.approved' terkirim saat CR disetujui dan ditandatangani (31 Jul 2026 12:41:17). Setiap notifikasi juga tercatat pada kanal in_app dengan status 'sent'.",
+    "shots": [
+      "shots/3.7.2-2_bukti-telegram-change-request.png"
+    ]
+  },
+  {
+    "id": "3.8.1-1",
+    "scenario": "Lihat daftar pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai Administrator lalu membuka /admin/users. Halaman menampilkan seluruh pengguna terdaftar (18 pengguna) beserta kolom USER, EMAIL, DIVISION/POSITION, dan peran. Tersedia ringkasan jumlah pengguna total dan aktif/nonaktif, penyaringan berdasarkan peran (Kepala Balai, Kepala Seksi, Project Manager, Scrum Master, Staff, Administrator) dengan jumlah masing-masing, pencarian berdasarkan nama/email, serta tombol Export PDF.",
+    "shots": [
+      "shots/3.8.1-1_daftar-pengguna.png"
+    ]
+  },
+  {
+    "id": "3.8.1-2",
+    "scenario": "Tambah pengguna baru",
+    "verdict": "PASS",
+    "notes": "Melalui tombol \"Add User\" diisi nama \"Pengguna UAT 75937\", email uat75937@test.com, kata sandi (minimal 8 karakter), divisi, jabatan, dan peran Staff, lalu disimpan. Pengguna baru berhasil dibuat dan muncul pada daftar pengguna. Verifikasi kemampuan login dilakukan pada skenario 3.8.1-4.",
+    "shots": [
+      "shots/3.8.1-2a_form-tambah-pengguna.png",
+      "shots/3.8.1-2b_pengguna-baru-terdaftar.png"
+    ]
+  },
+  {
+    "id": "3.8.1-3",
+    "scenario": "Ubah role pengguna",
+    "verdict": "PASS",
+    "notes": "Pada daftar pengguna dipilih menu aksi baris -> \"Change Role\". Sistem menampilkan pilihan peran: Kepala Balai, Kepala Seksi, Project Manager, Scrum Master, Staff, dan Administrator. Peran pengguna uji diubah dari Staff menjadi Project Manager lalu disimpan. Terverifikasi di basis data svc_auth (tabel model_has_roles) bahwa peran pengguna berubah menjadi \"project_manager\", dan penghitung jumlah pengguna per peran pada halaman ikut menyesuaikan. Hak akses mengikuti peran baru sebagaimana diuji pada skenario privilege (3.8.2).",
+    "shots": [
+      "shots/3.8.1-3a_form-ubah-role.png",
+      "shots/3.8.1-3b_pilih-role-baru.png",
+      "shots/3.8.1-3c_role-terupdate.png"
+    ]
+  },
+  {
+    "id": "3.8.1-4",
+    "scenario": "Nonaktifkan / hapus pengguna",
+    "verdict": "PASS",
+    "notes": "PERBAIKAN DITERAPKAN DAN DIUJI ULANG. Temuan awal: akun yang dinonaktifkan (is_active = false) tetap dapat login dan memperoleh token sah. Penyebab: proses autentikasi hanya memeriksa email dan kata sandi, serta middleware autentikasi rute tidak memeriksa status akun. Perbaikan: (a) status is_active dijadikan syarat kredensial pada proses login, dan (b) ditambahkan middleware EnsureActiveUser pada seluruh rute terproteksi svc-auth sehingga token yang terbit sebelum penonaktifan langsung kehilangan akses. Hasil pengujian ulang: pengguna dibuat lalu dinonaktifkan melalui menu aksi di /admin/users (terverifikasi is_active = false di basis data). Percobaan login ditolak dengan HTTP 401 \"Invalid credentials\". Token yang diterbitkan sebelum penonaktifan dan belum kedaluwarsa juga ditolak dengan HTTP 403 \"Account is deactivated\". Aksi Hapus tetap berperilaku benar seperti sebelumnya (login ditolak HTTP 401). Uji regresi memastikan akun yang masih aktif tidak terpengaruh: login, /auth/me, dan /admin/users tetap HTTP 200. CATATAN TINDAK LANJUT: layanan selain svc-auth memvalidasi token secara lokal tanpa memeriksa status akun, sehingga token lama masih dapat mengakses layanan tersebut sampai kedaluwarsa (maksimal 1 jam). Penutupan celah ini memerlukan mekanisme pencabutan token bersama antar layanan dan diusulkan sebagai perbaikan lanjutan.",
+    "shots": [
+      "shots/3.8.1-4a_menu-nonaktifkan.png",
+      "shots/3.8.1-4b_pengguna-nonaktif.png",
+      "shots/3.8.1-4_bukti-perbaikan-nonaktif.png"
+    ]
+  },
+  {
+    "id": "3.8.2-1",
+    "scenario": "Kelola privilege tambahan",
+    "verdict": "PASS",
+    "notes": "Melalui menu aksi baris pengguna dipilih \"Manage Privileges\". Sistem menampilkan 28 izin granular (antara lain project.create, project.edit, project.delete, project.manage_members, sprint.manage, sprint.view, task.create, task.edit_own) lengkap dengan deskripsi, nama teknis izin, dan penanda \"DEFAULT\" untuk izin bawaan peran. Dua izin diubah melalui sakelar: project.create diaktifkan dan project.edit dicabut. Antarmuka menandai perubahan dengan label DIBERIKAN/DICABUT. Terverifikasi di basis data svc_auth tabel user_extra_permissions: tercatat baris project.create dengan granted = true dan project.edit dengan granted = false, beserta pencatatan granted_by dan waktu. Privilege tambahan ini berlaku di luar bawaan peran.",
+    "shots": [
+      "shots/3.8.2-1a_kelola-privilege.png",
+      "shots/3.8.2-1b_privilege-diubah.png"
+    ]
+  },
+  {
+    "id": "3.8.2-2",
+    "scenario": "Reset privilege ke default",
+    "verdict": "PASS",
+    "notes": "Pada panel Manage Privileges ditekan tombol \"Reset ke default\". Seluruh penyesuaian izin dikembalikan ke bawaan peran: penanda DIBERIKAN/DICABUT hilang dari antarmuka dan seluruh izin kembali berlabel DEFAULT. Terverifikasi di basis data bahwa jumlah baris user_extra_permissions untuk pengguna tersebut kembali menjadi 0 (sebelumnya 2), sehingga hak akses sepenuhnya mengikuti peran.",
+    "shots": [
+      "shots/3.8.2-2a_sebelum-reset.png",
+      "shots/3.8.2-2b_setelah-reset.png"
+    ]
+  },
+  {
+    "id": "3.8.3-1",
+    "scenario": "Riwayat login dan aktivitas pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai Administrator lalu membuka halaman Activity Log (/admin/activity). Sistem menampilkan riwayat login dan aktivitas pengguna secara kronologis. Tersedia penyaringan berdasarkan jenis aksi — Login, Logout, Login Failed, Create CR, Sign CR, e-Sign Document, Upload Document, Add Asset — serta penyaringan berdasarkan pengguna dan rentang tanggal (dua kolom tanggal), dilengkapi pencarian bebas berdasarkan nama, email, atau deskripsi. Pengguna uji yang baru dibuat pada pengujian ini turut muncul pada daftar penyaring pengguna.",
+    "shots": [
+      "shots/3.8.3-1_riwayat-login-aktivitas.png"
+    ]
+  },
+  {
+    "id": "4.1-1",
+    "scenario": "Buat sprint baru",
+    "verdict": "PASS",
+    "notes": "Pada detail proyek \"Proyek UAT 627832\" dibuka tab Sprints -> \"Create Sprint\", diisi nama \"Sprint UAT 627832\", sasaran sprint, tanggal mulai 2026-07-31 dan tanggal selesai 2026-08-14, lalu disimpan. Sprint baru berhasil dibuat dan tampil pada daftar sprint proyek dengan status awal (belum dimulai).",
+    "shots": [
+      "shots/4.1-1a_tab-sprint.png",
+      "shots/4.1-1b_form-buat-sprint.png",
+      "shots/4.1-1c_sprint-terbuat.png"
+    ]
+  },
+  {
+    "id": "4.1-2",
+    "scenario": "Mulai sprint",
+    "verdict": "PASS",
+    "notes": "Pada tab Sprints, sprint \"Sprint UAT 627832\" berstatus \"Planned\" dipilih lalu ditekan \"Start Sprint\". Status sprint berubah menjadi aktif dan tombol aksi pada kartu menyesuaikan menjadi pengelolaan sprint berjalan.",
+    "shots": [
+      "shots/4.1-2a_sprint-sebelum-dimulai.png",
+      "shots/4.1-2b_sprint-aktif.png"
+    ]
+  },
+  {
+    "id": "4.1-3",
+    "scenario": "Tambahkan backlog ke sprint",
+    "verdict": "PASS",
+    "notes": "PERBAIKAN DITERAPKAN DAN DIUJI ULANG. Temuan awal: tidak ada kontrol untuk memasukkan item backlog ke sprint; modal \"Select Backlog for Sprint\" sudah dirender namun pemicunya tidak pernah dipanggil sehingga tidak dapat dibuka pengguna. Perbaikan: ditambahkan tombol \"Add Backlog\" pada kartu sprint (tampil selama sprint belum berstatus selesai) yang membuka modal tersebut. Hasil pengujian ulang: pada sprint \"Sprint Perbaikan 23014\" ditekan \"Add Backlog\"; modal menampilkan daftar item backlog yang belum masuk sprint beserta epic induk dan story point (\"Backlog UAT 627832 - Epic UAT 627832 - 5 pts\"), dilengkapi penghitung item terpilih. Setelah item dicentang dan disimpan, terverifikasi di basis data svc_project bahwa kolom sprint_id pada item backlog terisi dan item tersebut kini terhubung ke sprint yang dipilih.",
+    "shots": [
+      "shots/4.1-3a_tombol-tambah-backlog.png",
+      "shots/4.1-3b_modal-pilih-backlog.png",
+      "shots/4.1-3c_backlog-dipilih.png",
+      "shots/4.1-3d_backlog-masuk-sprint.png"
+    ]
+  },
+  {
+    "id": "4.1-4",
+    "scenario": "Buka board Kanban",
+    "verdict": "PASS",
+    "notes": "Papan Kanban proyek dibuka melalui tombol Board / \"Open Board\". Papan tampil dengan empat kolom status sesuai ekspektasi: To Do, In Progress, Review, Done. Setiap kolom menampilkan penghitung jumlah task, dan sistem memberi petunjuk bahwa status task dapat diubah langsung dari kartu pada papan.",
+    "shots": [
+      "shots/4.1-4_board-kanban.png"
+    ]
+  },
+  {
+    "id": "4.1-5",
+    "scenario": "Selesaikan sprint",
+    "verdict": "PASS",
+    "notes": "Pada tab Sprints, sprint aktif \"Sprint UAT 627832\" dipilih lalu ditekan tombol \"Complete\". Status sprint berubah menjadi \"Completed\" pada antarmuka dan terverifikasi di basis data svc_project tabel sprints bahwa kolom status bernilai \"completed\". Sprint yang telah selesai tetap tercatat pada daftar sprint proyek beserta periode dan sasarannya. Catatan: tombol berlabel \"Complete\" (bukan \"Selesaikan Sprint\" seperti pada dokumen) dan penyelesaian sprint tidak mensyaratkan seluruh task selesai.",
+    "shots": [
+      "shots/4.1-5a_sprint-aktif-sebelum-selesai.png",
+      "shots/4.1-5b_sprint-selesai.png"
+    ]
+  },
+  {
+    "id": "4.2-1",
+    "scenario": "Tambah dokumen baru",
+    "verdict": "PASS",
+    "notes": "Melalui /documents -> \"Upload document\" diisi judul \"Dokumen UAT 93744\", kategori SOP, nomor dokumen SK/2026/93744, tanggal terbit 2026-07-31, tanggal kadaluarsa 2026-08-20, deskripsi, serta diunggah berkas PDF, lalu disimpan. Dokumen muncul pada daftar dengan metadata lengkap.",
+    "shots": [
+      "shots/4.2-1a_form-tambah-dokumen.png",
+      "shots/4.2-1b_dokumen-tersimpan.png"
+    ]
+  },
+  {
+    "id": "4.2-2",
+    "scenario": "Lihat daftar dokumen",
+    "verdict": "PASS",
+    "notes": "Halaman Official Documents menampilkan seluruh dokumen beserta nama, kategori, nomor dokumen, dan status masa berlaku. Tersedia ringkasan: TOTAL dokumen, EXPIRING SOON (kadaluarsa dalam 30 hari), EXPIRED (perlu diperbarui), dan AWAITING SIGNATURE (dalam antrean e-Sign), serta penyaringan berdasarkan kategori (Decree, SOP, Report, Circular, Contract, Minutes, Other) dan status masa berlaku.",
+    "shots": [
+      "shots/4.2-2_daftar-dokumen.png"
+    ]
+  },
+  {
+    "id": "4.2-3",
+    "scenario": "Cari dokumen",
+    "verdict": "PASS",
+    "notes": "Kata kunci \"Dokumen UAT 93744\" dimasukkan pada kolom pencarian di halaman Dokumen. Hasil pencarian menyaring daftar sehingga hanya menampilkan dokumen yang judul atau nomornya cocok dengan kata kunci.",
+    "shots": [
+      "shots/4.2-3_cari-dokumen.png"
+    ]
+  },
+  {
+    "id": "4.2-4",
+    "scenario": "Filter dokumen segera kadaluarsa",
+    "verdict": "PASS",
+    "notes": "Penyaring status masa berlaku diatur ke \"expiring\" (segera kadaluarsa). Daftar hanya menampilkan dokumen yang masa berlakunya kurang dari 30 hari — dokumen uji \"Dokumen UAT 93744\" dengan tanggal kadaluarsa 2026-08-20 (20 hari dari tanggal pengujian) muncul pada hasil, sedangkan dokumen di luar rentang tersebut tidak ditampilkan. Kartu ringkasan \"EXPIRING SOON — within 30 days\" ikut menyesuaikan.",
+    "shots": [
+      "shots/4.2-4_filter-segera-kadaluarsa.png"
+    ]
+  },
+  {
+    "id": "4.2-5",
+    "scenario": "Edit dokumen",
+    "verdict": "PASS",
+    "notes": "PERBAIKAN DITERAPKAN DAN DIUJI ULANG. Ditemukan dua cacat berlapis pada alur ini. (a) Modal \"Edit Document\" terbuka dengan seluruh isian kosong sehingga tombol Save nonaktif. Penyebab: state form diinisialisasi dari properti editData memakai useState, yang nilainya hanya dievaluasi saat komponen pertama dipasang, sedangkan editData baru terisi ketika pengguna menekan Edit. Perbaikan: ditambahkan useEffect yang menyinkronkan ulang state form setiap kali modal dibuka atau data dokumen berubah. (b) Setelah isian terisi, penyimpanan tetap tidak mengubah data meski respons berhasil. Penyebab: pembaruan dikirim sebagai permintaan PUT dengan badan multipart/form-data, sedangkan PHP tidak mem-parsing badan multipart pada metode PUT sehingga payload sampai kosong di server. Perbaikan: pembaruan dikirim sebagai POST dengan penandaan metode (_method=PUT) sesuai mekanisme Laravel. Hasil pengujian ulang: modal Edit terbuka dengan data terisi otomatis (judul \"Dokumen UAT 93744\", nomor \"SK/2026/93744\", kategori \"SOP\") dan tombol Save aktif. Nomor dokumen diubah menjadi \"SK/2026/93744-REV1\" beserta deskripsi baru, lalu disimpan. Perubahan terverifikasi di basis data svc_storage: kolom doc_number dan description berubah dan updated_at diperbarui, serta nomor baru tampil pada daftar dokumen.",
+    "shots": [
+      "shots/4.2-5a_form-edit-terisi.png",
+      "shots/4.2-5b_metadata-tersimpan.png"
+    ]
+  },
+  {
+    "id": "4.2-6",
+    "scenario": "Download file dokumen",
+    "verdict": "PASS",
+    "notes": "Pada baris dokumen dipilih ikon Download. Berkas \"Test sign.pdf\" berhasil diunduh ke perangkat berukuran 15.607 byte dan terverifikasi berformat PDF sah (header %PDF), sesuai berkas yang diunggah saat dokumen dibuat.",
+    "shots": [
+      "shots/4.2-6_unduh-dokumen.png"
+    ]
+  },
+  {
+    "id": "4.3-1",
+    "scenario": "Upload file",
+    "verdict": "PASS",
+    "notes": "Halaman /storage dibuka lalu ditekan Upload, berkas PDF dipilih dan diunggah. Berkas berhasil tersimpan dan langsung muncul pada daftar dengan nama \"Test sign.pdf\", ukuran 15.2 KB, dan tipe PDF. Penghitung kuota institusi menyesuaikan menjadi 1 berkas (0.0 MB dari 50 GB terpakai). Halaman juga mendukung unggah melalui seret-dan-lepas.",
+    "shots": [
+      "shots/4.3-1a_storage-sebelum-upload.png",
+      "shots/4.3-1b_pilih-berkas.png",
+      "shots/4.3-1c_berkas-terunggah.png"
+    ]
+  },
+  {
+    "id": "4.3-2",
+    "scenario": "Lihat daftar file",
+    "verdict": "PASS",
+    "notes": "Halaman Storage menampilkan seluruh berkas yang telah diunggah dalam bentuk tabel dengan kolom FILE, TYPE, UPLOADED BY, dan DATE — berkas uji tampil sebagai \"Test sign.pdf, 15.2 KB, PDF, 31 Jul 2026\" dengan keterangan \"Showing 1 of 1 files\". Tersedia pencarian berkas serta pengelompokan berdasarkan kategori: Task attachments, CR attachments, Signature specimens, Other, dan All files, disertai informasi penggunaan kuota penyimpanan.",
+    "shots": [
+      "shots/4.3-1c_berkas-terunggah.png"
+    ]
+  }
+]

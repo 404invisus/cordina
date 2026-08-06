@@ -1,0 +1,58 @@
+[
+  {
+    "id": "4.2-1",
+    "scenario": "Tambah dokumen baru",
+    "verdict": "PASS",
+    "notes": "Melalui /documents -> \"Upload document\" diisi judul \"Dokumen UAT 93744\", kategori SOP, nomor dokumen SK/2026/93744, tanggal terbit 2026-07-31, tanggal kadaluarsa 2026-08-20, deskripsi, serta diunggah berkas PDF, lalu disimpan. Dokumen muncul pada daftar dengan metadata lengkap.",
+    "shots": [
+      "shots/4.2-1a_form-tambah-dokumen.png",
+      "shots/4.2-1b_dokumen-tersimpan.png"
+    ]
+  },
+  {
+    "id": "4.2-2",
+    "scenario": "Lihat daftar dokumen",
+    "verdict": "PASS",
+    "notes": "Halaman Official Documents menampilkan seluruh dokumen beserta nama, kategori, nomor dokumen, dan status masa berlaku. Tersedia ringkasan: TOTAL dokumen, EXPIRING SOON (kadaluarsa dalam 30 hari), EXPIRED (perlu diperbarui), dan AWAITING SIGNATURE (dalam antrean e-Sign), serta penyaringan berdasarkan kategori (Decree, SOP, Report, Circular, Contract, Minutes, Other) dan status masa berlaku.",
+    "shots": [
+      "shots/4.2-2_daftar-dokumen.png"
+    ]
+  },
+  {
+    "id": "4.2-3",
+    "scenario": "Cari dokumen",
+    "verdict": "PASS",
+    "notes": "Kata kunci \"Dokumen UAT 93744\" dimasukkan pada kolom pencarian di halaman Dokumen. Hasil pencarian menyaring daftar sehingga hanya menampilkan dokumen yang judul atau nomornya cocok dengan kata kunci.",
+    "shots": [
+      "shots/4.2-3_cari-dokumen.png"
+    ]
+  },
+  {
+    "id": "4.2-4",
+    "scenario": "Filter dokumen segera kadaluarsa",
+    "verdict": "PASS",
+    "notes": "Penyaring status masa berlaku diatur ke \"expiring\" (segera kadaluarsa). Daftar hanya menampilkan dokumen yang masa berlakunya kurang dari 30 hari — dokumen uji \"Dokumen UAT 93744\" dengan tanggal kadaluarsa 2026-08-20 (20 hari dari tanggal pengujian) muncul pada hasil, sedangkan dokumen di luar rentang tersebut tidak ditampilkan. Kartu ringkasan \"EXPIRING SOON — within 30 days\" ikut menyesuaikan.",
+    "shots": [
+      "shots/4.2-4_filter-segera-kadaluarsa.png"
+    ]
+  },
+  {
+    "id": "4.2-5",
+    "scenario": "Edit dokumen",
+    "verdict": "FAIL",
+    "notes": "Dokumen dibuka melalui ikon Edit pada barisnya. Modal berjudul \"Edit Document\" memang terbuka, namun SELURUH ISIAN TAMPIL KOSONG — judul, kategori, nomor dokumen, tanggal terbit, tanggal kadaluarsa, dan deskripsi tidak dimuat dari data dokumen yang ada. Akibatnya tombol \"Save\" berstatus NONAKTIF karena validasi mensyaratkan judul dan kategori terisi, sehingga perubahan metadata tidak dapat disimpan sama sekali. PENYEBAB TEKNIS: pada komponen DocModal, state form diinisialisasi dari properti editData menggunakan useState. Nilai awal useState hanya dievaluasi saat komponen pertama kali dipasang, sedangkan editData baru terisi ketika pengguna menekan Edit. Tidak terdapat useEffect yang menyinkronkan ulang state form ketika editData berubah, sehingga form selalu tampil kosong. RISIKO TAMBAHAN: bila pengguna mengisi ulang seluruh field secara manual agar tombol Save aktif, field yang tidak diketik ulang berpotensi menimpa metadata dokumen yang sudah ada dengan nilai kosong. DAMPAK: fitur ubah metadata dokumen tidak dapat digunakan. Perlu perbaikan sebelum go-live.",
+    "shots": [
+      "shots/4.2-5a_form-edit-dokumen.png",
+      "shots/4.2-5b_metadata-tersimpan.png"
+    ]
+  },
+  {
+    "id": "4.2-6",
+    "scenario": "Download file dokumen",
+    "verdict": "PASS",
+    "notes": "Pada baris dokumen dipilih ikon Download. Berkas \"Test sign.pdf\" berhasil diunduh ke perangkat berukuran 15.607 byte dan terverifikasi berformat PDF sah (header %PDF), sesuai berkas yang diunggah saat dokumen dibuat.",
+    "shots": [
+      "shots/4.2-6_unduh-dokumen.png"
+    ]
+  }
+]

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "3.5.1-1",
+    "scenario": "Ajukan change request baru",
+    "verdict": "PASS (dengan catatan penting)",
+    "notes": "Melalui /change-management -> \"New request\" diajukan CR berjudul \"CR UAT Setujui 61396\". Form memuat judul, usulan perubahan, rincian langkah pelaksanaan, latar belakang/alasan, risiko yang mungkin terjadi, langkah mitigasi, risiko bila perubahan tidak dilaksanakan, dan rencana penanganan kegagalan (rollback); disertai prioritas (High), tipe perubahan (Normal/Standard/Emergency), rencana waktu pelaksanaan, pelaksana, penilai/reviewer berurutan (Scrum Master), dan penandatangan (Project Manager). Sistem mewajibkan minimal 1 penilai dan tepat 1 penandatangan. CATATAN KETIDAKSESUAIAN PENTING: menekan \"Save\" TIDAK langsung mengajukan CR — CR tersimpan dengan status \"draft\" (terverifikasi di basis data: status=draft, current_step=0) dan penilai BELUM menerima notifikasi. Pengaju harus menekan tombol \"Submit\" terpisah pada kartu CR agar status berubah menjadi \"submitted\" dengan current_step=1 dan alur persetujuan dimulai. Dokumen menyatakan \"CR baru tersimpan dengan status awal dan reviewer pertama mendapat notifikasi\" dalam satu langkah, sehingga langkah pengujian perlu ditambahi aksi Submit.",
+    "shots": [
+      "shots/3.5.1-1b_form-ajukan-cr.png",
+      "shots/3.5.1-1d_cr-status-draft.png",
+      "shots/3.5.1-1e_cr-setelah-submit.png"
+    ]
+  },
+  {
+    "id": "3.5.2-1",
+    "scenario": "Review dan setujui CR (reviewer)",
+    "verdict": "PASS",
+    "notes": "Login sebagai penilai (sm@test.com / Scrum Master). CR \"CR UAT Setujui 61396\" muncul pada tab \"Awaiting me\", dibuka, lalu dipilih Setujui dengan catatan persetujuan. Terverifikasi di basis data: current_step CR berubah dari 1 menjadi 2, status tetap \"submitted\" karena alur berlanjut. Riwayat aktivitas mencatat \"Ditinjau oleh Scrum Master\" beserta waktunya, dan tahap berikutnya beralih ke penandatanganan oleh Project Manager dengan penanda \"TTE - Menunggu\". Perilaku sesuai ekspektasi alur persetujuan bertingkat.",
+    "shots": [
+      "shots/3.5.2-1a_cr-menunggu-persetujuan.png",
+      "shots/3.5.2-1b_form-persetujuan.png",
+      "shots/3.5.2-1c_status-setelah-disetujui.png"
+    ]
+  },
+  {
+    "id": "3.5.2-2",
+    "scenario": "Tolak CR (reviewer)",
+    "verdict": "PASS",
+    "notes": "Login sebagai penilai (pdm@test.com / Kepala Seksi). CR \"CR UAT Tolak 61396\" dibuka lalu dipilih Tolak. Sistem menampilkan dialog penolakan dengan kolom catatan bertanda wajib (\"Rejection note (required)\") — tombol konfirmasi \"Reject CR\" baru aktif setelah catatan diisi. Setelah dikonfirmasi, terverifikasi di basis data bahwa status CR berubah menjadi \"rejected\" dan alur persetujuan berhenti. Notifikasi kepada pengaju tercatat pada sistem notifikasi (lihat 3.7).",
+    "shots": [
+      "shots/3.5.2-2a_cr-sebelum-ditolak.png",
+      "shots/3.5.2-2b_form-penolakan.png",
+      "shots/3.5.2-2c_status-ditolak.png"
+    ]
+  },
+  {
+    "id": "3.5.3-1",
+    "scenario": "Riwayat dan audit trail CR",
+    "verdict": "PASS",
+    "notes": "Detail CR \"CR UAT Setujui 61396\" yang telah melalui beberapa tahap dibuka melalui \"View progress\". Sistem menampilkan alur tahapan (Step 2/2) beserta bagian \"Riwayat Aktivitas\" yang mencatat kronologi lengkap: \"CR Dibuat oleh Kepala Balai\" (30 Jul 2026, 08:54), \"Ditinjau oleh Scrum Master\" (30 Jul 2026, 09:00), serta tahap \"Penandatangan: Project Manager - TTE - Menunggu\". Setiap entri memuat pelaku dan waktu. Pencatatan juga tersimpan pada tabel cr_activity_logs dan cr_approvals.",
+    "shots": [
+      "shots/3.5.3-1_riwayat-audit-trail.png"
+    ]
+  },
+  {
+    "id": "3.5.4-1",
+    "scenario": "Filter CR berdasarkan status dan periode",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Halaman daftar CR menyediakan penyaringan status melalui tab: All, Awaiting me, In flight, Submitted by me, dan Closed. Saat tab \"All\" dipilih daftar menampilkan 13 hasil; setelah tab \"Closed\" dipilih daftar menyusut menjadi 1 hasil yang sesuai status tersebut, lengkap dengan penghitung jumlah hasil. CATATAN KETIDAKSESUAIAN: dokumen menyebut penyaringan \"status dan rentang tanggal\", namun halaman ini TIDAK menyediakan filter rentang tanggal/periode — penyaringan hanya berdasarkan status. Perlu penambahan filter periode atau penyesuaian dokumen.",
+    "shots": [
+      "shots/3.5.4-1a_daftar-sebelum-filter.png",
+      "shots/3.5.4-1b_daftar-terfilter.png"
+    ]
+  }
+]

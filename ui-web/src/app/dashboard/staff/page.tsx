@@ -10,6 +10,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { formatDate } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
+import { useLocale, useT } from '@/lib/i18n';
 
 const PRIORITY_DOT: Record<string, string> = {
   critical: 'bg-danger',
@@ -18,14 +19,54 @@ const PRIORITY_DOT: Record<string, string> = {
   low: 'bg-success',
 };
 
-const COLS = [
-  { key: 'todo', label: 'To Do', dot: '#8a8f98', bg: '#f1f0ed' },
-  { key: 'in_progress', label: 'In Progress', dot: '#14406a', bg: '#eaf1f8' },
-  { key: 'done', label: 'Done', dot: '#137a52', bg: '#e9f4ee' },
-];
+const dict = {
+  en: {
+    hello: 'Hello, {name}',
+    subtitle: 'Tasks assigned to you',
+    allTasks: 'All Tasks',
+    statToDo: 'To Do',
+    statInProgress: 'In Progress',
+    statCompleted: 'Completed',
+    statOverdue: 'Overdue',
+    overdueTasks: '{count} task{plural}',
+    pastDeadline: 'past their deadline',
+    view: 'View',
+    colToDo: 'To Do',
+    colInProgress: 'In Progress',
+    colDone: 'Done',
+    overduePrefix: 'Overdue · ',
+    empty: 'Empty',
+  },
+  id: {
+    hello: 'Halo, {name}',
+    subtitle: 'Tugas yang ditetapkan untuk Anda',
+    allTasks: 'Semua Tugas',
+    statToDo: 'Belum Dimulai',
+    statInProgress: 'Sedang Berjalan',
+    statCompleted: 'Selesai',
+    statOverdue: 'Terlambat',
+    overdueTasks: '{count} tugas',
+    pastDeadline: 'telah melewati tenggat waktu',
+    view: 'Lihat',
+    colToDo: 'Belum Dimulai',
+    colInProgress: 'Sedang Berjalan',
+    colDone: 'Selesai',
+    overduePrefix: 'Terlambat · ',
+    empty: 'Kosong',
+  },
+};
 
 export default function StaffDashboard() {
   const { user } = useAuthStore();
+  const { locale } = useLocale();
+  const t = useT(dict);
+
+  const COLS = [
+    { key: 'todo', label: t('colToDo'), dot: '#8a8f98', bg: '#f1f0ed' },
+    { key: 'in_progress', label: t('colInProgress'), dot: '#14406a', bg: '#eaf1f8' },
+    { key: 'done', label: t('colDone'), dot: '#137a52', bg: '#e9f4ee' },
+  ];
+
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['tasks', 'mine', user?.id],
     queryFn: () => taskService.list({ assignee_id: user?.id }).then((r) => r.data.data),
@@ -45,15 +86,15 @@ export default function StaffDashboard() {
     <div className="space-y-6">
       <PageHeader
         section="OVERVIEW"
-        title={`Hello, ${user?.full_name}`}
-        subtitle="Tasks assigned to you"
+        title={t('hello', { name: user?.full_name ?? '' })}
+        subtitle={t('subtitle')}
         actions={
           <Link
             href="/tasks"
             className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
             <ListTodo className="w-3 h-3" />
-            All Tasks
+            {t('allTasks')}
           </Link>
         }
       />
@@ -61,10 +102,10 @@ export default function StaffDashboard() {
       <CRSummaryCard />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="To Do" value={todo.length} icon={ListTodo} color="brand" index={0} />
-        <StatCard title="In Progress" value={inProgress.length} icon={Clock} color="brand" index={1} />
-        <StatCard title="Completed" value={done.length} icon={CheckSquare} color="green" index={2} />
-        <StatCard title="Overdue" value={overdue.length} icon={AlertTriangle} color="red" index={3} />
+        <StatCard title={t('statToDo')} value={todo.length} icon={ListTodo} color="brand" index={0} />
+        <StatCard title={t('statInProgress')} value={inProgress.length} icon={Clock} color="brand" index={1} />
+        <StatCard title={t('statCompleted')} value={done.length} icon={CheckSquare} color="green" index={2} />
+        <StatCard title={t('statOverdue')} value={overdue.length} icon={AlertTriangle} color="red" index={3} />
       </div>
 
       {overdue.length > 0 && (
@@ -78,12 +119,12 @@ export default function StaffDashboard() {
           <AlertTriangle className="w-[14px] h-[14px] text-danger flex-none" />
           <div className="flex-1 min-w-0">
             <span className="text-[12.5px] font-semibold text-navy-800">
-              {overdue.length} task{overdue.length !== 1 ? 's' : ''}{' '}
+              {t('overdueTasks', { count: overdue.length, plural: overdue.length !== 1 ? 's' : '' })}{' '}
             </span>
-            <span className="text-[12px] text-text-tertiary">past their deadline</span>
+            <span className="text-[12px] text-text-tertiary">{t('pastDeadline')}</span>
           </div>
           <Link href="/tasks" className="text-[11.5px] font-bold text-danger hover:underline flex-none flex items-center gap-1">
-            View <ArrowRight className="w-3 h-3" />
+            {t('view')} <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
       )}
@@ -114,32 +155,32 @@ export default function StaffDashboard() {
             </div>
 
             <div className="p-3 flex flex-col gap-2 flex-1">
-              {grouped[col.key].map((t: any, i: number) => {
-                const isOverdue = t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done';
+              {grouped[col.key].map((task: any, i: number) => {
+                const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
                 return (
                   <motion.div
-                    key={t.id}
+                    key={task.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.36 + ci * 0.08 + i * 0.04 }}
                   >
                     <Link
-                      href={`/tasks/${t.id}`}
+                      href={`/tasks/${task.id}`}
                       className="block p-3 rounded-[6px] border border-border hover:border-navy-700 hover:bg-surface-2 transition-all group"
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-[12px] font-semibold text-navy-800 group-hover:text-navy-700 leading-snug transition-colors line-clamp-2">
-                          {t.title}
+                          {task.title}
                         </span>
-                        {t.priority && (
-                          <span className={`w-2 h-2 rounded-full flex-none mt-1 ${PRIORITY_DOT[t.priority] || 'bg-text-meta'}`} />
+                        {task.priority && (
+                          <span className={`w-2 h-2 rounded-full flex-none mt-1 ${PRIORITY_DOT[task.priority] || 'bg-text-meta'}`} />
                         )}
                       </div>
-                      {t.due_date && (
+                      {task.due_date && (
                         <div className={`flex items-center gap-1 text-[11px] ${isOverdue ? 'text-danger' : 'text-text-placeholder'}`}>
                           <Calendar className="w-3 h-3 flex-none" />
-                          {isOverdue && <span className="font-semibold">Overdue · </span>}
-                          {formatDate(t.due_date)}
+                          {isOverdue && <span className="font-semibold">{t('overduePrefix')}</span>}
+                          {formatDate(task.due_date, locale)}
                         </div>
                       )}
                     </Link>
@@ -149,7 +190,7 @@ export default function StaffDashboard() {
               {grouped[col.key].length === 0 && (
                 <div className="flex flex-col items-center justify-center py-10 text-text-meta">
                   <CheckSquare className="w-7 h-7 mb-2 opacity-40" />
-                  <span className="text-[11px]">Empty</span>
+                  <span className="text-[11px]">{t('empty')}</span>
                 </div>
               )}
             </div>

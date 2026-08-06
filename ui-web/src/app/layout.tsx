@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
+import { LocaleProvider } from '@/lib/i18n';
 
 // SF Pro is Apple's proprietary system font — it can't be self-hosted or
 // loaded via next/font/google. The system-font stack in globals.css
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="id" className={plexMono.variable}>
       <body className="antialiased font-sans" suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <LocaleProvider>
+          <Providers>{children}</Providers>
+        </LocaleProvider>
       </body>
     </html>
   );

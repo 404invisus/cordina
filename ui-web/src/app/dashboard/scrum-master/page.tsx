@@ -9,8 +9,44 @@ import StatCard from '@/components/ui/StatCard';
 import PageHeader from '@/components/ui/PageHeader';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { getStatusTone, getStatusLabel, STATUS_MAP } from '@/lib/status';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    title: 'Dashboard',
+    subtitle: 'Manage sprints and monitor burndown',
+    workload: 'Workload',
+    statTotalProjects: 'Total Projects',
+    statTotalProjectsSub: 'all projects',
+    statActiveProjects: 'Active Projects',
+    statActiveProjectsSub: 'in progress',
+    statCompleted: 'Completed',
+    statCompletedSub: 'finished',
+    statWorkloadSub: 'view burndown',
+    activeProjects: 'Active Projects',
+    noProjectsYet: 'No projects yet',
+    boardBurndown: 'Board & Burndown',
+  },
+  id: {
+    title: 'Dasbor',
+    subtitle: 'Kelola sprint dan pantau burndown',
+    workload: 'Beban Kerja',
+    statTotalProjects: 'Total Proyek',
+    statTotalProjectsSub: 'semua proyek',
+    statActiveProjects: 'Proyek Aktif',
+    statActiveProjectsSub: 'sedang berjalan',
+    statCompleted: 'Selesai',
+    statCompletedSub: 'rampung',
+    statWorkloadSub: 'lihat burndown',
+    activeProjects: 'Proyek Aktif',
+    noProjectsYet: 'Belum ada proyek',
+    boardBurndown: 'Papan & Burndown',
+  },
+};
 
 export default function ScrumMasterDashboard() {
+  const { locale } = useLocale();
+  const t = useT(dict);
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectService.list().then((r) => r.data.data),
@@ -26,8 +62,8 @@ export default function ScrumMasterDashboard() {
     <div className="space-y-6">
       <PageHeader
         section="OVERVIEW"
-        title="Dashboard"
-        subtitle="Manage sprints and monitor burndown"
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <Link
             href="/workload"
@@ -35,16 +71,16 @@ export default function ScrumMasterDashboard() {
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
             <BarChart2 className="w-3 h-3" />
-            Workload
+            {t('workload')}
           </Link>
         }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Projects" value={total} icon={FolderKanban} color="brand" index={0} subtitle="all projects" />
-        <StatCard title="Active Projects" value={activeProjects.length} icon={Zap} color="green" index={1} subtitle="in progress" />
-        <StatCard title="Completed" value={doneProjects.length} icon={CheckSquare} color="green" index={2} subtitle="finished" />
-        <StatCard title="Workload" value="→" icon={BarChart2} color="brand" index={3} subtitle="view burndown" />
+        <StatCard title={t('statTotalProjects')} value={total} icon={FolderKanban} color="brand" index={0} subtitle={t('statTotalProjectsSub')} />
+        <StatCard title={t('statActiveProjects')} value={activeProjects.length} icon={Zap} color="green" index={1} subtitle={t('statActiveProjectsSub')} />
+        <StatCard title={t('statCompleted')} value={doneProjects.length} icon={CheckSquare} color="green" index={2} subtitle={t('statCompletedSub')} />
+        <StatCard title={t('workload')} value="→" icon={BarChart2} color="brand" index={3} subtitle={t('statWorkloadSub')} />
       </div>
 
       <CRSummaryCard />
@@ -58,10 +94,10 @@ export default function ScrumMasterDashboard() {
         <div className="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FolderKanban className="w-4 h-4 text-navy-700" />
-            <h2 className="text-[12.5px] font-semibold text-navy-900">Active Projects</h2>
+            <h2 className="text-[12.5px] font-semibold text-navy-900">{t('activeProjects')}</h2>
           </div>
           <Link href="/projects" className="text-[11.5px] font-semibold text-navy-700 hover:underline flex items-center gap-1">
-            View all <ArrowRight className="w-3 h-3" />
+            {t('common.viewAll')} <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
@@ -87,17 +123,17 @@ export default function ScrumMasterDashboard() {
                   <span
                     className={`text-[10.5px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_MAP[getStatusTone(p.status)].bg} ${STATUS_MAP[getStatusTone(p.status)].text}`}
                   >
-                    {getStatusLabel(p.status)}
+                    {getStatusLabel(p.status, locale)}
                   </span>
                   <span className="text-[11px] text-text-meta group-hover:text-navy-700 transition-colors flex items-center gap-1">
-                    Board & Burndown <ArrowRight className="w-3 h-3" />
+                    {t('boardBurndown')} <ArrowRight className="w-3 h-3" />
                   </span>
                 </div>
               </Link>
             </motion.div>
           ))}
           {(!projects || projects.length === 0) && (
-            <div className="col-span-2 text-center py-12 text-text-meta text-[12px]">No projects yet</div>
+            <div className="col-span-2 text-center py-12 text-text-meta text-[12px]">{t('noProjectsYet')}</div>
           )}
         </div>
       </motion.div>

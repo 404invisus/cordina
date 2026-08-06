@@ -1,0 +1,30 @@
+{
+  "opened": "",
+  "n": 0,
+  "done": "",
+  "dTxt": [
+    "Back to Projects",
+    "Proyek UAT 627832",
+    "Active",
+    "Proyek untuk pengujian UAT ConnectOne: verifikasi alur proyek, epic, backlog, task, sprint, dan pelaporan.",
+    "Open Board",
+    "Overview",
+    "Board",
+    "Sprints",
+    "Epics",
+    "Members",
+    "+ Create Sprint",
+    "Sprint UAT 627832",
+    "31 Jul 2026 – 14 Aug 2026",
+    "Active",
+    "Sasaran sprint pengujian UAT: menyelesaikan verifikasi alur kanban.",
+    "Complete",
+    "Board"
+  ],
+  "shots": {
+    "sPick": "shots/4.1-3a_pilih-backlog-untuk-sprint.png",
+    "sPicked": "shots/4.1-3b_backlog-dipilih.png",
+    "sAdded": "shots/4.1-3c_backlog-masuk-sprint.png",
+    "sDone": "shots/4.1-5_sprint-selesai.png"
+  }
+}

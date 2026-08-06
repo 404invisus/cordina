@@ -25,17 +25,232 @@ import DataTable, { type DataTableColumn } from '@/components/ui/DataTable';
 import { FilteredEmptyState } from '@/components/ui/EmptyState';
 import { adminUserService, adminReportExportService, permissionService } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    roleAdministrator: 'Administrator',
+    roleKepalaBalai: 'Kepala Balai',
+    roleKepalaSeksi: 'Kepala Seksi',
+    roleProjectManager: 'Project Manager',
+    roleScrumMaster: 'Scrum Master',
+    roleStaff: 'Staff',
+    editUser: 'Edit User',
+    addNewUser: 'Add New User',
+    editingUser: 'Editing {name}',
+    createNewUserAccount: 'Create a new user account',
+    fullNameLabel: 'Full Name *',
+    fullNamePlaceholder: 'Full name',
+    emailLabel: 'Email *',
+    passwordLabel: 'Password',
+    passwordKeepUnchanged: '(leave empty to keep unchanged)',
+    passwordPlaceholder: 'Minimum 8 characters',
+    passwordRuleLength: 'At least 8 characters',
+    passwordRuleLetter: 'Contains a letter',
+    passwordRuleNumber: 'Contains a number',
+    roleLabel: 'Role *',
+    divisionLabel: 'Division',
+    divisionPlaceholder: 'Teknologi',
+    positionLabel: 'Position',
+    positionPlaceholder: 'Software Engineer',
+    saving: 'Saving...',
+    saveChanges: 'Save Changes',
+    createUser: 'Create User',
+    userUpdated: 'User updated',
+    userCreated: 'User created successfully',
+    failed: 'Failed',
+    completeRequiredFields: 'Please complete all required fields',
+    changeRole: 'Change Role',
+    roleUpdated: 'Role updated!',
+    managePrivileges: 'Manage Privileges',
+    permissionResetToDefault: 'Permission reset to default',
+    permTogglesHint: 'Toggle untuk tambah/cabut privilege di luar role default',
+    resetToDefault: 'Reset ke default',
+    permProjectCreate: 'Create new projects',
+    permProjectEdit: 'Edit projects',
+    permProjectDelete: 'Delete projects',
+    permProjectManageMembers: 'Add/remove project members',
+    permSprintManage: 'Create, start, and complete sprints',
+    permSprintView: 'View sprint details and backlog',
+    permTaskCreate: 'Create new tasks',
+    permTaskEditOwn: 'Edit own tasks',
+    permTaskEditAll: 'Edit any task',
+    permTaskAssign: 'Assign tasks to members',
+    permTaskDelete: 'Delete tasks',
+    permTaskLogTime: 'Log time on tasks',
+    permCrSubmit: 'Submit Change Requests',
+    permCrApprove: 'Approve/reject Change Requests',
+    permCalendarView: 'View calendar',
+    permCalendarCreateOwn: 'Create events for self',
+    permCalendarManage: 'Create/edit events for all users',
+    permUserManage: 'Manage users, roles, and privileges',
+    permReportView: 'View analytics reports',
+    permReportExport: 'Export reports to file',
+    permAttendanceClock: 'Clock in/out attendance',
+    permAttendanceViewOwn: 'View own attendance',
+    permAttendanceViewAll: "View all employees' attendance",
+    permAssetView: 'View asset list',
+    permAssetManage: 'Add/edit/delete assets',
+    permDocumentView: 'View documents',
+    permDocumentManage: 'Add/edit/delete documents',
+    permNotificationManage: 'Manage Telegram notification settings',
+    defaultBadge: 'DEFAULT',
+    extraBadge: '+EXTRA',
+    revokedBadge: 'DICABUT',
+    done: 'Selesai',
+    editUserAction: 'Edit User',
+    changeRoleAction: 'Change Role',
+    managePrivilegesAction: 'Manage Privileges',
+    deactivate: 'Deactivate',
+    activate: 'Activate',
+    exportPdf: 'Export PDF',
+    manageUsers: 'Manage Users',
+    usersRegistered: '{count} user{plural} registered',
+    addUser: 'Add User',
+    statTotalUsers: 'Total Users',
+    statActive: 'Active',
+    statInactiveSub: '{count} inactive',
+    filterAll: 'All',
+    searchByNameOrEmail: 'Search by name or email...',
+    reset: 'Reset',
+    usersCount: '{count} user',
+    colUser: 'User',
+    colEmail: 'Email',
+    colDivisionPosition: 'Division / Position',
+    colRole: 'Role',
+    userDeactivated: 'User deactivated',
+    userActivated: 'User activated',
+    userDeleted: 'User deleted',
+    deleteUserTitle: 'Delete User?',
+    willBeDeleted: 'will be permanently deleted.',
+    deleting: 'Deleting...',
+    reportDownloaded: 'Report downloaded successfully',
+    failedDownloadReport: 'Failed to download report',
+  },
+  id: {
+    roleAdministrator: 'Administrator',
+    roleKepalaBalai: 'Kepala Balai',
+    roleKepalaSeksi: 'Kepala Seksi',
+    roleProjectManager: 'Manajer Proyek',
+    roleScrumMaster: 'Scrum Master',
+    roleStaff: 'Staf',
+    editUser: 'Ubah Pengguna',
+    addNewUser: 'Tambah Pengguna Baru',
+    editingUser: 'Mengubah {name}',
+    createNewUserAccount: 'Buat akun pengguna baru',
+    fullNameLabel: 'Nama Lengkap *',
+    fullNamePlaceholder: 'Nama lengkap',
+    emailLabel: 'Email *',
+    passwordLabel: 'Kata Sandi',
+    passwordKeepUnchanged: '(kosongkan jika tidak ingin diubah)',
+    passwordPlaceholder: 'Minimal 8 karakter',
+    passwordRuleLength: 'Minimal 8 karakter',
+    passwordRuleLetter: 'Mengandung huruf',
+    passwordRuleNumber: 'Mengandung angka',
+    roleLabel: 'Peran *',
+    divisionLabel: 'Divisi',
+    divisionPlaceholder: 'Teknologi',
+    positionLabel: 'Jabatan',
+    positionPlaceholder: 'Software Engineer',
+    saving: 'Menyimpan...',
+    saveChanges: 'Simpan Perubahan',
+    createUser: 'Buat Pengguna',
+    userUpdated: 'Pengguna berhasil diperbarui',
+    userCreated: 'Pengguna berhasil dibuat',
+    failed: 'Gagal',
+    completeRequiredFields: 'Harap lengkapi semua kolom wajib',
+    changeRole: 'Ubah Peran',
+    roleUpdated: 'Peran berhasil diperbarui!',
+    managePrivileges: 'Kelola Privilege',
+    permissionResetToDefault: 'Privilege berhasil direset ke default',
+    permTogglesHint: 'Alihkan untuk menambah/mencabut privilege di luar peran default',
+    resetToDefault: 'Reset ke default',
+    permProjectCreate: 'Membuat proyek baru',
+    permProjectEdit: 'Mengubah proyek',
+    permProjectDelete: 'Menghapus proyek',
+    permProjectManageMembers: 'Menambah/menghapus anggota proyek',
+    permSprintManage: 'Membuat, memulai, dan menyelesaikan sprint',
+    permSprintView: 'Melihat detail sprint dan backlog',
+    permTaskCreate: 'Membuat tugas baru',
+    permTaskEditOwn: 'Mengubah tugas sendiri',
+    permTaskEditAll: 'Mengubah semua tugas',
+    permTaskAssign: 'Menugaskan tugas ke anggota',
+    permTaskDelete: 'Menghapus tugas',
+    permTaskLogTime: 'Mencatat waktu pada tugas',
+    permCrSubmit: 'Mengajukan Change Request',
+    permCrApprove: 'Menyetujui/menolak Change Request',
+    permCalendarView: 'Melihat kalender',
+    permCalendarCreateOwn: 'Membuat acara untuk diri sendiri',
+    permCalendarManage: 'Membuat/mengubah acara untuk semua pengguna',
+    permUserManage: 'Mengelola pengguna, peran, dan privilege',
+    permReportView: 'Melihat laporan analitik',
+    permReportExport: 'Mengekspor laporan ke berkas',
+    permAttendanceClock: 'Absen masuk/keluar',
+    permAttendanceViewOwn: 'Melihat absensi sendiri',
+    permAttendanceViewAll: 'Melihat absensi seluruh pegawai',
+    permAssetView: 'Melihat daftar aset',
+    permAssetManage: 'Menambah/mengubah/menghapus aset',
+    permDocumentView: 'Melihat dokumen',
+    permDocumentManage: 'Menambah/mengubah/menghapus dokumen',
+    permNotificationManage: 'Mengelola pengaturan notifikasi Telegram',
+    defaultBadge: 'DEFAULT',
+    extraBadge: '+EKSTRA',
+    revokedBadge: 'DICABUT',
+    done: 'Selesai',
+    editUserAction: 'Ubah Pengguna',
+    changeRoleAction: 'Ubah Peran',
+    managePrivilegesAction: 'Kelola Privilege',
+    deactivate: 'Nonaktifkan',
+    activate: 'Aktifkan',
+    exportPdf: 'Ekspor PDF',
+    manageUsers: 'Kelola Pengguna',
+    usersRegistered: '{count} pengguna terdaftar',
+    addUser: 'Tambah Pengguna',
+    statTotalUsers: 'Total Pengguna',
+    statActive: 'Aktif',
+    statInactiveSub: '{count} tidak aktif',
+    filterAll: 'Semua',
+    searchByNameOrEmail: 'Cari berdasarkan nama atau email...',
+    reset: 'Reset',
+    usersCount: '{count} pengguna',
+    colUser: 'Pengguna',
+    colEmail: 'Email',
+    colDivisionPosition: 'Divisi / Jabatan',
+    colRole: 'Peran',
+    userDeactivated: 'Pengguna dinonaktifkan',
+    userActivated: 'Pengguna diaktifkan',
+    userDeleted: 'Pengguna berhasil dihapus',
+    deleteUserTitle: 'Hapus Pengguna?',
+    willBeDeleted: 'akan dihapus secara permanen.',
+    deleting: 'Menghapus...',
+    reportDownloaded: 'Laporan berhasil diunduh',
+    failedDownloadReport: 'Gagal mengunduh laporan',
+  },
+};
 
 const ROLES = ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff', 'administrator'];
 
-const ROLE_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  administrator: { label: 'Administrator', color: 'text-danger-text', bg: 'bg-danger-soft', dot: 'bg-danger' },
-  kepala_balai: { label: 'Kepala Balai', color: 'text-navy-700', bg: 'bg-navy-700/8', dot: 'bg-navy-700' },
-  kepala_seksi: { label: 'Kepala Seksi', color: 'text-info-text', bg: 'bg-info-soft', dot: 'bg-info' },
-  project_manager: { label: 'Project Manager', color: 'text-azure-400', bg: 'bg-info-soft', dot: 'bg-azure-400' },
-  scrum_master: { label: 'Scrum Master', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
-  staff: { label: 'Staff', color: 'text-text-secondary', bg: 'bg-border-subtle', dot: 'bg-text-placeholder' },
+const ROLE_CONFIG: Record<string, { color: string; bg: string; dot: string }> = {
+  administrator: { color: 'text-danger-text', bg: 'bg-danger-soft', dot: 'bg-danger' },
+  kepala_balai: { color: 'text-navy-700', bg: 'bg-navy-700/8', dot: 'bg-navy-700' },
+  kepala_seksi: { color: 'text-info-text', bg: 'bg-info-soft', dot: 'bg-info' },
+  project_manager: { color: 'text-azure-400', bg: 'bg-info-soft', dot: 'bg-azure-400' },
+  scrum_master: { color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
+  staff: { color: 'text-text-secondary', bg: 'bg-border-subtle', dot: 'bg-text-placeholder' },
 };
+
+const ROLE_LABEL_KEY: Record<string, string> = {
+  administrator: 'roleAdministrator',
+  kepala_balai: 'roleKepalaBalai',
+  kepala_seksi: 'roleKepalaSeksi',
+  project_manager: 'roleProjectManager',
+  scrum_master: 'roleScrumMaster',
+  staff: 'roleStaff',
+};
+
+function roleLabel(role: string, t: (key: string, vars?: Record<string, string | number>) => string) {
+  return ROLE_LABEL_KEY[role] ? t(ROLE_LABEL_KEY[role]) : role;
+}
 
 const GRADIENTS = [
   'from-navy-700 to-navy-700',
@@ -70,6 +285,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: number; 
 
 function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: () => void; editUser?: any }) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const isEdit = !!editUser;
 
   const [form, setForm] = useState({
@@ -88,15 +304,15 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success(isEdit ? 'User updated' : 'User created successfully');
+      toast.success(isEdit ? t('userUpdated') : t('userCreated'));
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   const handleSubmit = () => {
     if (!form.full_name || !form.email || (!isEdit && !form.password)) {
-      toast.error('Please complete all required fields');
+      toast.error(t('completeRequiredFields'));
       return;
     }
     const payload: any = { ...form };
@@ -122,8 +338,10 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div>
-            <h2 className="font-bold text-navy-900">{isEdit ? 'Edit User' : 'Add New User'}</h2>
-            <p className="text-xs text-text-placeholder mt-0.5">{isEdit ? `Editing ${editUser.full_name}` : 'Create a new user account'}</p>
+            <h2 className="font-bold text-navy-900">{isEdit ? t('editUser') : t('addNewUser')}</h2>
+            <p className="text-xs text-text-placeholder mt-0.5">
+              {isEdit ? t('editingUser', { name: editUser.full_name }) : t('createNewUserAccount')}
+            </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
             <X className="w-4 h-4 text-text-placeholder" />
@@ -133,16 +351,16 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Full Name *</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('fullNameLabel')}</label>
               <input
                 value={form.full_name}
                 onChange={(e) => set('full_name', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-                placeholder="Full name"
+                placeholder={t('fullNamePlaceholder')}
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Email *</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('emailLabel')}</label>
               <input
                 type="email"
                 value={form.email}
@@ -153,21 +371,22 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
             </div>
             <div className="col-span-2">
               <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">
-                Password {isEdit && <span className="font-normal text-text-placeholder">(leave empty to keep unchanged)</span>}
+                {t('passwordLabel')}{' '}
+                {isEdit && <span className="font-normal text-text-placeholder">{t('passwordKeepUnchanged')}</span>}
               </label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => set('password', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-                placeholder={isEdit ? '••••••••' : 'Minimum 8 characters'}
+                placeholder={isEdit ? '••••••••' : t('passwordPlaceholder')}
               />
               {form.password && (
                 <div className="mt-2 space-y-1">
                   {[
-                    { ok: form.password.length >= 8, label: 'At least 8 characters' },
-                    { ok: /[a-zA-Z]/.test(form.password), label: 'Contains a letter' },
-                    { ok: /[0-9]/.test(form.password), label: 'Contains a number' },
+                    { ok: form.password.length >= 8, label: t('passwordRuleLength') },
+                    { ok: /[a-zA-Z]/.test(form.password), label: t('passwordRuleLetter') },
+                    { ok: /[0-9]/.test(form.password), label: t('passwordRuleNumber') },
                   ].map((r, i) => (
                     <div key={i} className={`flex items-center gap-1.5 text-xs ${r.ok ? 'text-success-text' : 'text-text-placeholder'}`}>
                       <span
@@ -182,7 +401,7 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
               )}
             </div>
             <div>
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Role *</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('roleLabel')}</label>
               <div className="relative">
                 <select
                   value={form.role}
@@ -191,7 +410,7 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
-                      {ROLE_CONFIG[r]?.label || r}
+                      {roleLabel(r, t)}
                     </option>
                   ))}
                 </select>
@@ -199,21 +418,21 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Division</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('divisionLabel')}</label>
               <input
                 value={form.division}
                 onChange={(e) => set('division', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-                placeholder="Teknologi"
+                placeholder={t('divisionPlaceholder')}
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Position</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('positionLabel')}</label>
               <input
                 value={form.position}
                 onChange={(e) => set('position', e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-                placeholder="Software Engineer"
+                placeholder={t('positionPlaceholder')}
               />
             </div>
           </div>
@@ -224,14 +443,14 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={mutation.isPending}
             className="flex-1 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 transition-colors disabled:opacity-50"
           >
-            {mutation.isPending ? 'Saving...' : isEdit ? 'Save Changes' : 'Create User'}
+            {mutation.isPending ? t('saving') : isEdit ? t('saveChanges') : t('createUser')}
           </button>
         </div>
       </motion.div>
@@ -241,15 +460,16 @@ function UserFormModal({ open, onClose, editUser }: { open: boolean; onClose: ()
 
 function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const mutation = useMutation({
     mutationFn: (role: string) => adminUserService.updateRole(user.id, role),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success('Role updated!');
+      toast.success(t('roleUpdated'));
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   return (
@@ -267,7 +487,7 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle">
           <div>
-            <h2 className="font-bold text-navy-900">Change Role</h2>
+            <h2 className="font-bold text-navy-900">{t('changeRole')}</h2>
             <p className="text-xs text-text-placeholder">{user.full_name}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
@@ -290,7 +510,7 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
               >
                 <div className="flex items-center gap-2.5">
                   <span className={`w-2.5 h-2.5 rounded-full ${conf.dot}`} />
-                  <span className={`font-semibold ${isActive ? conf.color : 'text-text-secondary'}`}>{conf.label}</span>
+                  <span className={`font-semibold ${isActive ? conf.color : 'text-text-secondary'}`}>{roleLabel(role, t)}</span>
                 </div>
                 {isActive && (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
@@ -306,8 +526,40 @@ function RoleModal({ user, onClose }: { user: any; onClose: () => void }) {
   );
 }
 
+const PERMISSION_LABEL_KEY: Record<string, string> = {
+  'project.create': 'permProjectCreate',
+  'project.edit': 'permProjectEdit',
+  'project.delete': 'permProjectDelete',
+  'project.manage_members': 'permProjectManageMembers',
+  'sprint.manage': 'permSprintManage',
+  'sprint.view': 'permSprintView',
+  'task.create': 'permTaskCreate',
+  'task.edit_own': 'permTaskEditOwn',
+  'task.edit_all': 'permTaskEditAll',
+  'task.assign': 'permTaskAssign',
+  'task.delete': 'permTaskDelete',
+  'task.log_time': 'permTaskLogTime',
+  'cr.submit': 'permCrSubmit',
+  'cr.approve': 'permCrApprove',
+  'calendar.view': 'permCalendarView',
+  'calendar.create_own': 'permCalendarCreateOwn',
+  'calendar.manage': 'permCalendarManage',
+  'user.manage': 'permUserManage',
+  'report.view': 'permReportView',
+  'report.export': 'permReportExport',
+  'attendance.clock': 'permAttendanceClock',
+  'attendance.view_own': 'permAttendanceViewOwn',
+  'attendance.view_all': 'permAttendanceViewAll',
+  'asset.view': 'permAssetView',
+  'asset.manage': 'permAssetManage',
+  'document.view': 'permDocumentView',
+  'document.manage': 'permDocumentManage',
+  'notification.manage': 'permNotificationManage',
+};
+
 function PermissionModal({ user, onClose }: any) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const { data: permData, isLoading } = useQuery({
     queryKey: ['user-permissions', user?.id],
     queryFn: () => permissionService.getUserPermissions(user.id).then((r) => r.data.data),
@@ -317,14 +569,14 @@ function PermissionModal({ user, onClose }: any) {
   const setMutation = useMutation({
     mutationFn: ({ permission, granted }: any) => permissionService.setPermission(user.id, permission, granted),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] }),
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   const resetMutation = useMutation({
     mutationFn: () => permissionService.resetPermissions(user.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-permissions', user?.id] });
-      toast.success('Permission reset to default');
+      toast.success(t('permissionResetToDefault'));
     },
   });
 
@@ -333,37 +585,6 @@ function PermissionModal({ user, onClose }: any) {
   const effective: string[] = permData?.effective || [];
   const defaults: string[] = permData?.default || [];
   const extras = permData?.extra || [];
-
-  const ALL_PERMISSIONS: Record<string, string> = {
-    'project.create': 'Create new projects',
-    'project.edit': 'Edit projects',
-    'project.delete': 'Delete projects',
-    'project.manage_members': 'Add/remove project members',
-    'sprint.manage': 'Create, start, and complete sprints',
-    'sprint.view': 'View sprint details and backlog',
-    'task.create': 'Create new tasks',
-    'task.edit_own': 'Edit own tasks',
-    'task.edit_all': 'Edit any task',
-    'task.assign': 'Assign tasks to members',
-    'task.delete': 'Delete tasks',
-    'task.log_time': 'Log time on tasks',
-    'cr.submit': 'Submit Change Requests',
-    'cr.approve': 'Approve/reject Change Requests',
-    'calendar.view': 'View calendar',
-    'calendar.create_own': 'Create events for self',
-    'calendar.manage': 'Create/edit events for all users',
-    'user.manage': 'Manage users, roles, and privileges',
-    'report.view': 'View analytics reports',
-    'report.export': 'Export reports to file',
-    'attendance.clock': 'Clock in/out attendance',
-    'attendance.view_own': 'View own attendance',
-    'attendance.view_all': "View all employees' attendance",
-    'asset.view': 'View asset list',
-    'asset.manage': 'Add/edit/delete assets',
-    'document.view': 'View documents',
-    'document.manage': 'Add/edit/delete documents',
-    'notification.manage': 'Manage Telegram notification settings',
-  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -374,7 +595,7 @@ function PermissionModal({ user, onClose }: any) {
       >
         <div className="flex items-center justify-between p-6 border-b border-border-subtle">
           <div>
-            <h2 className="text-lg font-bold text-navy-900">Manage Privileges</h2>
+            <h2 className="text-lg font-bold text-navy-900">{t('managePrivileges')}</h2>
             <p className="text-sm text-text-placeholder mt-0.5">
               {user.full_name} · <span className="capitalize">{user.roles?.[0]?.replace('_', ' ')}</span>
             </p>
@@ -389,13 +610,13 @@ function PermissionModal({ user, onClose }: any) {
 
         <div className="p-6 space-y-2">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs text-text-placeholder">Toggle untuk tambah/cabut privilege di luar role default</p>
+            <p className="text-xs text-text-placeholder">{t('permTogglesHint')}</p>
             <button
               onClick={() => resetMutation.mutate()}
               disabled={resetMutation.isPending}
               className="text-xs font-semibold text-danger hover:underline disabled:opacity-50"
             >
-              Reset ke default
+              {t('resetToDefault')}
             </button>
           </div>
 
@@ -404,7 +625,7 @@ function PermissionModal({ user, onClose }: any) {
               <div className="w-6 h-6 border-2 border-navy-700/20 border-t-navy-700 rounded-full animate-spin" />
             </div>
           ) : (
-            Object.entries(ALL_PERMISSIONS).map(([key, label]) => {
+            Object.entries(PERMISSION_LABEL_KEY).map(([key, labelKey]) => {
               const isDefault = defaults.includes(key);
               const isEffective = effective.includes(key);
               const extraEntry = extras.find((e: any) => e.permission === key);
@@ -419,15 +640,15 @@ function PermissionModal({ user, onClose }: any) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-text-secondary">{label}</span>
+                      <span className="text-sm font-semibold text-text-secondary">{t(labelKey)}</span>
                       {isDefault && !isOverridden && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-border text-text-tertiary font-semibold">DEFAULT</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-border text-text-tertiary font-semibold">{t('defaultBadge')}</span>
                       )}
                       {isOverridden && extraEntry?.granted && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-success-soft text-success-text font-semibold">+EXTRA</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-success-soft text-success-text font-semibold">{t('extraBadge')}</span>
                       )}
                       {isOverridden && !extraEntry?.granted && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger-soft text-danger font-semibold">DICABUT</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-danger-soft text-danger font-semibold">{t('revokedBadge')}</span>
                       )}
                     </div>
                     <span className="text-xs text-text-placeholder font-mono">{key}</span>
@@ -454,7 +675,7 @@ function PermissionModal({ user, onClose }: any) {
             onClick={onClose}
             className="w-full px-4 py-2.5 rounded-[6px] bg-border-subtle text-text-secondary text-sm font-semibold hover:bg-border transition-colors"
           >
-            Selesai
+            {t('done')}
           </button>
         </div>
       </motion.div>
@@ -463,6 +684,7 @@ function PermissionModal({ user, onClose }: any) {
 }
 
 function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelete, onPermission, onClose }: any) {
+  const t = useT(dict);
   return (
     <motion.div
       ref={menuRef}
@@ -478,7 +700,7 @@ function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelet
         }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2 transition-colors"
       >
-        <Pencil className="w-3.5 h-3.5" /> Edit User
+        <Pencil className="w-3.5 h-3.5" /> {t('editUserAction')}
       </button>
       <button
         onClick={() => {
@@ -487,7 +709,7 @@ function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelet
         }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2 transition-colors"
       >
-        <Shield className="w-3.5 h-3.5" /> Change Role
+        <Shield className="w-3.5 h-3.5" /> {t('changeRoleAction')}
       </button>
       <button
         onClick={() => {
@@ -496,7 +718,7 @@ function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelet
         }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-navy-700 hover:bg-navy-700/8 transition-colors"
       >
-        <Shield className="w-3.5 h-3.5" /> Manage Privileges
+        <Shield className="w-3.5 h-3.5" /> {t('managePrivilegesAction')}
       </button>
       <button
         onClick={() => {
@@ -508,7 +730,7 @@ function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelet
         }`}
       >
         {user.is_active ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-        {user.is_active ? 'Deactivate' : 'Activate'}
+        {user.is_active ? t('deactivate') : t('activate')}
       </button>
       <div className="h-px bg-border-subtle mx-2" />
       <button
@@ -518,7 +740,7 @@ function ActionMenu({ user, position, menuRef, onEdit, onRole, onToggle, onDelet
         }}
         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger-text hover:bg-danger-soft transition-colors"
       >
-        <Trash2 className="w-3.5 h-3.5" /> Delete
+        <Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}
       </button>
     </motion.div>
   );
@@ -580,6 +802,7 @@ function UserRowActions({ user, openMenu, setOpenMenu, onEdit, onRole, onToggle,
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
+  const t = useT(dict);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -595,9 +818,9 @@ export default function AdminUsersPage() {
       a.download = 'laporan_pengguna.pdf';
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Report downloaded successfully');
+      toast.success(t('reportDownloaded'));
     } catch {
-      toast.error('Failed to download report');
+      toast.error(t('failedDownloadReport'));
     } finally {
       setExporting(false);
     }
@@ -628,9 +851,9 @@ export default function AdminUsersPage() {
     onSuccess: (_, u) => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success(u.is_active ? 'User deactivated' : 'User activated');
+      toast.success(u.is_active ? t('userDeactivated') : t('userActivated'));
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   const deleteMutation = useMutation({
@@ -638,10 +861,10 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
       qc.invalidateQueries({ queryKey: ['admin-user-stats'] });
-      toast.success('User deleted');
+      toast.success(t('userDeleted'));
       setDeleteUser(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   return (
@@ -653,9 +876,9 @@ export default function AdminUsersPage() {
             <Users className="w-5 h-5 text-navy-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-900">Manage Users</h1>
+            <h1 className="text-2xl font-bold text-navy-900">{t('manageUsers')}</h1>
             <p className="text-sm text-text-placeholder mt-0.5">
-              {stats?.total_users || 0} user{stats?.total_users !== 1 ? 's' : ''} registered
+              {t('usersRegistered', { count: stats?.total_users || 0, plural: stats?.total_users !== 1 ? 's' : '' })}
             </p>
           </div>
         </div>
@@ -665,29 +888,29 @@ export default function AdminUsersPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-40"
         >
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Export PDF
+          {t('exportPdf')}
         </button>
         <button
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all hover:-translate-y-0.5"
         >
-          <Plus className="w-4 h-4" /> Add User
+          <Plus className="w-4 h-4" /> {t('addUser')}
         </button>
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total Users" value={stats.total_users} color="text-navy-900" />
-          <StatCard label="Active" value={stats.active_users} sub={`${stats.inactive_users} inactive`} color="text-success-text" />
+          <StatCard label={t('statTotalUsers')} value={stats.total_users} color="text-navy-900" />
+          <StatCard
+            label={t('statActive')}
+            value={stats.active_users}
+            sub={t('statInactiveSub', { count: stats.inactive_users })}
+            color="text-success-text"
+          />
           {Object.entries(stats.by_role || {})
             .slice(0, 2)
             .map(([role, count]: any) => (
-              <StatCard
-                key={role}
-                label={ROLE_CONFIG[role]?.label || role}
-                value={count}
-                color={ROLE_CONFIG[role]?.color || 'text-text-secondary'}
-              />
+              <StatCard key={role} label={roleLabel(role, t)} value={count} color={ROLE_CONFIG[role]?.color || 'text-text-secondary'} />
             ))}
         </div>
       )}
@@ -697,7 +920,7 @@ export default function AdminUsersPage() {
           onClick={() => setRoleFilter('')}
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${!roleFilter ? 'bg-navy-700 text-white' : 'bg-white border border-border text-text-tertiary hover:border-border-button'}`}
         >
-          All
+          {t('filterAll')}
         </button>
         {ROLES.map((role) => {
           const conf = ROLE_CONFIG[role];
@@ -713,7 +936,7 @@ export default function AdminUsersPage() {
               }`}
             >
               <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
-              {conf.label} · {count}
+              {roleLabel(role, t)} · {count}
             </button>
           );
         })}
@@ -731,7 +954,7 @@ export default function AdminUsersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 pr-4 h-[30px] rounded-[6px] border border-border-input text-[12px] text-text-secondary placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all w-full"
-                placeholder="Search by name or email..."
+                placeholder={t('searchByNameOrEmail')}
               />
             </div>
             {(search || roleFilter) && (
@@ -742,10 +965,10 @@ export default function AdminUsersPage() {
                 }}
                 className="text-xs text-text-placeholder hover:text-text-secondary flex items-center gap-1 flex-none"
               >
-                <X className="w-3.5 h-3.5" /> Reset
+                <X className="w-3.5 h-3.5" /> {t('reset')}
               </button>
             )}
-            <span className="ml-auto font-mono text-[11px] text-text-muted flex-none">{users.length} user</span>
+            <span className="ml-auto font-mono text-[11px] text-text-muted flex-none">{t('usersCount', { count: users.length })}</span>
           </div>
         }
         emptyState={
@@ -760,7 +983,7 @@ export default function AdminUsersPage() {
           [
             {
               key: 'user',
-              header: 'User',
+              header: t('colUser'),
               width: 'minmax(0,2.2fr)',
               render: (u) => (
                 <div className="flex items-center gap-3">
@@ -775,13 +998,13 @@ export default function AdminUsersPage() {
             },
             {
               key: 'email',
-              header: 'Email',
+              header: t('colEmail'),
               width: 'minmax(0,1.6fr)',
               render: (u) => <span className="text-text-tertiary">{u.email}</span>,
             },
             {
               key: 'division',
-              header: 'Division / Position',
+              header: t('colDivisionPosition'),
               width: 'minmax(0,1.6fr)',
               render: (u) => (
                 <div>
@@ -792,7 +1015,7 @@ export default function AdminUsersPage() {
             },
             {
               key: 'role',
-              header: 'Role',
+              header: t('colRole'),
               width: 'minmax(0,1.4fr)',
               render: (u) => (
                 <div className="flex gap-1.5 flex-wrap">
@@ -804,7 +1027,7 @@ export default function AdminUsersPage() {
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${conf.bg} ${conf.color}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
-                        {conf.label}
+                        {roleLabel(r, t)}
                       </span>
                     );
                   })}
@@ -813,14 +1036,14 @@ export default function AdminUsersPage() {
             },
             {
               key: 'status',
-              header: 'Status',
+              header: t('common.status'),
               width: '110px',
               render: (u) => (
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${u.is_active ? 'bg-success-soft text-success-text' : 'bg-danger-soft text-danger-text'}`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${u.is_active ? 'bg-success animate-pulse' : 'bg-danger'}`} />
-                  {u.is_active ? 'Active' : 'Inactive'}
+                  {u.is_active ? t('common.active') : t('common.inactive')}
                 </span>
               ),
             },
@@ -878,23 +1101,23 @@ export default function AdminUsersPage() {
               <div className="w-12 h-12 bg-danger-soft rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-danger" />
               </div>
-              <h3 className="font-bold text-navy-900 mb-1">Delete User?</h3>
+              <h3 className="font-bold text-navy-900 mb-1">{t('deleteUserTitle')}</h3>
               <p className="text-sm text-text-tertiary mb-5">
-                <span className="font-semibold text-text-secondary">{deleteUser.full_name}</span> will be permanently deleted.
+                <span className="font-semibold text-text-secondary">{deleteUser.full_name}</span> {t('willBeDeleted')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteUser(null)}
                   className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(deleteUser.id)}
                   disabled={deleteMutation.isPending}
                   className="flex-1 px-4 py-2.5 rounded-[6px] bg-danger text-white text-sm font-semibold hover:bg-danger-text disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                  {deleteMutation.isPending ? t('deleting') : t('common.delete')}
                 </button>
               </div>
             </motion.div>

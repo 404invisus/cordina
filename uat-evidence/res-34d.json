@@ -1,0 +1,13 @@
+[
+  {
+    "id": "3.4.2-2",
+    "scenario": "Tambah Backlog (User Story)",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Pada tab Epics, kartu Epic \"Epic UAT 627832\" diperluas lalu ditekan \"Add Backlog\". Item backlog \"Backlog UAT 627832\" diisi judul, tipe Story, dan story point 5, lalu disimpan. Item muncul di daftar backlog di bawah Epic induknya dengan penanda \"Backlog\" (belum masuk sprint) dan tanpa assignee. CATATAN KETIDAKSESUAIAN: dokumen menyebut \"Buka tab Backlog\", namun aplikasi TIDAK memiliki tab Backlog tersendiri. Backlog hanya dapat dibuat dari dalam kartu Epic pada tab Epics (kartu harus diperluas terlebih dahulu), sehingga epic induk terpilih secara implisit dari kartu tempat tombol ditekan — tidak ada dropdown pemilihan epic seperti tersirat pada langkah dokumen.",
+    "shots": [
+      "shots/3.4.2-2a_epic-diperluas.png",
+      "shots/3.4.2-2b_form-tambah-backlog.png",
+      "shots/3.4.2-2c_backlog-di-daftar.png"
+    ]
+  }
+]

@@ -26,16 +26,170 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { formatDateTime as formatDate } from '@/lib/format';
 import StepChain, { type StepChainStep } from '@/components/ui/StepChain';
+import { useLocale, useT } from '@/lib/i18n';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  draft: { label: 'Draft', color: 'bg-border-subtle text-text-tertiary' },
-  waiting_signature: { label: 'Awaiting Signature', color: 'bg-pending-soft text-pending-text' },
-  signed: { label: 'Fully Signed', color: 'bg-success-soft text-success-text' },
-  distributed: { label: 'Distributed', color: 'bg-navy-700/10 text-navy-900' },
+const dict = {
+  en: {
+    statusDraft: 'Draft',
+    statusAwaitingSignature: 'Awaiting Signature',
+    statusFullySigned: 'Fully Signed',
+    statusDistributed: 'Distributed',
+    fileRequired: 'File is required',
+    maxFileSize: 'Maximum file size is 20 MB',
+    createSuccess: 'e-Sign request created!',
+    createError: 'Failed to create request',
+    createModalTitle: 'Create e-Sign Request',
+    documentTitleLabel: 'Document Title *',
+    documentTitlePlaceholder: 'Enter document title',
+    descriptionLabel: 'Description',
+    descriptionPlaceholder: 'Brief description (optional)',
+    pdfFileLabel: 'PDF File *',
+    maxSizeNote: '(max. 20 MB)',
+    clickToUploadPdf: 'Click to upload PDF',
+    additionalSignatoriesLabel: 'Additional Signatories',
+    firstSignatoryNote: 'You are automatically the first signatory (order 1)',
+    creating: 'Creating...',
+    createRequestBtn: 'Create e-Sign Request',
+    noUsersAvailable: 'No users available',
+    signSuccess: 'Document signed successfully!',
+    signError: 'Failed to sign document',
+    distributeSuccess: 'Document distributed successfully!',
+    distributeError: 'Failed to distribute document',
+    verificationFailed: 'Verification failed',
+    downloadFailed: 'Download failed',
+    actionCreated: 'Document created',
+    actionSignerAdded: 'Signatory added',
+    actionSubmitted: 'Document submitted',
+    actionSigned: 'Signed',
+    actionAllSigned: 'All signatories completed',
+    actionRejected: 'Rejected',
+    actionDistributed: 'Distributed',
+    tabInfo: 'Info & Signatories',
+    tabLog: 'Audit Trail',
+    signatoryOrderTitle: 'Signatory Order',
+    distributionRecipientsTitle: 'Distribution Recipients',
+    groupBadge: 'Group',
+    signBtn: 'Sign',
+    distributeBtn: 'Distribute',
+    verifyEsignBtn: 'Verify e-Sign',
+    verifying: 'Verifying...',
+    checkDigitalSignature: 'Check Digital Signature',
+    documentValid: 'Document Valid',
+    documentInvalid: 'Document Invalid',
+    integrityOk: 'Integrity OK',
+    certificateTrusted: 'Certificate Trusted',
+    enterPassphrase: 'Enter your e-Sign passphrase',
+    passphrasePlaceholder: 'e-Sign passphrase',
+    signing: 'Signing...',
+    confirmSignature: 'Confirm Signature',
+    selectDistRecipients: 'Select distribution recipients',
+    individualLabel: 'Individual',
+    membersCount: '{count} members',
+    distributing: 'Distributing...',
+    distributeToRecipients: 'Distribute to {count} recipient{plural}',
+    section: 'GOVERNANCE',
+    title: 'e-Sign Distribution',
+    subtitle: 'Multi-signatory electronic signature',
+    newRequestBtn: 'New e-Sign Request',
+    emptyRequests: 'No e-Sign requests yet',
+    creatorBadge: 'Creator',
+    yourTurnBadge: 'Your turn!',
+    signedCountLabel: '{signed}/{total} signed',
+  },
+  id: {
+    statusDraft: 'Draf',
+    statusAwaitingSignature: 'Menunggu Tanda Tangan',
+    statusFullySigned: 'Sepenuhnya Ditandatangani',
+    statusDistributed: 'Didistribusikan',
+    fileRequired: 'File wajib diisi',
+    maxFileSize: 'Ukuran file maksimum adalah 20 MB',
+    createSuccess: 'Permintaan e-Sign berhasil dibuat!',
+    createError: 'Gagal membuat permintaan',
+    createModalTitle: 'Buat Permintaan e-Sign',
+    documentTitleLabel: 'Judul Dokumen *',
+    documentTitlePlaceholder: 'Masukkan judul dokumen',
+    descriptionLabel: 'Deskripsi',
+    descriptionPlaceholder: 'Deskripsi singkat (opsional)',
+    pdfFileLabel: 'File PDF *',
+    maxSizeNote: '(maks. 20 MB)',
+    clickToUploadPdf: 'Klik untuk mengunggah PDF',
+    additionalSignatoriesLabel: 'Penanda Tangan Tambahan',
+    firstSignatoryNote: 'Anda otomatis menjadi penanda tangan pertama (urutan 1)',
+    creating: 'Membuat...',
+    createRequestBtn: 'Buat Permintaan e-Sign',
+    noUsersAvailable: 'Tidak ada pengguna yang tersedia',
+    signSuccess: 'Dokumen berhasil ditandatangani!',
+    signError: 'Gagal menandatangani dokumen',
+    distributeSuccess: 'Dokumen berhasil didistribusikan!',
+    distributeError: 'Gagal mendistribusikan dokumen',
+    verificationFailed: 'Verifikasi gagal',
+    downloadFailed: 'Unduhan gagal',
+    actionCreated: 'Dokumen dibuat',
+    actionSignerAdded: 'Penanda tangan ditambahkan',
+    actionSubmitted: 'Dokumen diajukan',
+    actionSigned: 'Ditandatangani',
+    actionAllSigned: 'Semua penanda tangan selesai',
+    actionRejected: 'Ditolak',
+    actionDistributed: 'Didistribusikan',
+    tabInfo: 'Info & Penanda Tangan',
+    tabLog: 'Jejak Audit',
+    signatoryOrderTitle: 'Urutan Penanda Tangan',
+    distributionRecipientsTitle: 'Penerima Distribusi',
+    groupBadge: 'Grup',
+    signBtn: 'Tandatangani',
+    distributeBtn: 'Distribusikan',
+    verifyEsignBtn: 'Verifikasi e-Sign',
+    verifying: 'Memverifikasi...',
+    checkDigitalSignature: 'Periksa Tanda Tangan Digital',
+    documentValid: 'Dokumen Valid',
+    documentInvalid: 'Dokumen Tidak Valid',
+    integrityOk: 'Integritas OK',
+    certificateTrusted: 'Sertifikat Terpercaya',
+    enterPassphrase: 'Masukkan passphrase e-Sign Anda',
+    passphrasePlaceholder: 'Passphrase e-Sign',
+    signing: 'Menandatangani...',
+    confirmSignature: 'Konfirmasi Tanda Tangan',
+    selectDistRecipients: 'Pilih penerima distribusi',
+    individualLabel: 'Perorangan',
+    membersCount: '{count} anggota',
+    distributing: 'Mendistribusikan...',
+    distributeToRecipients: 'Distribusikan ke {count} penerima',
+    section: 'TATA KELOLA',
+    title: 'Distribusi e-Sign',
+    subtitle: 'Tanda tangan elektronik multi-penanda tangan',
+    newRequestBtn: 'Permintaan e-Sign Baru',
+    emptyRequests: 'Belum ada permintaan e-Sign',
+    creatorBadge: 'Pembuat',
+    yourTurnBadge: 'Giliran Anda!',
+    signedCountLabel: '{signed}/{total} ditandatangani',
+  },
 };
+
+const STATUS_COLOR: Record<string, string> = {
+  draft: 'bg-border-subtle text-text-tertiary',
+  waiting_signature: 'bg-pending-soft text-pending-text',
+  signed: 'bg-success-soft text-success-text',
+  distributed: 'bg-navy-700/10 text-navy-900',
+};
+
+function statusLabel(status: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  switch (status) {
+    case 'draft':
+      return t('statusDraft');
+    case 'waiting_signature':
+      return t('statusAwaitingSignature');
+    case 'signed':
+      return t('statusFullySigned');
+    case 'distributed':
+      return t('statusDistributed');
+    default:
+      return status;
+  }
+}
 
 function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const { user } = useAuthStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -57,8 +211,8 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   });
   const mutation = useMutation({
     mutationFn: () => {
-      if (!file) throw new Error('File is required');
-      if (file.size > 20 * 1024 * 1024) throw { response: { data: { message: 'Maximum file size is 20 MB' } } };
+      if (!file) throw new Error(t('fileRequired'));
+      if (file.size > 20 * 1024 * 1024) throw { response: { data: { message: t('maxFileSize') } } };
       const fd = new FormData();
       fd.append('title', title);
       if (desc) fd.append('description', desc);
@@ -68,14 +222,14 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('e-Sign request created!');
+      toast.success(t('createSuccess'));
       onClose();
       setFile(null);
       setTitle('');
       setDesc('');
       setSignerIds([]);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create request'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('createError')),
   });
 
   if (!open) return null;
@@ -91,7 +245,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             <div className="w-9 h-9 bg-navy-700/8 rounded-[6px] flex items-center justify-center">
               <FilePen className="w-4 h-4 text-navy-700" />
             </div>
-            <h2 className="text-lg font-bold text-navy-900">Create e-Sign Request</h2>
+            <h2 className="text-lg font-bold text-navy-900">{t('createModalTitle')}</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-border-subtle rounded-[6px]">
             <X className="w-4 h-4 text-text-tertiary" />
@@ -100,30 +254,30 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Document Title *</label>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('documentTitleLabel')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-navy-700/20"
-              placeholder="Enter document title"
+              placeholder={t('documentTitlePlaceholder')}
               style={{ color: '#94a3b8' }}
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Description</label>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('descriptionLabel')}</label>
             <textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               rows={2}
               className="mt-1 w-full px-3 py-2.5 rounded-[6px] border border-border text-sm text-navy-900 placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-navy-700/20 resize-none"
-              placeholder="Brief description (optional)"
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
 
           <div>
             <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-              PDF File * <span className="text-text-placeholder font-normal">(max. 20 MB)</span>
+              {t('pdfFileLabel')} <span className="text-text-placeholder font-normal">{t('maxSizeNote')}</span>
             </label>
             <div
               onClick={() => fileRef.current?.click()}
@@ -135,14 +289,14 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
               {file ? (
                 <p className="text-sm font-medium text-navy-900">{file.name}</p>
               ) : (
-                <p className="text-sm text-text-placeholder">Click to upload PDF</p>
+                <p className="text-sm text-text-placeholder">{t('clickToUploadPdf')}</p>
               )}
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Additional Signatories</label>
-            <p className="text-xs text-text-placeholder mt-0.5">You are automatically the first signatory (order 1)</p>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('additionalSignatoriesLabel')}</label>
+            <p className="text-xs text-text-placeholder mt-0.5">{t('firstSignatoryNote')}</p>
             <UserMultiSelect users={allUsers.filter((u: any) => u.id !== (user as any)?.id)} selected={signerIds} onChange={setSignerIds} />
           </div>
         </div>
@@ -153,7 +307,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
             disabled={mutation.isPending || !title || !file}
             className="w-full py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-colors"
           >
-            {mutation.isPending ? 'Creating...' : 'Create e-Sign Request'}
+            {mutation.isPending ? t('creating') : t('createRequestBtn')}
           </button>
         </div>
       </motion.div>
@@ -172,6 +326,7 @@ function UserMultiSelect({
   users: any[];
   showOrder?: boolean;
 }) {
+  const t = useT(dict);
   const toggle = (uid: string) => onChange(selected.includes(uid) ? selected.filter((id) => id !== uid) : [...selected, uid]);
   return (
     <div>
@@ -198,7 +353,7 @@ function UserMultiSelect({
               </div>
             );
           })}
-          {users.length === 0 && <div className="px-3 py-4 text-sm text-text-placeholder text-center">No users available</div>}
+          {users.length === 0 && <div className="px-3 py-4 text-sm text-text-placeholder text-center">{t('noUsersAvailable')}</div>}
         </div>
       </div>
       {selected.length > 0 && (
@@ -237,6 +392,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     staleTime: 60000,
   });
   const qc = useQueryClient();
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { user } = useAuthStore();
   const [passphrase, setPassphrase] = useState('');
   const [showSign, setShowSign] = useState(false);
@@ -269,11 +426,11 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-detail', id] });
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('Document signed successfully!');
+      toast.success(t('signSuccess'));
       setShowSign(false);
       setPassphrase('');
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to sign document'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('signError')),
   });
 
   const distMutation = useMutation({
@@ -281,12 +438,12 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tte-sign-detail', id] });
       qc.invalidateQueries({ queryKey: ['tte-sign-requests'] });
-      toast.success('Document distributed successfully!');
+      toast.success(t('distributeSuccess'));
       setShowDist(false);
       setDistIds([]);
       setDistGroupIds([]);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to distribute document'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('distributeError')),
   });
 
   const handleVerify = async () => {
@@ -299,7 +456,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
       const vRes = await import('@/lib/api').then((m) => m.default.post(`/api/v1/tte-sign-requests/${id}/verify`));
       setVerifyData(vRes.data?.data);
     } catch {
-      toast.error('Verification failed');
+      toast.error(t('verificationFailed'));
     } finally {
       setVerifyLoading(false);
     }
@@ -315,18 +472,18 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Download failed');
+      toast.error(t('downloadFailed'));
     }
   };
 
   const ACTION_LABELS: Record<string, string> = {
-    created: 'Document created',
-    signer_added: 'Signatory added',
-    submitted: 'Document submitted',
-    signed: 'Signed',
-    all_signed: 'All signatories completed',
-    rejected: 'Rejected',
-    distributed: 'Distributed',
+    created: t('actionCreated'),
+    signer_added: t('actionSignerAdded'),
+    submitted: t('actionSubmitted'),
+    signed: t('actionSigned'),
+    all_signed: t('actionAllSigned'),
+    rejected: t('actionRejected'),
+    distributed: t('actionDistributed'),
   };
 
   return (
@@ -344,8 +501,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <div>
               <h2 className="text-lg font-bold text-navy-900">{detail?.title || '...'}</h2>
               {detail?.status && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${STATUS_CONFIG[detail.status]?.color}`}>
-                  {STATUS_CONFIG[detail.status]?.label}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${STATUS_COLOR[detail.status]}`}>
+                  {statusLabel(detail.status, t)}
                 </span>
               )}
             </div>
@@ -363,17 +520,17 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
           <div className="p-6 space-y-4">
             <div className="flex gap-2 border-b border-border-subtle">
               {[
-                { key: 'info', label: 'Info & Signatories', icon: Users },
-                { key: 'log', label: 'Audit Trail', icon: History },
-              ].map((t) => (
+                { key: 'info', label: t('tabInfo'), icon: Users },
+                { key: 'log', label: t('tabLog'), icon: History },
+              ].map((tabItem) => (
                 <button
-                  key={t.key}
-                  onClick={() => setTab(t.key as any)}
+                  key={tabItem.key}
+                  onClick={() => setTab(tabItem.key as any)}
                   className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border-b-2 transition-colors -mb-px
- ${tab === t.key ? 'border-navy-700 text-navy-700' : 'border-transparent text-text-placeholder hover:text-text-secondary'}`}
+ ${tab === tabItem.key ? 'border-navy-700 text-navy-700' : 'border-transparent text-text-placeholder hover:text-text-secondary'}`}
                 >
-                  <t.icon className="w-3.5 h-3.5" />
-                  {t.label}
+                  <tabItem.icon className="w-3.5 h-3.5" />
+                  {tabItem.label}
                 </button>
               ))}
             </div>
@@ -383,12 +540,12 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 {detail?.description && <p className="text-sm text-text-tertiary">{detail.description}</p>}
 
                 <div>
-                  <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Signatory Order</h3>
+                  <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">{t('signatoryOrderTitle')}</h3>
                   <StepChain
                     steps={(detail?.signers || []).map(
                       (s: any, i: number, arr: any[]): StepChainStep => ({
                         label: s.user?.full_name || '-',
-                        assignee: s.signed_at ? formatDate(s.signed_at) : undefined,
+                        assignee: s.signed_at ? formatDate(s.signed_at, locale) : undefined,
                         status:
                           s.status === 'signed'
                             ? 'completed'
@@ -404,7 +561,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
                 {detail?.distributions?.length > 0 && (
                   <div>
-                    <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">Distribution Recipients</h3>
+                    <h3 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-2">{t('distributionRecipientsTitle')}</h3>
                     <div className="space-y-1">
                       {detail.distributions.map((d: any, i: number) => (
                         <div key={i} className="flex items-center gap-2 px-3 py-2 bg-surface-2 rounded-[6px]">
@@ -413,9 +570,9 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                             : <Share2 className="w-3.5 h-3.5 text-navy-700/60" />}
                           <span className="text-sm text-text-secondary">{d.name || d.user?.full_name || '-'}</span>
                           {d.type === 'group' && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] bg-navy-700/10 text-navy-700">Group</span>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px] bg-navy-700/10 text-navy-700">{t('groupBadge')}</span>
                           )}
-                          <span className="text-xs text-text-placeholder ml-auto">{formatDate(d.distributed_at)}</span>
+                          <span className="text-xs text-text-placeholder ml-auto">{formatDate(d.distributed_at, locale)}</span>
                         </div>
                       ))}
                     </div>
@@ -435,7 +592,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     <div className="pb-3">
                       <div className="text-sm font-semibold text-navy-800">{ACTION_LABELS[l.action] || l.action}</div>
                       <div className="text-xs text-text-placeholder">
-                        {l.user?.full_name} · {formatDate(l.created_at)}
+                        {l.user?.full_name} · {formatDate(l.created_at, locale)}
                       </div>
                       {l.note && <div className="text-xs text-text-tertiary mt-0.5">{l.note}</div>}
                     </div>
@@ -449,7 +606,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 onClick={handleDownload}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
               >
-                <Download className="w-4 h-4" /> Download
+                <Download className="w-4 h-4" /> {t('common.download')}
               </button>
 
               {detail?.can_sign && !showSign && (
@@ -457,7 +614,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                   onClick={() => setShowSign(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900"
                 >
-                  <Lock className="w-4 h-4" /> Sign
+                  <Lock className="w-4 h-4" /> {t('signBtn')}
                 </button>
               )}
 
@@ -466,7 +623,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                   onClick={() => setShowDist(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] bg-success-text text-white text-sm font-semibold hover:bg-success-text"
                 >
-                  <Send className="w-4 h-4" /> Distribute
+                  <Send className="w-4 h-4" /> {t('distributeBtn')}
                 </button>
               )}
 
@@ -475,7 +632,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                   onClick={() => setShowVerify((v) => !v)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
                 >
-                  <Eye className="w-4 h-4" /> Verify e-Sign
+                  <Eye className="w-4 h-4" /> {t('verifyEsignBtn')}
                 </button>
               )}
             </div>
@@ -488,7 +645,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     disabled={verifyLoading}
                     className="w-full py-2 rounded-[6px] bg-text-secondary text-white text-sm font-semibold disabled:opacity-50"
                   >
-                    {verifyLoading ? 'Verifying...' : 'Check Digital Signature'}
+                    {verifyLoading ? t('verifying') : t('checkDigitalSignature')}
                   </button>
                 )}
                 {verifyData && (
@@ -501,7 +658,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       />
                       <div>
                         <div className={`text-sm font-semibold ${verifyData.conclusion === 'VALID' ? 'text-success-text' : 'text-danger-text'}`}>
-                          {verifyData.conclusion === 'VALID' ? 'Document Valid' : 'Document Invalid'}
+                          {verifyData.conclusion === 'VALID' ? t('documentValid') : t('documentInvalid')}
                         </div>
                         <div className="text-xs text-text-placeholder">{verifyData.description}</div>
                       </div>
@@ -510,17 +667,17 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                       <div key={i} className="p-3 bg-white rounded-[6px] border border-border-subtle text-sm">
                         <div className="font-semibold text-navy-800">{s.signerName}</div>
                         <div className="text-xs text-text-placeholder mt-0.5">
-                          {formatDate(s.signatureDate)} · {s.signatureFormat}
+                          {formatDate(s.signatureDate, locale)} · {s.signatureFormat}
                         </div>
                         <div className="flex gap-2 mt-1.5">
                           {s.integrityValid && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-soft text-success-text font-semibold">
-                              Integrity OK
+                              {t('integrityOk')}
                             </span>
                           )}
                           {s.certificateTrusted && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-info-soft text-info-text font-semibold">
-                              Certificate Trusted
+                              {t('certificateTrusted')}
                             </span>
                           )}
                         </div>
@@ -533,13 +690,13 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
             {showSign && (
               <div className="p-4 bg-navy-700/8 rounded-[6px] border border-navy-700/10 space-y-3">
-                <p className="text-sm font-semibold text-navy-900">Enter your e-Sign passphrase</p>
+                <p className="text-sm font-semibold text-navy-900">{t('enterPassphrase')}</p>
                 <input
                   type="password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-[6px] border border-navy-700/20 text-sm text-navy-900 placeholder:text-text-placeholder focus:outline-none focus:ring-2 focus:ring-navy-700/30"
-                  placeholder="e-Sign passphrase"
+                  placeholder={t('passphrasePlaceholder')}
                 />
                 <div className="flex gap-2">
                   <button
@@ -547,7 +704,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     disabled={signMutation.isPending || !passphrase}
                     className="flex-1 py-2 rounded-[6px] bg-navy-700 text-white text-sm font-semibold disabled:opacity-50"
                   >
-                    {signMutation.isPending ? 'Signing...' : 'Confirm Signature'}
+                    {signMutation.isPending ? t('signing') : t('confirmSignature')}
                   </button>
                   <button
                     onClick={() => {
@@ -556,7 +713,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     }}
                     className="px-3 py-2 rounded-[6px] border border-border text-sm text-text-secondary"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -564,12 +721,12 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 
             {showDist && (
               <div className="p-4 bg-success-soft rounded-[6px] border border-success-soft space-y-3">
-                <p className="text-sm font-semibold text-success-text">Select distribution recipients</p>
-                <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mt-2">Individual</p>
+                <p className="text-sm font-semibold text-success-text">{t('selectDistRecipients')}</p>
+                <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mt-2">{t('individualLabel')}</p>
                 <UserMultiSelect users={allUsers} selected={distIds} onChange={setDistIds} showOrder={false} />
                 {allGroups.length > 0 && (
                   <>
-                    <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mt-3">Group</p>
+                    <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mt-3">{t('groupBadge')}</p>
                     <div className="border border-border rounded-[6px] overflow-hidden">
                       <div className="max-h-32 overflow-y-auto divide-y divide-surface-2">
                         {allGroups.map((g: any) => {
@@ -587,7 +744,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                               </div>
                               <div>
                                 <div className="text-sm font-medium text-navy-800">{g.name}</div>
-                                <div className="text-xs text-text-placeholder">{g.member_count || 0} members</div>
+                                <div className="text-xs text-text-placeholder">{t('membersCount', { count: g.member_count || 0 })}</div>
                               </div>
                             </div>
                           );
@@ -626,8 +783,11 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     className="flex-1 py-2 rounded-[6px] bg-success-text text-white text-sm font-semibold disabled:opacity-50"
                   >
                     {distMutation.isPending
-                      ? 'Distributing...'
-                      : `Distribute to ${distIds.length + distGroupIds.length} recipient${distIds.length + distGroupIds.length !== 1 ? 's' : ''}`}
+                      ? t('distributing')
+                      : t('distributeToRecipients', {
+                          count: distIds.length + distGroupIds.length,
+                          plural: distIds.length + distGroupIds.length !== 1 ? 's' : '',
+                        })}
                   </button>
                   <button
                     onClick={() => {
@@ -636,7 +796,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                     }}
                     className="px-3 py-2 rounded-[6px] border border-border text-sm text-text-secondary"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -649,6 +809,8 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 export default function TteSignPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -666,16 +828,16 @@ export default function TteSignPage() {
       {detailId && <DetailModal id={detailId} onClose={() => setDetailId(null)} />}
 
       <PageHeader
-        section="GOVERNANCE"
-        title="e-Sign Distribution"
-        subtitle="Multi-signatory electronic signature"
+        section={t('section')}
+        title={t('title')}
+        subtitle={t('subtitle')}
         actions={
           <button
             onClick={() => setCreateOpen(true)}
             className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold hover:bg-navy-900 transition-colors"
           >
             <Plus className="w-3 h-3" strokeWidth={2.5} />
-            New e-Sign Request
+            {t('newRequestBtn')}
           </button>
         }
       />
@@ -687,7 +849,7 @@ export default function TteSignPage() {
       ) : requests.length === 0 ? (
         <div className="text-center py-20">
           <FilePen className="w-12 h-12 text-border mx-auto mb-3" />
-          <div className="text-text-placeholder text-sm">No e-Sign requests yet</div>
+          <div className="text-text-placeholder text-sm">{t('emptyRequests')}</div>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -705,22 +867,22 @@ export default function TteSignPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-navy-900 truncate">{req.title}</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CONFIG[req.status]?.color}`}>
-                      {STATUS_CONFIG[req.status]?.label}
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR[req.status]}`}>
+                      {statusLabel(req.status, t)}
                     </span>
                     {req.my_role === 'creator' && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-info-soft text-info-text">Creator</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-info-soft text-info-text">{t('creatorBadge')}</span>
                     )}
                     {req.can_sign && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pending-soft text-pending-text animate-pulse">
-                        Your turn!
+                        {t('yourTurnBadge')}
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-text-placeholder">{formatDate(req.created_at)}</span>
+                    <span className="text-xs text-text-placeholder">{formatDate(req.created_at, locale)}</span>
                     <span className="text-xs text-text-placeholder flex items-center gap-1">
-                      <Users className="w-3 h-3" /> {req.signed_count}/{req.signer_count} signed
+                      <Users className="w-3 h-3" /> {t('signedCountLabel', { signed: req.signed_count, total: req.signer_count })}
                     </span>
                   </div>
                 </div>

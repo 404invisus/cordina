@@ -1,0 +1,22 @@
+[
+  {
+    "id": "4.3-1",
+    "scenario": "Upload file",
+    "verdict": "PASS",
+    "notes": "Halaman /storage dibuka lalu ditekan Upload, berkas PDF dipilih dan diunggah. Berkas berhasil tersimpan dan langsung muncul pada daftar dengan nama \"Test sign.pdf\", ukuran 15.2 KB, dan tipe PDF. Penghitung kuota institusi menyesuaikan menjadi 1 berkas (0.0 MB dari 50 GB terpakai). Halaman juga mendukung unggah melalui seret-dan-lepas.",
+    "shots": [
+      "shots/4.3-1a_storage-sebelum-upload.png",
+      "shots/4.3-1b_pilih-berkas.png",
+      "shots/4.3-1c_berkas-terunggah.png"
+    ]
+  },
+  {
+    "id": "4.3-2",
+    "scenario": "Lihat daftar file",
+    "verdict": "PASS",
+    "notes": "Halaman Storage menampilkan seluruh berkas yang telah diunggah dalam bentuk tabel dengan kolom FILE, TYPE, UPLOADED BY, dan DATE — berkas uji tampil sebagai \"Test sign.pdf, 15.2 KB, PDF, 31 Jul 2026\" dengan keterangan \"Showing 1 of 1 files\". Tersedia pencarian berkas serta pengelompokan berdasarkan kategori: Task attachments, CR attachments, Signature specimens, Other, dan All files, disertai informasi penggunaan kuota penyimpanan.",
+    "shots": [
+      "shots/4.3-1c_berkas-terunggah.png"
+    ]
+  }
+]

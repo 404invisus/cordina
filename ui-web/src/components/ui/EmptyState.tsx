@@ -1,5 +1,7 @@
+'use client';
 import { LucideIcon, Plus, FilterX } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useT } from '@/lib/i18n';
 
 export function EmptyState({
   icon: Icon,
@@ -36,13 +38,14 @@ export function EmptyState({
 /** Empty state for a filtered/searched list that returned nothing — offers a way out. */
 export function FilteredEmptyState({
   onClearFilters,
-  title = 'No results',
+  title,
   subtitle,
 }: {
   onClearFilters: () => void;
   title?: string;
   subtitle?: string;
 }) {
+  const t = useT();
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -52,13 +55,13 @@ export function FilteredEmptyState({
       <div className="w-14 h-14 rounded-[6px] bg-surface-2 border border-border flex items-center justify-center mb-4">
         <FilterX className="w-6 h-6 text-text-placeholder" />
       </div>
-      <h3 className="text-[13px] font-bold text-navy-800 mb-1">{title}</h3>
-      <p className="text-[12px] text-text-tertiary mb-4 max-w-xs leading-relaxed">{subtitle ?? 'Nothing matches the current filters.'}</p>
+      <h3 className="text-[13px] font-bold text-navy-800 mb-1">{title ?? t('common.noResults')}</h3>
+      <p className="text-[12px] text-text-tertiary mb-4 max-w-xs leading-relaxed">{subtitle ?? t('common.nothingMatchesFilters')}</p>
       <button
         onClick={onClearFilters}
         className="h-[30px] px-3 rounded-[6px] border border-border-button bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
       >
-        Clear filters
+        {t('common.clearFilters')}
       </button>
     </motion.div>
   );

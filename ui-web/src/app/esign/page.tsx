@@ -12,9 +12,110 @@ import { esignService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import { formatDateTime as formatDate, formatBytes as formatSize } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    signDocument: 'Sign document',
+    pdfDocumentLabel: 'PDF DOCUMENT *',
+    clickToUploadPdf: 'Click to upload a PDF',
+    max20mb: 'Max 20 MB',
+    documentTitleLabel: 'DOCUMENT TITLE',
+    titlePlaceholder: 'Optional, defaults to file name',
+    passphraseLabel: 'SIGNING PASSPHRASE *',
+    passphrasePlaceholder: 'Enter your e-Sign passphrase',
+    passphraseNotice: 'Passphrase is never stored. The document will be electronically signed using a certificate issued by BSrE.',
+    signing: 'Signing…',
+    fileTooLarge: 'File size too large. Maximum 20 MB per document for e-signing.',
+    signSuccess: 'Document signed successfully',
+    signError: 'Failed to sign document',
+    verifySignatureTitle: 'Verify signature',
+    signatureValid: 'Signature valid',
+    signatureInvalid: 'Signature invalid',
+    signerFallback: 'Signer {n}',
+    signedAtLabel: 'Signed: {date}',
+    verifyFailed: 'Failed to verify document',
+    section: 'E-SIGN',
+    title: 'e-Sign',
+    subtitle: '{total} document{plural} signed',
+    nikWarningPrefix: 'NIK not set in your profile. Complete your e-Sign setup in',
+    settingsLink: 'Settings',
+    nikWarningSuffix: 'to use this feature.',
+    statDocumentsSignedTitle: 'Documents Signed',
+    statDocumentsSignedSubtitle: 'total signed',
+    statVisibleTitle: 'Visible Signatures',
+    statVisibleSubtitle: 'with stamp',
+    statInvisibleTitle: 'Invisible Signatures',
+    statInvisibleSubtitle: 'embedded only',
+    statNikTitle: 'NIK Status',
+    nikActive: 'Active',
+    nikNotSet: 'Not set',
+    nikReady: 'ready to sign',
+    nikConfigure: 'configure in settings',
+    colFile: 'FILE',
+    colSigned: 'SIGNED',
+    colSignature: 'SIGNATURE',
+    colActions: 'ACTIONS',
+    emptyTitle: 'No signed documents',
+    emptySubtitle: 'Upload a PDF and sign it electronically to see it here',
+    visible: 'Visible',
+    invisible: 'Invisible',
+    verify: 'Verify',
+    downloadFailed: 'Failed to download document',
+  },
+  id: {
+    signDocument: 'Tandatangani dokumen',
+    pdfDocumentLabel: 'DOKUMEN PDF *',
+    clickToUploadPdf: 'Klik untuk mengunggah PDF',
+    max20mb: 'Maks 20 MB',
+    documentTitleLabel: 'JUDUL DOKUMEN',
+    titlePlaceholder: 'Opsional, default ke nama file',
+    passphraseLabel: 'PASSPHRASE TANDA TANGAN *',
+    passphrasePlaceholder: 'Masukkan passphrase e-Sign Anda',
+    passphraseNotice: 'Passphrase tidak pernah disimpan. Dokumen akan ditandatangani secara elektronik menggunakan sertifikat yang diterbitkan oleh BSrE.',
+    signing: 'Menandatangani…',
+    fileTooLarge: 'Ukuran file terlalu besar. Maksimum 20 MB per dokumen untuk e-Sign.',
+    signSuccess: 'Dokumen berhasil ditandatangani',
+    signError: 'Gagal menandatangani dokumen',
+    verifySignatureTitle: 'Verifikasi tanda tangan',
+    signatureValid: 'Tanda tangan valid',
+    signatureInvalid: 'Tanda tangan tidak valid',
+    signerFallback: 'Penanda Tangan {n}',
+    signedAtLabel: 'Ditandatangani: {date}',
+    verifyFailed: 'Gagal memverifikasi dokumen',
+    section: 'E-SIGN',
+    title: 'e-Sign',
+    subtitle: '{total} dokumen ditandatangani',
+    nikWarningPrefix: 'NIK belum diatur pada profil Anda. Lengkapi pengaturan e-Sign Anda di',
+    settingsLink: 'Pengaturan',
+    nikWarningSuffix: 'untuk menggunakan fitur ini.',
+    statDocumentsSignedTitle: 'Dokumen Ditandatangani',
+    statDocumentsSignedSubtitle: 'total ditandatangani',
+    statVisibleTitle: 'Tanda Tangan Terlihat',
+    statVisibleSubtitle: 'dengan stempel',
+    statInvisibleTitle: 'Tanda Tangan Tersembunyi',
+    statInvisibleSubtitle: 'hanya tertanam',
+    statNikTitle: 'Status NIK',
+    nikActive: 'Aktif',
+    nikNotSet: 'Belum diatur',
+    nikReady: 'siap menandatangani',
+    nikConfigure: 'atur di pengaturan',
+    colFile: 'FILE',
+    colSigned: 'DITANDATANGANI',
+    colSignature: 'TANDA TANGAN',
+    colActions: 'AKSI',
+    emptyTitle: 'Belum ada dokumen yang ditandatangani',
+    emptySubtitle: 'Unggah PDF dan tandatangani secara elektronik untuk melihatnya di sini',
+    visible: 'Terlihat',
+    invisible: 'Tersembunyi',
+    verify: 'Verifikasi',
+    downloadFailed: 'Gagal mengunduh dokumen',
+  },
+};
 
 function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const { user } = useAuthStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -26,7 +127,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       const fd = new FormData();
       fd.append('file', file!);
       if (file && file.size > 20 * 1024 * 1024) {
-        throw { response: { data: { message: 'File size too large. Maximum 20 MB per document for e-signing.' } } };
+        throw { response: { data: { message: t('fileTooLarge') } } };
       }
       fd.append('passphrase', passphrase);
       fd.append('tampilan', 'INVISIBLE');
@@ -36,14 +137,14 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['esign-docs'] });
-      toast.success('Document signed successfully');
+      toast.success(t('signSuccess'));
       onClose();
       setFile(null);
       setTitle('');
       setPassphrase('');
       if (fileRef.current) fileRef.current.value = '';
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to sign document'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('signError')),
   });
 
   if (!open) return null;
@@ -55,7 +156,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         className="bg-white rounded-[8px] w-full max-w-md"
       >
         <div className="flex items-center justify-between px-[20px] py-[15px] border-b border-border-subtle">
-          <span className="text-[14px] font-semibold text-navy-900">Sign document</span>
+          <span className="text-[14px] font-semibold text-navy-900">{t('signDocument')}</span>
           <button onClick={onClose} className="p-[6px] hover:bg-surface-2 rounded-[4px] transition-colors">
             <X className="w-3.5 h-3.5 text-text-tertiary" />
           </button>
@@ -64,7 +165,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
         <div className="p-[20px] flex flex-col gap-[14px]">
           {/* File upload */}
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral block mb-[6px]">PDF DOCUMENT *</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral block mb-[6px]">{t('pdfDocumentLabel')}</label>
             <div
               onClick={() => fileRef.current?.click()}
               className="border border-dashed border-border-button rounded-[6px] p-[14px] text-center cursor-pointer hover:border-navy-700 hover:bg-info-soft transition-colors"
@@ -94,8 +195,8 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               ) : (
                 <div>
                   <Upload className="w-[18px] h-[18px] text-text-meta mx-auto mb-[6px]" />
-                  <div className="text-[12px] text-text-placeholder">Click to upload a PDF</div>
-                  <div className="text-[10px] text-text-meta mt-1">Max 20 MB</div>
+                  <div className="text-[12px] text-text-placeholder">{t('clickToUploadPdf')}</div>
+                  <div className="text-[10px] text-text-meta mt-1">{t('max20mb')}</div>
                 </div>
               )}
             </div>
@@ -103,33 +204,33 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
           {/* Title */}
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral block mb-[6px]">DOCUMENT TITLE</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral block mb-[6px]">{t('documentTitleLabel')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full h-[34px] px-[10px] border border-border-button rounded-[6px] text-[12px] text-navy-800 focus:outline-none focus:border-navy-700"
-              placeholder="Optional, defaults to file name"
+              placeholder={t('titlePlaceholder')}
             />
           </div>
 
           {/* Passphrase */}
           <div>
             <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral block mb-[6px]">
-              SIGNING PASSPHRASE *
+              {t('passphraseLabel')}
             </label>
             <input
               type="password"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               className="w-full h-[34px] px-[10px] border border-border-button rounded-[6px] text-[12px] text-navy-800 font-mono focus:outline-none focus:border-navy-700"
-              placeholder="Enter your e-Sign passphrase"
+              placeholder={t('passphrasePlaceholder')}
             />
           </div>
 
           {/* Notice */}
           <div className="flex items-start gap-[8px] px-[10px] py-[9px] bg-gold-soft border border-gold-soft rounded-[6px] text-[11px] text-gold-700">
             <AlertTriangle className="w-[13px] h-[13px] flex-none mt-[1px]" />
-            Passphrase is never stored. The document will be electronically signed using a certificate issued by BSrE.
+            {t('passphraseNotice')}
           </div>
         </div>
 
@@ -138,7 +239,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             onClick={onClose}
             className="flex-1 h-[34px] border border-border-button rounded-[6px] text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => mutation.mutate()}
@@ -147,7 +248,7 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
             <FileSignature className="w-3 h-3" />
-            {mutation.isPending ? 'Signing…' : 'Sign document'}
+            {mutation.isPending ? t('signing') : t('signDocument')}
           </button>
         </div>
       </motion.div>
@@ -156,6 +257,8 @@ function SignModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose: () => void }) {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { data, isLoading } = useQuery({
     queryKey: ['esign-verify', doc?.id],
     queryFn: () =>
@@ -167,7 +270,7 @@ function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose:
           signers:
             d?.signers ||
             d?.signatureInformations?.map((s: any) => ({
-              name: s.signerName || s.commonName || s.name || 'Signer',
+              name: s.signerName || s.commonName || s.name || '',
               signingTime: s.signatureDate ? new Date(s.signatureDate).toISOString() : null,
             })) ||
             [],
@@ -185,7 +288,7 @@ function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose:
         className="bg-white rounded-[8px] w-full max-w-md"
       >
         <div className="flex items-center justify-between px-[20px] py-[15px] border-b border-border-subtle">
-          <span className="text-[14px] font-semibold text-navy-900">Verify signature</span>
+          <span className="text-[14px] font-semibold text-navy-900">{t('verifySignatureTitle')}</span>
           <button onClick={onClose} className="p-[6px] hover:bg-surface-2 rounded-[4px] transition-colors">
             <X className="w-3.5 h-3.5 text-text-tertiary" />
           </button>
@@ -208,27 +311,27 @@ function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose:
               >
                 {data.valid ? <CheckCircle2 className="w-4 h-4 flex-none" /> : <AlertTriangle className="w-4 h-4 flex-none" />}
                 <div>
-                  <div className="text-[12.5px] font-semibold">{data.valid ? 'Signature valid' : 'Signature invalid'}</div>
+                  <div className="text-[12.5px] font-semibold">{data.valid ? t('signatureValid') : t('signatureInvalid')}</div>
                   {data.message && <div className="text-[11px] mt-[2px] opacity-75">{data.message}</div>}
                 </div>
               </div>
               {data.signers?.map((s: any, i: number) => (
                 <div key={i} className="px-[12px] py-[9px] bg-surface-2 rounded-[6px]">
-                  <div className="text-[12px] font-semibold text-navy-800">{s.name || 'Signer ' + (i + 1)}</div>
+                  <div className="text-[12px] font-semibold text-navy-800">{s.name || t('signerFallback', { n: i + 1 })}</div>
                   <div className="font-mono text-[10.5px] text-text-placeholder mt-[2px]">
-                    Signed: {s.signingTime ? formatDate(s.signingTime) : '—'}
+                    {t('signedAtLabel', { date: s.signingTime ? formatDate(s.signingTime, locale) : '—' })}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-[12px] text-text-placeholder text-center py-8">Failed to verify document</div>
+            <div className="text-[12px] text-text-placeholder text-center py-8">{t('verifyFailed')}</div>
           )}
           <button
             onClick={onClose}
             className="w-full mt-[14px] h-[34px] border border-border-button rounded-[6px] text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </motion.div>
@@ -237,6 +340,8 @@ function VerifyModal({ open, doc, onClose }: { open: boolean; doc: any; onClose:
 }
 
 export default function EsignPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { user } = useAuthStore();
   const [signOpen, setSignOpen] = useState(false);
   const [verifyDoc, setVerifyDoc] = useState<any>(null);
@@ -256,7 +361,7 @@ export default function EsignPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Failed to download document');
+      toast.error(t('downloadFailed'));
     }
   };
 
@@ -270,9 +375,9 @@ export default function EsignPage() {
       <VerifyModal open={!!verifyDoc} doc={verifyDoc} onClose={() => setVerifyDoc(null)} />
 
       <PageHeader
-        section="E-SIGN"
-        title="e-Sign"
-        subtitle={`${total} document${total !== 1 ? 's' : ''} signed`}
+        section={t('section')}
+        title={t('title')}
+        subtitle={t('subtitle', { total, plural: total !== 1 ? 's' : '' })}
         actions={
           <>
             <button
@@ -282,7 +387,7 @@ export default function EsignPage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <FileSignature className="w-3 h-3" strokeWidth={2.5} />
-              Sign document
+              {t('signDocument')}
             </button>
           </>
         }
@@ -296,11 +401,11 @@ export default function EsignPage() {
         >
           <AlertTriangle className="w-[14px] h-[14px] text-gold-500 flex-none" />
           <span className="text-[12px] text-text-secondary">
-            NIK not set in your profile. Complete your e-Sign setup in{' '}
+            {t('nikWarningPrefix')}{' '}
             <a href="/settings" className="font-semibold text-navy-700 hover:underline">
-              Settings
+              {t('settingsLink')}
             </a>{' '}
-            to use this feature.
+            {t('nikWarningSuffix')}
           </span>
         </div>
       )}
@@ -309,36 +414,36 @@ export default function EsignPage() {
       <div className="grid grid-cols-4 gap-3">
         <StatCard
           index={0}
-          title="Documents Signed"
+          title={t('statDocumentsSignedTitle')}
           value={total}
-          subtitle="total signed"
+          subtitle={t('statDocumentsSignedSubtitle')}
           icon={FileSignature}
           color="brand"
           progress={100}
         />
         <StatCard
           index={1}
-          title="Visible Signatures"
+          title={t('statVisibleTitle')}
           value={docs.filter((d) => d.tampilan === 'VISIBLE').length}
-          subtitle="with stamp"
+          subtitle={t('statVisibleSubtitle')}
           icon={ShieldCheck}
           color="green"
           progress={total > 0 ? Math.round((docs.filter((d) => d.tampilan === 'VISIBLE').length / total) * 100) : 0}
         />
         <StatCard
           index={2}
-          title="Invisible Signatures"
+          title={t('statInvisibleTitle')}
           value={docs.filter((d) => d.tampilan !== 'VISIBLE').length}
-          subtitle="embedded only"
+          subtitle={t('statInvisibleSubtitle')}
           icon={FileSignature}
           color="brand"
           progress={total > 0 ? Math.round((docs.filter((d) => d.tampilan !== 'VISIBLE').length / total) * 100) : 0}
         />
         <StatCard
           index={3}
-          title="NIK Status"
-          value={hasNik ? 'Active' : 'Not set'}
-          subtitle={hasNik ? 'ready to sign' : 'configure in settings'}
+          title={t('statNikTitle')}
+          value={hasNik ? t('nikActive') : t('nikNotSet')}
+          subtitle={hasNik ? t('nikReady') : t('nikConfigure')}
           icon={ShieldCheck}
           color={hasNik ? 'green' : 'red'}
           progress={hasNik ? 100 : 0}
@@ -352,7 +457,7 @@ export default function EsignPage() {
           className="grid px-[15px] h-[30px] items-center border-b border-border-subtle bg-surface-2"
           style={{ gridTemplateColumns: '1fr 180px 110px 160px' }}
         >
-          {['FILE', 'SIGNED', 'SIGNATURE', 'ACTIONS'].map((h, i) => (
+          {[t('colFile'), t('colSigned'), t('colSignature'), t('colActions')].map((h, i) => (
             <div
               key={h}
               className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral"
@@ -371,8 +476,8 @@ export default function EsignPage() {
           <div className="py-10">
             <EmptyState
               icon={FileSignature}
-              title="No signed documents"
-              subtitle="Upload a PDF and sign it electronically to see it here"
+              title={t('emptyTitle')}
+              subtitle={t('emptySubtitle')}
             />
           </div>
         ) : (
@@ -394,7 +499,7 @@ export default function EsignPage() {
               </div>
 
               {/* Signed at */}
-              <div className="font-mono text-[11px] text-text-secondary">{formatDate(doc.signed_at)}</div>
+              <div className="font-mono text-[11px] text-text-secondary">{formatDate(doc.signed_at, locale)}</div>
 
               {/* Visibility */}
               <div>
@@ -404,7 +509,7 @@ export default function EsignPage() {
                     doc.tampilan === 'VISIBLE' ? { background: '#e9f4ee', color: '#0f6144' } : { background: '#f1f0ed', color: '#5c6470' }
                   }
                 >
-                  {doc.tampilan === 'VISIBLE' ? 'Visible' : 'Invisible'}
+                  {doc.tampilan === 'VISIBLE' ? t('visible') : t('invisible')}
                 </span>
               </div>
 
@@ -415,14 +520,14 @@ export default function EsignPage() {
                   className="h-[26px] flex items-center gap-[5px] px-[9px] border border-border-button rounded-[4px] text-[11px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
                 >
                   <ShieldCheck className="w-[11px] h-[11px]" />
-                  Verify
+                  {t('verify')}
                 </button>
                 <button
                   onClick={() => handleDownload(doc)}
                   className="h-[26px] flex items-center gap-[5px] px-[9px] border border-border-button rounded-[4px] text-[11px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
                 >
                   <Download className="w-[11px] h-[11px]" />
-                  Download
+                  {t('common.download')}
                 </button>
               </div>
             </motion.div>

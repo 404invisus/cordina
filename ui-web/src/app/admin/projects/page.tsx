@@ -21,20 +21,154 @@ import AppLayout from '@/components/layout/AppLayout';
 import { adminProjectService, adminReportExportService } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useT } from '@/lib/i18n';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  active: { label: 'Active', color: 'text-success-text', bg: 'bg-success-soft', dot: 'bg-success' },
-  inactive: { label: 'Inactive', color: 'text-text-tertiary', bg: 'bg-border-subtle', dot: 'bg-text-placeholder' },
-  completed: { label: 'Completed', color: 'text-info-text', bg: 'bg-info-soft', dot: 'bg-info' },
-  archived: { label: 'Archived', color: 'text-neutral-text', bg: 'bg-neutral-soft', dot: 'bg-neutral' },
+const dict = {
+  en: {
+    detailProject: 'Detail Project',
+    statusActive: 'Active',
+    statusInactive: 'Inactive',
+    statusCompleted: 'Completed',
+    statusArchived: 'Archived',
+    taskStatusTodo: 'To Do',
+    taskStatusInProgress: 'In Progress',
+    taskStatusReview: 'Review',
+    taskStatusDone: 'Done',
+    startLabel: 'Mulai',
+    endLabel: 'Selesai',
+    tasksCount: 'Tasks ({count})',
+    membersCount: 'Members ({count})',
+    editProject: 'Edit Project',
+    updateProjectInfo: 'Update project information',
+    projectNameLabel: 'Nama Project *',
+    projectNamePlaceholder: 'Nama project',
+    descriptionLabel: 'Deskripsi',
+    descriptionPlaceholder: 'Deskripsi project',
+    statusOptionActive: 'Active',
+    statusOptionInactive: 'Nonaktif',
+    statusOptionCompleted: 'Selesai',
+    statusOptionArchived: 'Arsip',
+    startDateLabel: 'Tanggal Mulai',
+    endDateLabel: 'Tanggal Selesai',
+    saving: 'Saving...',
+    saveChanges: 'Save Changes',
+    projectUpdated: 'Project updated!',
+    failed: 'Failed',
+    projectNameRequired: 'Project name is required',
+    exportPdf: 'Export PDF',
+    manageProjects: 'Manage Projects',
+    projectsRegistered: '{count} projects registered',
+    statTotalProject: 'Total Project',
+    statTaskCompleted: 'Task Selesai',
+    statInProgress: 'In Progress',
+    statOverdueTasks: 'Overdue Tasks',
+    filterAll: 'All',
+    searchProjectsPlaceholder: 'Search projects...',
+    projectsCount: '{count} project',
+    noProjects: 'No projects',
+    colProject: 'Project',
+    colPeriode: 'Periode',
+    colMembers: 'Members',
+    colTasks: 'Tasks',
+    viewDetails: 'View Details',
+    deleteProjectTitle: 'Delete Project?',
+    andAllDataDeleted: 'and all related data will be permanently deleted.',
+    deleting: 'Deleting...',
+    reportDownloaded: 'Report downloaded successfully',
+    failedDownloadReport: 'Failed to download report',
+    projectDeleted: 'Project deleted',
+  },
+  id: {
+    detailProject: 'Detail Proyek',
+    statusActive: 'Aktif',
+    statusInactive: 'Tidak Aktif',
+    statusCompleted: 'Selesai',
+    statusArchived: 'Diarsipkan',
+    taskStatusTodo: 'Belum Dimulai',
+    taskStatusInProgress: 'Sedang Berjalan',
+    taskStatusReview: 'Ditinjau',
+    taskStatusDone: 'Selesai',
+    startLabel: 'Mulai',
+    endLabel: 'Selesai',
+    tasksCount: 'Tugas ({count})',
+    membersCount: 'Anggota ({count})',
+    editProject: 'Ubah Proyek',
+    updateProjectInfo: 'Perbarui informasi proyek',
+    projectNameLabel: 'Nama Proyek *',
+    projectNamePlaceholder: 'Nama proyek',
+    descriptionLabel: 'Deskripsi',
+    descriptionPlaceholder: 'Deskripsi proyek',
+    statusOptionActive: 'Aktif',
+    statusOptionInactive: 'Nonaktif',
+    statusOptionCompleted: 'Selesai',
+    statusOptionArchived: 'Diarsipkan',
+    startDateLabel: 'Tanggal Mulai',
+    endDateLabel: 'Tanggal Selesai',
+    saving: 'Menyimpan...',
+    saveChanges: 'Simpan Perubahan',
+    projectUpdated: 'Proyek berhasil diperbarui!',
+    failed: 'Gagal',
+    projectNameRequired: 'Nama proyek wajib diisi',
+    exportPdf: 'Ekspor PDF',
+    manageProjects: 'Kelola Proyek',
+    projectsRegistered: '{count} proyek terdaftar',
+    statTotalProject: 'Total Proyek',
+    statTaskCompleted: 'Tugas Selesai',
+    statInProgress: 'Sedang Berjalan',
+    statOverdueTasks: 'Tugas Terlambat',
+    filterAll: 'Semua',
+    searchProjectsPlaceholder: 'Cari proyek...',
+    projectsCount: '{count} proyek',
+    noProjects: 'Tidak ada proyek',
+    colProject: 'Proyek',
+    colPeriode: 'Periode',
+    colMembers: 'Anggota',
+    colTasks: 'Tugas',
+    viewDetails: 'Lihat Detail',
+    deleteProjectTitle: 'Hapus Proyek?',
+    andAllDataDeleted: 'beserta seluruh data terkait akan dihapus secara permanen.',
+    deleting: 'Menghapus...',
+    reportDownloaded: 'Laporan berhasil diunduh',
+    failedDownloadReport: 'Gagal mengunduh laporan',
+    projectDeleted: 'Proyek berhasil dihapus',
+  },
 };
 
-const TASK_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  todo: { label: 'To Do', color: 'text-text-tertiary' },
-  in_progress: { label: 'In Progress', color: 'text-info-text' },
-  review: { label: 'Review', color: 'text-navy-700' },
-  done: { label: 'Done', color: 'text-success-text' },
+const STATUS_CONFIG: Record<string, { color: string; bg: string; dot: string }> = {
+  active: { color: 'text-success-text', bg: 'bg-success-soft', dot: 'bg-success' },
+  inactive: { color: 'text-text-tertiary', bg: 'bg-border-subtle', dot: 'bg-text-placeholder' },
+  completed: { color: 'text-info-text', bg: 'bg-info-soft', dot: 'bg-info' },
+  archived: { color: 'text-neutral-text', bg: 'bg-neutral-soft', dot: 'bg-neutral' },
 };
+
+const STATUS_LABEL_KEY: Record<string, string> = {
+  active: 'statusActive',
+  inactive: 'statusInactive',
+  completed: 'statusCompleted',
+  archived: 'statusArchived',
+};
+
+function statusLabel(status: string, t: (key: string, vars?: Record<string, string | number>) => string) {
+  return t(STATUS_LABEL_KEY[status] || STATUS_LABEL_KEY.active);
+}
+
+const TASK_STATUS_CONFIG: Record<string, { color: string }> = {
+  todo: { color: 'text-text-tertiary' },
+  in_progress: { color: 'text-info-text' },
+  review: { color: 'text-navy-700' },
+  done: { color: 'text-success-text' },
+};
+
+const TASK_STATUS_LABEL_KEY: Record<string, string> = {
+  todo: 'taskStatusTodo',
+  in_progress: 'taskStatusInProgress',
+  review: 'taskStatusReview',
+  done: 'taskStatusDone',
+};
+
+function taskStatusLabel(status: string, t: (key: string, vars?: Record<string, string | number>) => string) {
+  return TASK_STATUS_LABEL_KEY[status] ? t(TASK_STATUS_LABEL_KEY[status]) : status;
+}
 
 function StatCard({ icon: Icon, label, value, color, bg }: any) {
   return (
@@ -50,6 +184,7 @@ function StatCard({ icon: Icon, label, value, color, bg }: any) {
   );
 }
 function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () => void }) {
+  const t = useT(dict);
   const { data: project, isLoading } = useQuery({
     queryKey: ['admin-project', projectId],
     queryFn: () => adminProjectService.show(projectId).then((r) => r.data.data),
@@ -81,7 +216,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
         className="relative w-full max-w-md bg-white flex flex-col h-full"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <h2 className="font-bold text-navy-900">Detail Project</h2>
+          <h2 className="font-bold text-navy-900">{t('detailProject')}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
             <X className="w-4 h-4 text-text-placeholder" />
           </button>
@@ -103,7 +238,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${conf.bg} ${conf.color}`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${conf.dot}`} />
-                      {conf.label}
+                      {statusLabel(project.status, t)}
                     </span>
                   );
                 })()}
@@ -113,7 +248,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-surface-2 rounded-[6px] p-3">
-                <div className="text-xs text-text-placeholder mb-0.5">Mulai</div>
+                <div className="text-xs text-text-placeholder mb-0.5">{t('startLabel')}</div>
                 <div className="text-sm font-semibold text-text-secondary">
                   {project.start_date
                     ? new Date(project.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -121,7 +256,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
                 </div>
               </div>
               <div className="bg-surface-2 rounded-[6px] p-3">
-                <div className="text-xs text-text-placeholder mb-0.5">Selesai</div>
+                <div className="text-xs text-text-placeholder mb-0.5">{t('endLabel')}</div>
                 <div className="text-sm font-semibold text-text-secondary">
                   {project.end_date
                     ? new Date(project.end_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -132,7 +267,9 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 
             {tasks && (
               <div>
-                <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">Tasks ({tasks.length})</div>
+                <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">
+                  {t('tasksCount', { count: tasks.length })}
+                </div>
                 <div className="space-y-1.5">
                   {Object.entries(
                     tasks.reduce((acc: any, t: any) => {
@@ -140,10 +277,10 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
                       return acc;
                     }, {}),
                   ).map(([status, count]: any) => {
-                    const conf = TASK_STATUS_CONFIG[status] || { label: status, color: 'text-text-tertiary' };
+                    const conf = TASK_STATUS_CONFIG[status] || { color: 'text-text-tertiary' };
                     return (
                       <div key={status} className="flex items-center justify-between px-3 py-2 bg-surface-2 rounded-lg">
-                        <span className={`text-sm font-medium ${conf.color}`}>{conf.label}</span>
+                        <span className={`text-sm font-medium ${conf.color}`}>{taskStatusLabel(status, t)}</span>
                         <span className="text-sm font-bold text-text-secondary">{count}</span>
                       </div>
                     );
@@ -154,7 +291,9 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 
             {members && members.length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">Members ({members.length})</div>
+                <div className="text-xs font-semibold text-text-placeholder uppercase tracking-wider mb-2">
+                  {t('membersCount', { count: members.length })}
+                </div>
                 <div className="space-y-2">
                   {members.map((m: any) => (
                     <div key={m.id} className="flex items-center gap-3 px-3 py-2 bg-surface-2 rounded-lg">
@@ -183,6 +322,7 @@ function ProjectDrawer({ projectId, onClose }: { projectId: string; onClose: () 
 }
 function EditProjectModal({ project, onClose }: { project: any; onClose: () => void }) {
   const qc = useQueryClient();
+  const t = useT(dict);
   const [form, setForm] = useState({
     name: project?.name || '',
     description: project?.description || '',
@@ -198,15 +338,15 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-projects'] });
       qc.invalidateQueries({ queryKey: ['admin-project-stats'] });
-      toast.success('Project updated!');
+      toast.success(t('projectUpdated'));
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   const handleSubmit = () => {
     if (!form.name.trim()) {
-      toast.error('Project name is required');
+      toast.error(t('projectNameRequired'));
       return;
     }
     mutation.mutate(form);
@@ -228,8 +368,8 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div>
-            <h2 className="font-bold text-navy-900">Edit Project</h2>
-            <p className="text-xs text-text-placeholder mt-0.5">Update project information</p>
+            <h2 className="font-bold text-navy-900">{t('editProject')}</h2>
+            <p className="text-xs text-text-placeholder mt-0.5">{t('updateProjectInfo')}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
             <X className="w-4 h-4 text-text-placeholder" />
@@ -237,42 +377,42 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Nama Project *</label>
+            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('projectNameLabel')}</label>
             <input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all"
-              placeholder="Nama project"
+              placeholder={t('projectNamePlaceholder')}
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Deskripsi</label>
+            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('descriptionLabel')}</label>
             <textarea
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
               rows={3}
               className="w-full px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all resize-none"
-              placeholder="Deskripsi project"
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Status</label>
+            <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('common.status')}</label>
             <div className="relative">
               <select
                 value={form.status}
                 onChange={(e) => set('status', e.target.value)}
                 className="w-full appearance-none px-3.5 py-2.5 rounded-[6px] border border-border text-sm text-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all pr-8"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Nonaktif</option>
-                <option value="completed">Selesai</option>
-                <option value="archived">Arsip</option>
+                <option value="active">{t('statusOptionActive')}</option>
+                <option value="inactive">{t('statusOptionInactive')}</option>
+                <option value="completed">{t('statusOptionCompleted')}</option>
+                <option value="archived">{t('statusOptionArchived')}</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Tanggal Mulai</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('startDateLabel')}</label>
               <input
                 type="date"
                 value={form.start_date}
@@ -281,7 +421,7 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">Tanggal Selesai</label>
+              <label className="text-xs font-semibold text-text-tertiary mb-1.5 block">{t('endDateLabel')}</label>
               <input
                 type="date"
                 value={form.end_date}
@@ -296,14 +436,14 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             disabled={mutation.isPending}
             className="flex-1 px-4 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 transition-colors disabled:opacity-50"
           >
-            {mutation.isPending ? 'Saving...' : 'Save Changes'}
+            {mutation.isPending ? t('saving') : t('saveChanges')}
           </button>
         </div>
       </motion.div>
@@ -313,6 +453,7 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
 
 export default function AdminProjectsPage() {
   const qc = useQueryClient();
+  const t = useT(dict);
   const [exporting, setExporting] = useState(false);
   const handleExport = async () => {
     setExporting(true);
@@ -324,9 +465,9 @@ export default function AdminProjectsPage() {
       a.download = 'laporan_project.pdf';
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Report downloaded successfully');
+      toast.success(t('reportDownloaded'));
     } catch {
-      toast.error('Failed to download report');
+      toast.error(t('failedDownloadReport'));
     } finally {
       setExporting(false);
     }
@@ -358,10 +499,10 @@ export default function AdminProjectsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-projects'] });
       qc.invalidateQueries({ queryKey: ['admin-project-stats'] });
-      toast.success('Project deleted');
+      toast.success(t('projectDeleted'));
       setDeleteProject(null);
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failed')),
   });
 
   return (
@@ -372,8 +513,8 @@ export default function AdminProjectsPage() {
             <FolderOpen className="w-5 h-5 text-navy-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-900">Manage Projects</h1>
-            <p className="text-sm text-text-placeholder mt-0.5">{stats?.total_projects || 0} projects registered</p>
+            <h1 className="text-2xl font-bold text-navy-900">{t('manageProjects')}</h1>
+            <p className="text-sm text-text-placeholder mt-0.5">{t('projectsRegistered', { count: stats?.total_projects || 0 })}</p>
           </div>
         </div>
         <button
@@ -382,33 +523,33 @@ export default function AdminProjectsPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-40"
         >
           {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          Export PDF
+          {t('exportPdf')}
         </button>
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard icon={FolderOpen} label="Total Project" value={stats.total_projects} color="text-navy-700" bg="bg-navy-700/8" />
+          <StatCard icon={FolderOpen} label={t('statTotalProject')} value={stats.total_projects} color="text-navy-700" bg="bg-navy-700/8" />
           <StatCard
             icon={CheckSquare}
-            label="Task Selesai"
+            label={t('statTaskCompleted')}
             value={stats.tasks_by_status?.done || 0}
             color="text-success-text"
             bg="bg-success-soft"
           />
           <StatCard
             icon={Clock}
-            label="In Progress"
+            label={t('statInProgress')}
             value={stats.tasks_by_status?.in_progress || 0}
             color="text-info-text"
             bg="bg-info-soft"
           />
-          <StatCard icon={AlertTriangle} label="Overdue Tasks" value={stats.overdue_tasks || 0} color="text-danger-text" bg="bg-danger-soft" />
+          <StatCard icon={AlertTriangle} label={t('statOverdueTasks')} value={stats.overdue_tasks || 0} color="text-danger-text" bg="bg-danger-soft" />
         </div>
       )}
 
       <div className="flex gap-2 flex-wrap mb-5">
-        {[{ value: '', label: 'All' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ value: v, label: c.label }))].map(
+        {[{ value: '', label: t('filterAll') }, ...Object.entries(STATUS_CONFIG).map(([v]) => ({ value: v, label: statusLabel(v, t) }))].map(
           ({ value, label }) => (
             <button
               key={value}
@@ -433,10 +574,10 @@ export default function AdminProjectsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2 rounded-[6px] border border-border text-sm text-text-secondary placeholder:text-border-button focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:border-navy-700 transition-all w-full"
-              placeholder="Search projects..."
+              placeholder={t('searchProjectsPlaceholder')}
             />
           </div>
-          <span className="ml-auto text-xs text-text-placeholder">{projects.length} project</span>
+          <span className="ml-auto text-xs text-text-placeholder">{t('projectsCount', { count: projects.length })}</span>
         </div>
 
         {isLoading ? (
@@ -446,14 +587,14 @@ export default function AdminProjectsPage() {
         ) : projects.length === 0 ? (
           <div className="text-center py-16 text-text-placeholder">
             <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No projects</p>
+            <p className="text-sm">{t('noProjects')}</p>
           </div>
         ) : (
           <table className="w-full">
             <thead>
               <tr className="bg-surface-2/50 border-b border-border-subtle">
-                {['Project', 'Status', 'Periode', 'Members', 'Tasks', ''].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-text-placeholder uppercase tracking-wider">
+                {[t('colProject'), t('common.status'), t('colPeriode'), t('colMembers'), t('colTasks'), ''].map((h, i) => (
+                  <th key={i} className="text-left px-5 py-3 text-xs font-semibold text-text-placeholder uppercase tracking-wider">
                     {h}
                   </th>
                 ))}
@@ -489,7 +630,7 @@ export default function AdminProjectsPage() {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${sConf.bg} ${sConf.color}`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${sConf.dot}`} />
-                          {sConf.label}
+                          {statusLabel(p.status, t)}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-text-tertiary">
@@ -541,7 +682,7 @@ export default function AdminProjectsPage() {
                                     }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2"
                                   >
-                                    <Eye className="w-3.5 h-3.5" /> View Details
+                                    <Eye className="w-3.5 h-3.5" /> {t('viewDetails')}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -550,7 +691,7 @@ export default function AdminProjectsPage() {
                                     }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2"
                                   >
-                                    <Pencil className="w-3.5 h-3.5" /> Edit
+                                    <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
                                   </button>
                                   <div className="h-px bg-border-subtle mx-2" />
                                   <button
@@ -560,7 +701,7 @@ export default function AdminProjectsPage() {
                                     }}
                                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger-text hover:bg-danger-soft"
                                   >
-                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                    <Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}
                                   </button>
                                 </motion.div>
                               )}
@@ -598,24 +739,23 @@ export default function AdminProjectsPage() {
               <div className="w-12 h-12 bg-danger-soft rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-5 h-5 text-danger" />
               </div>
-              <h3 className="font-bold text-navy-900 mb-1">Delete Project?</h3>
+              <h3 className="font-bold text-navy-900 mb-1">{t('deleteProjectTitle')}</h3>
               <p className="text-sm text-text-tertiary mb-5">
-                <span className="font-semibold text-text-secondary">{deleteProject.name}</span> and all related data will be permanently
-                deleted.
+                <span className="font-semibold text-text-secondary">{deleteProject.name}</span> {t('andAllDataDeleted')}
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteProject(null)}
                   className="flex-1 px-4 py-2.5 rounded-[6px] border border-border text-sm font-semibold text-text-secondary hover:bg-surface-2"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(deleteProject.id)}
                   disabled={deleteMutation.isPending}
                   className="flex-1 px-4 py-2.5 rounded-[6px] bg-danger text-white text-sm font-semibold hover:bg-danger-text disabled:opacity-50"
                 >
-                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                  {deleteMutation.isPending ? t('deleting') : t('common.delete')}
                 </button>
               </div>
             </motion.div>

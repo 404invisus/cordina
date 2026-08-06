@@ -1,0 +1,31 @@
+[
+  {
+    "id": "3.3.2-2",
+    "scenario": "Edit agenda kegiatan",
+    "verdict": "PASS (dengan catatan penting)",
+    "notes": "Diuji melalui /admin/calendar: kegiatan dibuka, tombol Edit (ikon pensil) pada panel detail menampilkan modal \"Edit Event\" dengan seluruh data terisi otomatis. Judul diubah menjadi \"UAT Agenda Peserta 069487 [DIUBAH]\", lokasi menjadi \"Ruang Rapat Lantai 5 (lokasi diubah)\", dan tanggal dipindah ke 2026-08-01, lalu Save. Perubahan TERSIMPAN dan terverifikasi dua cara: (a) query basis data svc_workload.calendar_events menunjukkan judul, tanggal, dan lokasi baru dengan updated_at lebih baru dari created_at, dan (b) kegiatan tampil dengan judul baru di kalender pada periode August 2026. Tidak ada error HTTP. CATATAN KETIDAKSESUAIAN PENTING: pada halaman /calendar — jalur yang disebut dokumen (\"Klik kegiatan di kalender, pilih Edit\") — TIDAK TERSEDIA tombol Edit untuk data kegiatan. Modal \"Event details\" di sana hanya menyediakan tombol \"+ Add report\" yang mengubah status, notulensi, hasil pembahasan, dan tindak lanjut; judul, tanggal, waktu, dan lokasi tidak dapat diubah. Perubahan data inti kegiatan hanya dapat dilakukan administrator melalui /admin/calendar.",
+    "shots": [
+      "shots/3.3.2-2a_detail-kegiatan.png",
+      "shots/3.3.2-2b_form-edit-kegiatan.png",
+      "shots/3.3.2-2c_perubahan-tersimpan.png"
+    ]
+  },
+  {
+    "id": "3.3.4-1",
+    "scenario": "Notifikasi Telegram acara kalender",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Dibuat kegiatan dengan peserta melalui /admin/calendar. Terverifikasi pada tabel svc_notification.notifications: notifikasi bertipe calendar.event_created channel telegram berstatus 'sent' untuk acara publik — terkirim ke grup Telegram organisasi melalui TELEGRAM_GROUP_CHAT_ID; dan notifikasi calendar.event_assigned channel telegram berstatus 'sent' untuk peserta yang memiliki telegram_chat_id — terkirim ke chat pribadi peserta yang diundang. Notifikasi in_app juga tercatat 'sent' untuk seluruh peserta. TEMUAN: peserta yang belum memiliki telegram_chat_id (pdm@test.com, sm@test.com) menghasilkan baris notifikasi telegram yang tertahan berstatus 'pending' tanpa error_message dan tanpa status 'failed'/'skipped'. Kegagalan senyap seperti ini menyulitkan operator mendeteksi notifikasi yang tidak terkirim; disarankan memberi status eksplisit (mis. 'skipped: telegram_chat_id belum diisi').",
+    "shots": [
+      "shots/3.3.4-1_bukti-notifikasi-telegram.png"
+    ]
+  },
+  {
+    "id": "3.3.4-2",
+    "scenario": "Pengingat agenda H-1 dan H-0",
+    "verdict": "PASS",
+    "notes": "Perintah terjadwal 'calendar:remind-deadlines' (dijalankan harian pukul 07:00 oleh container pm_workload_scheduler) dieksekusi manual. Hasil: agenda bertanggal 2026-07-30 (hari pelaksanaan) memicu pengingat H-0 dan agenda bertanggal 2026-07-31 (besok) memicu pengingat H-1; kolom reminder_h0_sent_at dan reminder_h1_sent_at terisi. Agenda bertanggal 2026-08-01 (H-2) benar TIDAK dikirimi pengingat. Notifikasi calendar.deadline_reminder channel telegram tercatat 'sent'. Eksekusi ulang perintah tidak mengirim pengingat kedua kali, membuktikan mekanisme anti-duplikat berjalan. Catatan sama seperti 3.3.4-1 berlaku untuk peserta tanpa telegram_chat_id.",
+    "shots": [
+      "shots/3.3.4-2_bukti-pengingat-h1-h0.png"
+    ]
+  }
+]

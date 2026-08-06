@@ -1,0 +1,12 @@
+{
+  "dlName": "",
+  "size": 0,
+  "isPdf": false,
+  "NEWDESC": "Deskripsi diperbarui pada pengujian UAT (edit metadata).",
+  "shots": {
+    "sMenu": "shots/4.2-5a_menu-aksi-dokumen.png",
+    "sEdit": "shots/4.2-5b_form-edit-dokumen.png",
+    "sEdited": "shots/4.2-5c_metadata-tersimpan.png",
+    "sDl": "shots/4.2-6_unduh-dokumen.png"
+  }
+}

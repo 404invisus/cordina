@@ -1,0 +1,29 @@
+{
+  "atxt": [
+    "GOVERNANCE",
+    "e-Sign Distribution",
+    "Multi-signatory electronic signature",
+    "New e-Sign Request",
+    "dokumen tes distri",
+    "Awaiting Signature",
+    "Creator",
+    "Your turn!",
+    "24 Jul 2026, 04:15",
+    "0/2 signed",
+    "tes dokumen UAT",
+    "Awaiting Signature",
+    "Creator",
+    "21 Jul 2026, 03:34",
+    "1/4 signed",
+    "tes distribusi",
+    "Distributed",
+    "16 Jul 2026, 20:40"
+  ],
+  "shots": [
+    "shots/3.6.2-1a_daftar-esign-multi-pihak.png",
+    "shots/3.6.2-1b_urutan-penandatangan.png",
+    "shots/3.6.2-1c_dialog-tanda-tangan.png",
+    "shots/3.6.2-1d_setelah-penandatangan-pertama.png",
+    "shots/3.6.2-1e_status-daftar-setelah.png"
+  ]
+}

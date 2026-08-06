@@ -1,0 +1,51 @@
+[
+  {
+    "id": "3.6.1-1",
+    "scenario": "Tanda tangan dokumen via TTE",
+    "verdict": "PASS",
+    "notes": "Pengujian dilakukan pada dua jalur dan keduanya berhasil menandatangani secara elektronik melalui layanan BSrE yang sesungguhnya (bukan simulasi). (a) Jalur Change Request: setelah penilai menyetujui, penandatangan (Project Manager) membuka CR \"CR UAT Setujui 61396\", memilih Tanda Tangani, dan memasukkan passphrase. Terverifikasi di basis data: status CR berubah menjadi \"approved\", baris cr_approvals dengan role \"signer\" berubah menjadi \"approved\" beserta acted_at, dan kolom signed_document_id terisi. (b) Jalur dokumen mandiri (/esign): berkas PDF diunggah, judul diisi, passphrase dimasukkan, lalu ditandatangani. Terverifikasi di basis data svc_storage.esign_documents: dokumen \"Dokumen UAT TTE 48194\" tercatat dengan signed_at terisi. Catatan teknis: sistem memanggil endpoint pemanasan (/esign/warmup) sebelum menandatangani; pemanasan mengembalikan status upstream \"ok\". Passphrase tidak disimpan sistem.",
+    "shots": [
+      "shots/3.6.1-1a_cr-menunggu-tanda-tangan.png",
+      "shots/3.6.1-1b_dialog-tanda-tangan.png",
+      "shots/3.6.1-1c_hasil-tanda-tangan.png"
+    ]
+  },
+  {
+    "id": "3.6.2-1",
+    "scenario": "Multi penanda tangan berurutan",
+    "verdict": "FAIL",
+    "notes": "Modul multi penandatangan tersedia pada halaman /tte-sign (\"e-Sign Distribution\"). Dokumen uji \"tes dokumen UAT\" memiliki 4 penandatangan dengan urutan yang terdefinisi jelas (SIGNATORY ORDER: 1 Kepala Balai, 2 Kepala Seksi, 3 Scrum Master, 4 Project Manager), dilengkapi penanda progres \"0/4 signed\", status \"Awaiting Signature\", indikator \"Your turn!\" bagi penandatangan yang sedang mendapat giliran, serta tab \"Audit Trail\". Struktur antarmuka sudah sesuai kebutuhan penandatanganan berurutan. TEMUAN CACAT: proses penandatanganan TIDAK DAPAT diselesaikan. Saat penandatangan urutan ke-1 (Kepala Balai) memasukkan passphrase dan menekan \"Confirm Signature\", permintaan POST /api/v1/tte-sign-requests/{id}/sign menggantung hingga gagal dengan HTTP 504 Gateway Time-out. Kegagalan REPRODUCIBLE: diuji melalui antarmuka (gagal setelah menunggu 180 detik) dan diulang melalui pemanggilan API langsung (gagal tepat pada detik ke-60). Setelah kegagalan, basis data menunjukkan seluruh 4 penandatangan tetap berstatus \"pending\" dan status dokumen tetap \"waiting_signature\" — tidak ada tanda tangan yang tersimpan. Sebagai pembanding, penandatanganan dokumen tunggal melalui /esign pada dokumen dan kredensial yang sama BERHASIL dalam sekitar 2 detik, sehingga layanan BSrE terbukti sehat dan penyebab kegagalan berada pada alur multi penandatangan di svc-storage (endpoint tte-sign-requests/{id}/sign), bukan pada BSrE. DAMPAK: fitur penandatanganan multi pihak berurutan tidak dapat digunakan. Perlu perbaikan sebelum go-live.",
+    "shots": [
+      "shots/3.6.2-1a_daftar-esign-multi-pihak.png",
+      "shots/3.6.2-1b_urutan-penandatangan.png"
+    ]
+  },
+  {
+    "id": "3.6.3-1",
+    "scenario": "Verifikasi keaslian dokumen TTE",
+    "verdict": "PASS",
+    "notes": "Pada daftar dokumen tertandatangani di /esign dipilih aksi \"Verify\" untuk dokumen hasil pengujian. Sistem mengirimkan dokumen ke layanan verifikasi BSrE dan menerima respons HTTP 200 dengan hasil: conclusion = \"VALID\", description = \"Dokumen valid, Sertifikat yang digunakan terpercaya\", dan signatureCount = 1, disertai rincian informasi tanda tangan (fieldName \"Signature1\" beserta identifier tanda tangan). Layanan juga mengembalikan peringatan informatif dari BSrE bahwa algoritma RSA dengan panjang kunci 2048 bit tidak lagi dianggap andal untuk pembuatan tanda tangan — peringatan ini berasal dari BSrE dan perlu ditindaklanjuti bersama penyedia sertifikat, bukan cacat aplikasi.",
+    "shots": [
+      "shots/3.6.3-1a_daftar-dokumen-tte.png",
+      "shots/3.6.3-1b_hasil-verifikasi.png"
+    ]
+  },
+  {
+    "id": "3.6.4-1",
+    "scenario": "Riwayat dokumen tertandatangani",
+    "verdict": "PASS",
+    "notes": "Halaman /esign menampilkan daftar/riwayat dokumen yang telah ditandatangani secara elektronik, memuat kolom FILE, SIGNED (waktu penandatanganan), SIGNATURE (jenis tanda tangan: VISIBLE/INVISIBLE), dan ACTIONS. Dokumen hasil pengujian \"Dokumen UAT TTE 48194\" tercatat pada daftar. Halaman juga menampilkan ringkasan: jumlah dokumen ditandatangani, jumlah tanda tangan visible, invisible, serta status NIK penandatangan (\"Active - ready to sign\").",
+    "shots": [
+      "shots/3.6.4-1_riwayat-dokumen-tte.png"
+    ]
+  },
+  {
+    "id": "3.6.4-2",
+    "scenario": "Unduh dokumen yang sudah ditandatangani",
+    "verdict": "PASS",
+    "notes": "Pada baris dokumen di halaman /esign dipilih aksi Unduh. Berkas \"signed_Dokumen UAT TTE 48194.pdf\" berhasil diunduh berukuran 466.932 byte dan terverifikasi berformat PDF sah (header %PDF), yaitu dokumen yang telah dibubuhi tanda tangan elektronik BSrE.",
+    "shots": [
+      "shots/3.6.4-2_unduh-dokumen.png"
+    ]
+  }
+]

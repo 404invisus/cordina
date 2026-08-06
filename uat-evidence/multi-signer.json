@@ -1,0 +1,49 @@
+{
+  "mtxt": [
+    "GOVERNANCE",
+    "e-Sign Distribution",
+    "Multi-signatory electronic signature",
+    "New e-Sign Request",
+    "tes dokumen UAT",
+    "Awaiting Signature",
+    "21 Jul 2026, 03:34",
+    "0/4 signed",
+    "tes distribusi",
+    "Distributed",
+    "16 Jul 2026, 20:40",
+    "2/2 signed"
+  ],
+  "dtxt": [
+    "tes dokumen UAT",
+    "Awaiting Signature",
+    "Info & Signatories",
+    "Audit Trail",
+    "deskripsi tes dokumen uat",
+    "SIGNATORY ORDER",
+    "1",
+    "Kepala Balai",
+    "2",
+    "Kepala Seksi",
+    "3",
+    "Scrum Master",
+    "4",
+    "Project Manager",
+    "Download",
+    "GOVERNANCE",
+    "e-Sign Distribution",
+    "Multi-signatory electronic signature",
+    "New e-Sign Request",
+    "tes dokumen UAT",
+    "Awaiting Signature",
+    "21 Jul 2026, 03:34",
+    "0/4 signed",
+    "tes distribusi",
+    "Distributed",
+    "16 Jul 2026, 20:40",
+    "2/2 signed"
+  ],
+  "shots": [
+    "shots/3.6.2-1a_daftar-esign-multi-pihak.png",
+    "shots/3.6.2-1b_detail-urutan-penandatangan.png"
+  ]
+}

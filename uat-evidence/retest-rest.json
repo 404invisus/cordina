@@ -1,0 +1,101 @@
+{
+  "addBacklogButtons": 1,
+  "modalTxt": [
+    "Select Backlog for Sprint",
+    "Backlog UAT 627832",
+    "Epic UAT 627832",
+    "5 pts",
+    "low",
+    "0 selected",
+    "Cancel",
+    "Add (0)"
+  ],
+  "backlogRows": 1,
+  "shots41": [
+    "shots/4.1-3a_tombol-tambah-backlog.png",
+    "shots/4.1-3b_modal-pilih-backlog.png",
+    "shots/4.1-3c_backlog-dipilih.png",
+    "shots/4.1-3d_backlog-masuk-sprint.png"
+  ],
+  "SPRINT": "Sprint Perbaikan 23014",
+  "prefilled": {
+    "inputs": [
+      {
+        "ph": "e.g. Cooperation Agreement with BSrE",
+        "v": "Dokumen UAT"
+      },
+      {
+        "ph": "e.g. SK/2026/019",
+        "v": "UAT-238721939821"
+      },
+      {
+        "ph": "",
+        "v": "2026-07-21"
+      },
+      {
+        "ph": "",
+        "v": "2026-07-28"
+      },
+      {
+        "ph": "",
+        "v": ""
+      },
+      {
+        "ph": "Search title or document number",
+        "v": ""
+      }
+    ],
+    "sels": [
+      "",
+      "",
+      ""
+    ],
+    "saveDisabled": false
+  },
+  "editSaved": false,
+  "NEWNUM": "SK/2026/93744-REV1",
+  "shots42": [
+    "shots/4.2-5a_form-edit-terisi.png",
+    "shots/4.2-5b_metadata-tersimpan.png"
+  ],
+  "workload": {
+    "nSel": 3,
+    "memOpts": [
+      "All Members ▾",
+      "Staff Satu"
+    ],
+    "picked": "Staff Satu",
+    "rowsBefore": 0,
+    "rowsAfter": 0,
+    "bodyAfter": [
+      "CAPACITY",
+      "Workload",
+      "Project Alpha · first sprint",
+      "Select Project ▾",
+      "Project Alpha",
+      "Project Alpha",
+      "ID Wallet",
+      "Test Permission Project",
+      "Test UAT Project",
+      "Simulasi UAT",
+      "Select Sprint ▾",
+      "first sprint",
+      "All Members ▾",
+      "Staff Satu",
+      "Export PDF",
+      "Rebalance",
+      "AVG UTILISATION",
+      "13%",
+      "within range",
+      "OVERLOADED",
+      "0",
+      "above 100%",
+      "AVAILABLE",
+      "1"
+    ]
+  },
+  "shots344": [
+    "shots/3.4.4-2a_beban-kerja-semua-anggota.png",
+    "shots/3.4.4-2b_filter-satu-anggota.png"
+  ]
+}

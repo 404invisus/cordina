@@ -26,6 +26,68 @@ import {
   FilePen,
 } from 'lucide-react';
 import { getInitials, getRoleLabel } from '@/lib/utils';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    groupWorkspace: 'WORKSPACE',
+    groupRecords: 'RECORDS',
+    groupGovernance: 'GOVERNANCE',
+    groupBriefing: 'BRIEFING',
+    groupAdmin: 'Admin',
+    navDashboard: 'Dashboard',
+    navProjects: 'Projects',
+    navTasks: 'Tasks',
+    navWorkload: 'Workload',
+    navCalendar: 'Calendar',
+    navReports: 'Reports',
+    navNotifications: 'Notifications',
+    navStorage: 'Storage',
+    navAssets: 'Physical Assets',
+    navDocuments: 'Official Documents',
+    navChangeManagement: 'Change Management',
+    navEsign: 'e-Sign',
+    navEsignDistribution: 'e-Sign Distribution',
+    navDailyBrief: 'Daily Brief',
+    adminManageUsers: 'Manage Users',
+    adminManageProjects: 'Manage Projects',
+    adminManageCalendar: 'Manage Calendar',
+    adminWorkloadMonitor: 'Workload Monitor',
+    adminTelegramBot: 'Telegram Bot',
+    adminEsignConfig: 'e-Sign Config',
+    adminActivityLog: 'Activity Log',
+    adminUserGroups: 'User Groups',
+  },
+  id: {
+    groupWorkspace: 'RUANG KERJA',
+    groupRecords: 'ARSIP',
+    groupGovernance: 'TATA KELOLA',
+    groupBriefing: 'RINGKASAN',
+    groupAdmin: 'Admin',
+    navDashboard: 'Dasbor',
+    navProjects: 'Proyek',
+    navTasks: 'Tugas',
+    navWorkload: 'Beban Kerja',
+    navCalendar: 'Kalender',
+    navReports: 'Laporan',
+    navNotifications: 'Notifikasi',
+    navStorage: 'Penyimpanan',
+    navAssets: 'Aset Fisik',
+    navDocuments: 'Dokumen Resmi',
+    navChangeManagement: 'Manajemen Perubahan',
+    navEsign: 'e-Sign',
+    navEsignDistribution: 'Distribusi e-Sign',
+    navDailyBrief: 'Ringkasan Harian',
+    adminManageUsers: 'Kelola Pengguna',
+    adminManageProjects: 'Kelola Proyek',
+    adminManageCalendar: 'Kelola Kalender',
+    adminWorkloadMonitor: 'Monitor Beban Kerja',
+    adminTelegramBot: 'Bot Telegram',
+    adminEsignConfig: 'Konfigurasi e-Sign',
+    adminActivityLog: 'Log Aktivitas',
+    adminUserGroups: 'Grup Pengguna',
+  },
+};
 
 type NavItem = {
   label: string;
@@ -36,36 +98,36 @@ type NavItem = {
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
-    label: 'WORKSPACE',
+    label: 'groupWorkspace',
     items: [
       {
-        label: 'Dashboard',
+        label: 'navDashboard',
         icon: LayoutDashboard,
         href: null,
         roles: ['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'Projects',
+        label: 'navProjects',
         icon: FolderKanban,
         href: '/projects',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'Tasks',
+        label: 'navTasks',
         icon: CheckSquare,
         href: '/tasks',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
-      { label: 'Workload', icon: Activity, href: '/workload', roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master'] },
+      { label: 'navWorkload', icon: Activity, href: '/workload', roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master'] },
       {
-        label: 'Calendar',
+        label: 'navCalendar',
         icon: Calendar,
         href: '/calendar',
         roles: ['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
-      { label: 'Reports', icon: BarChart3, href: '/reports', roles: ['kepala_balai', 'kepala_seksi', 'project_manager'] },
+      { label: 'navReports', icon: BarChart3, href: '/reports', roles: ['kepala_balai', 'kepala_seksi', 'project_manager'] },
       {
-        label: 'Notifications',
+        label: 'navNotifications',
         icon: Bell,
         href: '/notifications',
         roles: ['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
@@ -73,22 +135,22 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'RECORDS',
+    label: 'groupRecords',
     items: [
       {
-        label: 'Storage',
+        label: 'navStorage',
         icon: HardDrive,
         href: '/storage',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'Physical Assets',
+        label: 'navAssets',
         icon: Archive,
         href: '/assets',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'Official Documents',
+        label: 'navDocuments',
         icon: FileText,
         href: '/documents',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
@@ -96,22 +158,22 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'GOVERNANCE',
+    label: 'groupGovernance',
     items: [
       {
-        label: 'Change Management',
+        label: 'navChangeManagement',
         icon: GitMerge,
         href: '/change-management',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'e-Sign',
+        label: 'navEsign',
         icon: FileSignature,
         href: '/esign',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
       },
       {
-        label: 'e-Sign Distribution',
+        label: 'navEsignDistribution',
         icon: FilePen,
         href: '/tte-sign',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
@@ -119,10 +181,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: 'BRIEFING',
+    label: 'groupBriefing',
     items: [
       {
-        label: 'Daily Brief',
+        label: 'navDailyBrief',
         icon: Activity,
         href: '/daily-brief',
         roles: ['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master', 'staff'],
@@ -132,14 +194,14 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 ];
 
 const adminNavItems = [
-  { label: 'Manage Users', icon: UserCog, href: '/admin/users' },
-  { label: 'Manage Projects', icon: FolderOpen, href: '/admin/projects' },
-  { label: 'Manage Calendar', icon: CalendarRange, href: '/admin/calendar' },
-  { label: 'Workload Monitor', icon: Activity, href: '/admin/workload' },
-  { label: 'Telegram Bot', icon: MessageCircle, href: '/admin/telegram' },
-  { label: 'e-Sign Config', icon: Shield, href: '/admin/tte' },
-  { label: 'Activity Log', icon: Activity, href: '/admin/activity', roles: ['administrator'] },
-  { label: 'User Groups', icon: Users, href: '/admin/user-groups', roles: ['administrator'] },
+  { label: 'adminManageUsers', icon: UserCog, href: '/admin/users' },
+  { label: 'adminManageProjects', icon: FolderOpen, href: '/admin/projects' },
+  { label: 'adminManageCalendar', icon: CalendarRange, href: '/admin/calendar' },
+  { label: 'adminWorkloadMonitor', icon: Activity, href: '/admin/workload' },
+  { label: 'adminTelegramBot', icon: MessageCircle, href: '/admin/telegram' },
+  { label: 'adminEsignConfig', icon: Shield, href: '/admin/tte' },
+  { label: 'adminActivityLog', icon: Activity, href: '/admin/activity', roles: ['administrator'] },
+  { label: 'adminUserGroups', icon: Users, href: '/admin/user-groups', roles: ['administrator'] },
 ];
 
 function NavLink({
@@ -155,6 +217,7 @@ function NavLink({
   notifCount?: number;
   onClick?: () => void;
 }) {
+  const t = useT(dict);
   const href = item.href || dashboardHref;
   return (
     <Link
@@ -171,7 +234,7 @@ function NavLink({
         />
       )}
       <item.icon className="w-[14px] h-[14px] flex-shrink-0" strokeWidth={1.4} />
-      <span className="flex-1 truncate">{item.label}</span>
+      <span className="flex-1 truncate">{t(item.label)}</span>
       {notifCount ? (
         <span className="ml-auto font-mono text-[10px] font-semibold bg-white/13 px-[5px] py-px rounded-[3px]">{notifCount}</span>
       ) : null}
@@ -180,9 +243,10 @@ function NavLink({
 }
 
 function NavGroupLabel({ label }: { label: string }) {
+  const t = useT(dict);
   return (
     <div className="px-2 pt-3.5 pb-[5px]">
-      <span className="text-[9.5px] font-semibold font-mono tracking-[0.14em] text-navy-text-dim">{label}</span>
+      <span className="text-[9.5px] font-semibold font-mono tracking-[0.14em] text-navy-text-dim">{t(label)}</span>
     </div>
   );
 }
@@ -208,6 +272,8 @@ function SidebarContent({
   isAdmin: boolean;
   unreadCount?: number;
 }) {
+  const { locale } = useLocale();
+  const t = useT(dict);
   const isActive = (href: string | null) => (href ? pathname.startsWith(href) : pathname.startsWith('/dashboard'));
 
   return (
@@ -239,7 +305,7 @@ function SidebarContent({
                   item={item}
                   active={isActive(item.href)}
                   dashboardHref={dashboardHref}
-                  notifCount={item.label === 'Notifications' ? unreadCount || undefined : undefined}
+                  notifCount={item.label === 'navNotifications' ? unreadCount || undefined : undefined}
                   onClick={onClose}
                 />
               ))}
@@ -251,7 +317,7 @@ function SidebarContent({
           <div>
             <div className="px-2 pt-3.5 pb-[5px] flex items-center gap-2">
               <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[9.5px] font-semibold font-mono tracking-[0.14em] text-navy-text-dim">Admin</span>
+              <span className="text-[9.5px] font-semibold font-mono tracking-[0.14em] text-navy-text-dim">{t('groupAdmin')}</span>
               <div className="flex-1 h-px bg-white/10" />
             </div>
             {adminNavItems.map((item) => (
@@ -275,7 +341,7 @@ function SidebarContent({
           </div>
           <div className="min-w-0">
             <div className="text-white text-[12px] font-semibold truncate">{user.full_name}</div>
-            <div className="text-navy-text-dim text-[9px] font-mono uppercase tracking-[0.06em]">{getRoleLabel(primaryRole)}</div>
+            <div className="text-navy-text-dim text-[9px] font-mono uppercase tracking-[0.06em]">{getRoleLabel(primaryRole, locale)}</div>
           </div>
         </div>
         <Link
@@ -286,14 +352,14 @@ function SidebarContent({
           }`}
         >
           <Settings className="w-[14px] h-[14px]" strokeWidth={1.4} />
-          Settings
+          {t('common.settings')}
         </Link>
         <button
           onClick={onLogout}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[12.5px] font-medium text-danger/70 hover:bg-danger/10 hover:text-danger transition-all duration-150"
         >
           <LogOut className="w-[14px] h-[14px]" strokeWidth={1.4} />
-          Sign Out
+          {t('common.signOut')}
         </button>
       </div>
     </div>

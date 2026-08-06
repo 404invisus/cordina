@@ -1,0 +1,52 @@
+[
+  {
+    "id": "4.1-1",
+    "scenario": "Buat sprint baru",
+    "verdict": "PASS",
+    "notes": "Pada detail proyek \"Proyek UAT 627832\" dibuka tab Sprints -> \"Create Sprint\", diisi nama \"Sprint UAT 627832\", sasaran sprint, tanggal mulai 2026-07-31 dan tanggal selesai 2026-08-14, lalu disimpan. Sprint baru berhasil dibuat dan tampil pada daftar sprint proyek dengan status awal (belum dimulai).",
+    "shots": [
+      "shots/4.1-1a_tab-sprint.png",
+      "shots/4.1-1b_form-buat-sprint.png",
+      "shots/4.1-1c_sprint-terbuat.png"
+    ]
+  },
+  {
+    "id": "4.1-2",
+    "scenario": "Mulai sprint",
+    "verdict": "PASS",
+    "notes": "Pada tab Sprints, sprint \"Sprint UAT 627832\" berstatus \"Planned\" dipilih lalu ditekan \"Start Sprint\". Status sprint berubah menjadi aktif dan tombol aksi pada kartu menyesuaikan menjadi pengelolaan sprint berjalan.",
+    "shots": [
+      "shots/4.1-2a_sprint-sebelum-dimulai.png",
+      "shots/4.1-2b_sprint-aktif.png"
+    ]
+  },
+  {
+    "id": "4.1-3",
+    "scenario": "Tambahkan backlog ke sprint",
+    "verdict": "FAIL",
+    "notes": "Skenario TIDAK DAPAT dijalankan melalui antarmuka. Pada tab Sprints, kartu sprint hanya menyediakan tombol \"Start Sprint\" (saat berstatus Planned) serta \"Complete\" dan \"Board\" (saat berstatus Active). Tidak ditemukan tombol \"Tambah Backlog\" atau kontrol sejenis untuk memasukkan item backlog ke dalam sprint, baik pada kartu sprint, tab Epics, maupun halaman papan Kanban. PENYEBAB TEKNIS: komponen modal pemilihan backlog untuk sprint (AddBacklogToSprintModal, berjudul \"Select Backlog for Sprint\") sudah tersedia dan dirender pada halaman detail proyek, namun state pembukanya (setAddBacklogOpen) TIDAK PERNAH dipanggil di mana pun pada kode halaman tersebut. Akibatnya modal tidak pernah dapat dibuka oleh pengguna. Penelusuran juga memastikan tidak ada jalur alternatif — satu-satunya kode yang menetapkan sprint_id pada item backlog berada di dalam modal yang tidak terjangkau tersebut. DAMPAK: item backlog tidak dapat dimasukkan ke sprint melalui aplikasi, sehingga sprint tidak dapat diisi pekerjaan dan papan Kanban tetap kosong (terverifikasi: papan menampilkan \"0 tasks total\"). Perlu perbaikan sebelum go-live.",
+    "shots": [
+      "shots/4.1-3a_pilih-backlog-untuk-sprint.png",
+      "shots/4.1-4_board-kanban.png"
+    ]
+  },
+  {
+    "id": "4.1-4",
+    "scenario": "Buka board Kanban",
+    "verdict": "PASS",
+    "notes": "Papan Kanban proyek dibuka melalui tombol Board / \"Open Board\". Papan tampil dengan empat kolom status sesuai ekspektasi: To Do, In Progress, Review, Done. Setiap kolom menampilkan penghitung jumlah task, dan sistem memberi petunjuk bahwa status task dapat diubah langsung dari kartu pada papan.",
+    "shots": [
+      "shots/4.1-4_board-kanban.png"
+    ]
+  },
+  {
+    "id": "4.1-5",
+    "scenario": "Selesaikan sprint",
+    "verdict": "PASS",
+    "notes": "Pada tab Sprints, sprint aktif \"Sprint UAT 627832\" dipilih lalu ditekan tombol \"Complete\". Status sprint berubah menjadi \"Completed\" pada antarmuka dan terverifikasi di basis data svc_project tabel sprints bahwa kolom status bernilai \"completed\". Sprint yang telah selesai tetap tercatat pada daftar sprint proyek beserta periode dan sasarannya. Catatan: tombol berlabel \"Complete\" (bukan \"Selesaikan Sprint\" seperti pada dokumen) dan penyelesaian sprint tidak mensyaratkan seluruh task selesai.",
+    "shots": [
+      "shots/4.1-5a_sprint-aktif-sebelum-selesai.png",
+      "shots/4.1-5b_sprint-selesai.png"
+    ]
+  }
+]

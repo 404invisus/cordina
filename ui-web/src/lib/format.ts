@@ -1,4 +1,6 @@
 import { format, formatDistanceToNow } from 'date-fns';
+import { enUS, id as idLocale } from 'date-fns/locale';
+import type { Locale } from '@/lib/i18n/types';
 
 function toValidDate(date: string | Date | null | undefined): Date | null {
   if (!date) return null;
@@ -6,25 +8,27 @@ function toValidDate(date: string | Date | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-export function formatDate(date: string | Date | null | undefined): string {
+const dateFnsLocale = (locale: Locale) => (locale === 'id' ? idLocale : enUS);
+
+export function formatDate(date: string | Date | null | undefined, locale: Locale = 'en'): string {
   const d = toValidDate(date);
-  return d ? format(d, 'dd MMM yyyy') : '—';
+  return d ? format(d, 'dd MMM yyyy', { locale: dateFnsLocale(locale) }) : '—';
 }
 
-export function formatDateTime(date: string | Date | null | undefined): string {
+export function formatDateTime(date: string | Date | null | undefined, locale: Locale = 'en'): string {
   const d = toValidDate(date);
-  return d ? format(d, 'dd MMM yyyy, HH:mm') : '—';
+  return d ? format(d, 'dd MMM yyyy, HH:mm', { locale: dateFnsLocale(locale) }) : '—';
 }
 
 /** Full weekday + date, e.g. "Wednesday, 29 July 2026" — used in the app header. */
-export function formatDateLong(date: string | Date | null | undefined): string {
+export function formatDateLong(date: string | Date | null | undefined, locale: Locale = 'en'): string {
   const d = toValidDate(date);
-  return d ? format(d, 'EEEE, d MMMM yyyy') : '—';
+  return d ? format(d, 'EEEE, d MMMM yyyy', { locale: dateFnsLocale(locale) }) : '—';
 }
 
-export function timeAgo(date: string | Date | null | undefined): string {
+export function timeAgo(date: string | Date | null | undefined, locale: Locale = 'en'): string {
   const d = toValidDate(date);
-  return d ? formatDistanceToNow(d, { addSuffix: true }) : '—';
+  return d ? formatDistanceToNow(d, { addSuffix: true, locale: dateFnsLocale(locale) }) : '—';
 }
 
 export function formatNumber(value: number | string | null | undefined): string {

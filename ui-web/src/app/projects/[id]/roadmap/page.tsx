@@ -8,6 +8,28 @@ import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { projectService } from '@/lib/api';
 import { getStatusLabel } from '@/lib/status';
 import { formatDate } from '@/lib/format';
+import { useLocale, useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    backToProject: 'Back to Project',
+    pageTitle: 'Roadmap',
+    sprintCountSubtitle: '{count} sprint · Timeline visual',
+    noSprintsYet: 'No sprints yet',
+    createSprintToView: 'Create a sprint to view the roadmap',
+    sprintDurationH: '{days}h',
+    sprintDurationDays: '{days} hari',
+  },
+  id: {
+    backToProject: 'Kembali ke Proyek',
+    pageTitle: 'Peta Jalan',
+    sprintCountSubtitle: '{count} sprint · Visualisasi linimasa',
+    noSprintsYet: 'Belum ada sprint',
+    createSprintToView: 'Buat sprint untuk melihat peta jalan',
+    sprintDurationH: '{days}h',
+    sprintDurationDays: '{days} hari',
+  },
+};
 
 const sprintStatusConfig: Record<string, { bg: string; text: string; bar: string; dot: string }> = {
   active: { bg: 'bg-info-soft', text: 'text-info-text', bar: 'from-navy-700 to-navy-700', dot: 'bg-navy-700' },
@@ -21,6 +43,8 @@ const sprintStatusConfig: Record<string, { bg: string; text: string; bar: string
 };
 
 export default function RoadmapPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { id } = useParams<{ id: string }>();
   const { data: roadmap, isLoading } = useQuery({
     queryKey: ['roadmap', id],
@@ -72,7 +96,7 @@ export default function RoadmapPage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Back to Project
+          {t('backToProject')}
         </Link>
 
         <div className="flex items-center justify-between">
@@ -86,8 +110,8 @@ export default function RoadmapPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-navy-900">Roadmap</h1>
-              <p className="text-sm text-text-placeholder mt-0.5">{sprints.length} sprint · Timeline visual</p>
+              <h1 className="text-2xl font-bold text-navy-900">{t('pageTitle')}</h1>
+              <p className="text-sm text-text-placeholder mt-0.5">{t('sprintCountSubtitle', { count: sprints.length })}</p>
             </div>
           </div>
 
@@ -95,13 +119,13 @@ export default function RoadmapPage() {
             {Object.entries(sprintStatusConfig).map(([key, cfg]) => (
               <div key={key} className="flex items-center gap-1.5 text-xs text-text-tertiary">
                 <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-                <span className="capitalize">{getStatusLabel(key)}</span>
+                <span className="capitalize">{getStatusLabel(key, locale)}</span>
               </div>
             ))}
             {showToday && (
               <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
                 <span className="w-2.5 h-2.5 rounded-full bg-danger" />
-                <span>Today</span>
+                <span>{t('common.today')}</span>
               </div>
             )}
           </div>
@@ -118,8 +142,8 @@ export default function RoadmapPage() {
               <path d="M18 9a9 9 0 01-9 9" />
             </svg>
           </div>
-          <p className="text-sm font-semibold text-text-placeholder">No sprints yet</p>
-          <p className="text-xs text-border-button mt-1">Create a sprint to view the roadmap</p>
+          <p className="text-sm font-semibold text-text-placeholder">{t('noSprintsYet')}</p>
+          <p className="text-xs text-border-button mt-1">{t('createSprintToView')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-[6px] border border-border-subtle overflow-hidden">
@@ -144,7 +168,7 @@ export default function RoadmapPage() {
                   <div className="absolute top-0 bottom-0 z-10" style={{ left: `${todayPct}%` }}>
                     <div className="relative h-full">
                       <div className="absolute top-0 -translate-x-1/2 bg-danger text-white text-xs font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                        Today
+                        {t('common.today')}
                       </div>
                       <div className="absolute top-6 bottom-0 left-0 w-px bg-danger border-l-2 border-dashed border-danger/50" />
                     </div>
@@ -186,20 +210,24 @@ export default function RoadmapPage() {
                               <polyline points="12 6 12 12 16 14" />
                             </svg>
                             <span className="text-xs font-bold text-white truncate">{s.name}</span>
-                            {width > 12 && <span className="ml-auto text-xs text-white/70 flex-shrink-0">{sprintDays}h</span>}
+                            {width > 12 && (
+                              <span className="ml-auto text-xs text-white/70 flex-shrink-0">
+                                {t('sprintDurationH', { days: sprintDays })}
+                              </span>
+                            )}
                           </div>
 
                           <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-20">
                             <div className="bg-navy-900 text-white text-xs rounded-[6px] px-3 py-2 whitespace-nowrap">
                               <div className="font-bold mb-1">{s.name}</div>
                               <div className="text-border-button">
-                                {formatDate(s.start_date)} → {formatDate(s.end_date)}
+                                {formatDate(s.start_date, locale)} → {formatDate(s.end_date, locale)}
                               </div>
                               <div className="mt-1">
                                 <span
                                   className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${cfg.bg} ${cfg.text}`}
                                 >
-                                  {getStatusLabel(s.status)}
+                                  {getStatusLabel(s.status, locale)}
                                 </span>
                               </div>
                             </div>
@@ -207,7 +235,7 @@ export default function RoadmapPage() {
                         </div>
 
                         <div className="absolute right-0 text-xs text-text-placeholder font-medium" style={{ paddingRight: 4 }}>
-                          {formatDate(s.end_date)}
+                          {formatDate(s.end_date, locale)}
                         </div>
                       </motion.div>
                     );
@@ -224,7 +252,7 @@ export default function RoadmapPage() {
                       <div key={s.id} className="flex items-center gap-4 p-3 rounded-[6px] hover:bg-surface-2 transition-colors">
                         <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
                         <span className="text-sm font-semibold text-text-secondary w-36 truncate">{s.name}</span>
-                        <span className="text-xs text-text-placeholder">{formatDate(s.start_date)}</span>
+                        <span className="text-xs text-text-placeholder">{formatDate(s.start_date, locale)}</span>
                         <svg
                           viewBox="0 0 24 24"
                           fill="none"
@@ -235,10 +263,10 @@ export default function RoadmapPage() {
                           <line x1="5" y1="12" x2="19" y2="12" />
                           <polyline points="12 5 19 12 12 19" />
                         </svg>
-                        <span className="text-xs text-text-placeholder">{formatDate(s.end_date)}</span>
-                        <span className="text-xs text-text-placeholder ml-auto">{sprintDays} hari</span>
+                        <span className="text-xs text-text-placeholder">{formatDate(s.end_date, locale)}</span>
+                        <span className="text-xs text-text-placeholder ml-auto">{t('sprintDurationDays', { days: sprintDays })}</span>
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
-                          {getStatusLabel(s.status)}
+                          {getStatusLabel(s.status, locale)}
                         </span>
                         {s.goal && <span className="text-xs text-text-placeholder italic truncate max-w-xs">{s.goal}</span>}
                       </div>

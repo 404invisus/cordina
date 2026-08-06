@@ -6,8 +6,57 @@ import { Shield, Save, TestTube, CheckCircle2, XCircle, Eye, EyeOff } from 'luci
 import AppLayout from '@/components/layout/AppLayout';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: {
+    title: 'e-Sign Configuration',
+    subtitle: 'Electronic signature integration settings',
+    apiCredentials: 'API Credentials',
+    baseUrl: 'Base URL',
+    username: 'Username',
+    password: 'Password',
+    leaveEmptyUnchanged: '(leave empty to keep unchanged)',
+    apiKey: 'API Key',
+    saving: 'Saving...',
+    saveConfiguration: 'Save Configuration',
+    toastConfigSaved: 'e-Sign configuration saved',
+    toastSaveFailed: 'Failed to save',
+    connectionTest: 'Connection Test',
+    nikForTesting: 'NIK for testing',
+    nikPlaceholder: '16 digit NIK',
+    testing: 'Testing...',
+    testEsignConnection: 'Test e-Sign Connection',
+    connectionSuccessful: 'Connection successful',
+    authFailed: 'Authentication failed - check username/password/API key',
+    connectionFailed: 'Connection failed',
+  },
+  id: {
+    title: 'Konfigurasi Tanda Tangan Elektronik',
+    subtitle: 'Pengaturan integrasi tanda tangan elektronik',
+    apiCredentials: 'Kredensial API',
+    baseUrl: 'URL Dasar',
+    username: 'Nama Pengguna',
+    password: 'Kata Sandi',
+    leaveEmptyUnchanged: '(kosongkan jika tidak ingin diubah)',
+    apiKey: 'Kunci API',
+    saving: 'Menyimpan...',
+    saveConfiguration: 'Simpan Konfigurasi',
+    toastConfigSaved: 'Konfigurasi tanda tangan elektronik disimpan',
+    toastSaveFailed: 'Gagal menyimpan',
+    connectionTest: 'Uji Koneksi',
+    nikForTesting: 'NIK untuk pengujian',
+    nikPlaceholder: 'NIK 16 digit',
+    testing: 'Menguji...',
+    testEsignConnection: 'Uji Koneksi Tanda Tangan Elektronik',
+    connectionSuccessful: 'Koneksi berhasil',
+    authFailed: 'Autentikasi gagal - periksa nama pengguna/kata sandi/kunci API',
+    connectionFailed: 'Koneksi gagal',
+  },
+};
 
 export default function TteConfigPage() {
+  const t = useT(dict);
   const [form, setForm] = useState({
     TTE_BASE_URL: '',
     TTE_USERNAME: '',
@@ -41,8 +90,8 @@ export default function TteConfigPage() {
       if (form.TTE_API_KEY) payload.TTE_API_KEY = form.TTE_API_KEY;
       return api.put('/api/v1/tte-config', payload);
     },
-    onSuccess: () => toast.success('e-Sign configuration saved'),
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to save'),
+    onSuccess: () => toast.success(t('toastConfigSaved')),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('toastSaveFailed')),
   });
 
   const testMutation = useMutation({
@@ -63,8 +112,8 @@ export default function TteConfigPage() {
             <Shield className="w-5 h-5 text-navy-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-900">e-Sign Configuration</h1>
-            <p className="text-sm text-text-placeholder mt-0.5">Electronic signature integration settings</p>
+            <h1 className="text-2xl font-bold text-navy-900">{t('title')}</h1>
+            <p className="text-sm text-text-placeholder mt-0.5">{t('subtitle')}</p>
           </div>
         </div>
 
@@ -76,10 +125,10 @@ export default function TteConfigPage() {
           <div className="space-y-4">
             {/* Credentials */}
             <div className="bg-white rounded-[6px] border border-border-subtle p-6 space-y-4">
-              <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">API Credentials</div>
+              <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">{t('apiCredentials')}</div>
 
               <div>
-                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Base URL</label>
+                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('baseUrl')}</label>
                 <input
                   value={form.TTE_BASE_URL}
                   onChange={f('TTE_BASE_URL')}
@@ -89,13 +138,13 @@ export default function TteConfigPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Username</label>
+                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('username')}</label>
                 <input value={form.TTE_USERNAME} onChange={f('TTE_USERNAME')} className={`mt-1 ${inputCls}`} placeholder="esign" />
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                  Password <span className="text-text-placeholder normal-case font-normal">(leave empty to keep unchanged)</span>
+                  {t('password')} <span className="text-text-placeholder normal-case font-normal">{t('leaveEmptyUnchanged')}</span>
                 </label>
                 <div className="relative mt-1">
                   <input
@@ -116,7 +165,7 @@ export default function TteConfigPage() {
 
               <div>
                 <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                  API Key <span className="text-text-placeholder normal-case font-normal">(leave empty to keep unchanged)</span>
+                  {t('apiKey')} <span className="text-text-placeholder normal-case font-normal">{t('leaveEmptyUnchanged')}</span>
                 </label>
                 <div className="relative mt-1">
                   <input
@@ -141,20 +190,20 @@ export default function TteConfigPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-[6px] bg-navy-700 text-white text-sm font-semibold hover:bg-navy-900 disabled:opacity-50 transition-all"
               >
                 <Save className="w-4 h-4" />
-                {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
+                {saveMutation.isPending ? t('saving') : t('saveConfiguration')}
               </button>
             </div>
 
             {/* Test koneksi */}
             <div className="bg-white rounded-[6px] border border-border-subtle p-6 space-y-4">
-              <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">Connection Test</div>
+              <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">{t('connectionTest')}</div>
               <div>
-                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">NIK for testing</label>
+                <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('nikForTesting')}</label>
                 <input
                   value={testNik}
                   onChange={(e) => setTestNik(e.target.value)}
                   className={`mt-1 ${inputCls}`}
-                  placeholder="16 digit NIK"
+                  placeholder={t('nikPlaceholder')}
                   maxLength={16}
                 />
               </div>
@@ -168,7 +217,7 @@ export default function TteConfigPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-[6px] border-2 border-navy-700/20 text-navy-900 text-sm font-semibold hover:bg-navy-700/8 disabled:opacity-50 transition-all"
               >
                 <TestTube className="w-4 h-4" />
-                {testMutation.isPending ? 'Testing...' : 'Test e-Sign Connection'}
+                {testMutation.isPending ? t('testing') : t('testEsignConnection')}
               </button>
 
               {testResult && (
@@ -183,10 +232,10 @@ export default function TteConfigPage() {
                     )}
                     <span className={`text-sm font-semibold ${testResult.reachable ? 'text-success-text' : 'text-danger-text'}`}>
                       {testResult.reachable && testResult.status < 400
-                        ? 'Connection successful'
+                        ? t('connectionSuccessful')
                         : testResult.status === 401
-                          ? 'Authentication failed - check username/password/API key'
-                          : 'Connection failed'}
+                          ? t('authFailed')
+                          : t('connectionFailed')}
                     </span>
                     {testResult.status && <span className="text-xs text-text-placeholder font-mono">HTTP {testResult.status}</span>}
                   </div>

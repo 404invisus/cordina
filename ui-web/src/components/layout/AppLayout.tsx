@@ -10,6 +10,12 @@ import { getDashboardPath } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useT } from '@/lib/i18n';
+
+const dict = {
+  en: { loading: 'Loading...', signedOut: 'Signed out successfully' },
+  id: { loading: 'Memuat...', signedOut: 'Berhasil keluar' },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout, primaryRole, isAdmin } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const t = useT(dict);
 
   useEffect(() => {
     setMounted(true);
@@ -30,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       await authService.logout();
     } catch {}
     logout();
-    toast.success('Signed out successfully');
+    toast.success(t('signedOut'));
     router.push('/login');
   };
 
@@ -60,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-3">
           <div className="w-9 h-9 border-2 border-navy-700/20 border-t-navy-700 rounded-full animate-spin" />
-          <span className="text-sm text-text-tertiary">Loading...</span>
+          <span className="text-sm text-text-tertiary">{t('loading')}</span>
         </div>
       </div>
     );

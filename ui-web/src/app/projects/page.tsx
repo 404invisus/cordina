@@ -13,28 +13,128 @@ import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import { useT } from '@/lib/i18n';
 
-const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot: string; bar: string }> = {
-  active: { label: 'In progress', bg: '#eaf1f8', color: '#14406a', dot: '#14406a', bar: '#14406a' },
-  on_track: { label: 'On track', bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
-  at_risk: { label: 'At risk', bg: '#fdeceb', color: '#a3231c', dot: '#b3261e', bar: '#b3261e' },
-  awaiting_approval: { label: 'Awaiting approval', bg: '#fbf3e0', color: '#8a6209', dot: '#c9971b', bar: '#c9971b' },
-  completed: { label: 'Completed', bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
-  planned: { label: 'Planned', bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
-  on_hold: { label: 'On hold', bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
+const dict = {
+  en: {
+    statusInProgress: 'In progress',
+    statusOnTrack: 'On track',
+    statusAtRisk: 'At risk',
+    statusAwaitingApproval: 'Awaiting approval',
+    statusCompleted: 'Completed',
+    statusPlanned: 'Planned',
+    statusOnHold: 'On hold',
+    pageTitle: 'Projects',
+    filterAll: 'All',
+    newProjectModalTitle: 'New project',
+    newProject: 'New project',
+    nameLabel: 'NAME',
+    descriptionLabel: 'DESCRIPTION',
+    startDateLabel: 'START DATE',
+    endDateLabel: 'END DATE',
+    divisionLabel: 'DIVISION',
+    nameRequired: 'Name is required',
+    projectNamePlaceholder: 'Project name...',
+    descriptionPlaceholder: 'Scope and goals...',
+    divisionPlaceholder: 'Division or unit name',
+    creating: 'Creating…',
+    createProject: 'Create project',
+    projectCreated: 'Project created!',
+    failedToCreate: 'Failed to create project',
+    subtitleCount: '{total} project{plural} · {active} active · {completed} completed',
+    subtitleEmpty: 'Manage and monitor all team projects',
+    totalProjects: 'Total Projects',
+    allTime: 'all time',
+    activeStat: 'Active',
+    inProgressSub: 'in progress',
+    needsAttention: 'Needs Attention',
+    atRiskPendingSub: 'at risk / pending',
+    completedStat: 'Completed',
+    thisQuarter: 'this quarter',
+    searchProjects: 'Search projects',
+    statusFilterLabel: 'Status: {label}',
+    sortDueDate: 'Sort: Due date ↑',
+    sortNameAz: 'Sort: Name A–Z',
+    sortStatus: 'Sort: Status',
+    noProjectsMatch: 'No projects match your filters',
+    noProjectsYet: 'No projects yet',
+    createFirstProject: 'Create the first project to get started',
+    noProjectsCreated: 'No projects have been created yet',
+    colProject: 'PROJECT',
+    colOwner: 'OWNER',
+    colTeam: 'TEAM',
+    colStatus: 'STATUS',
+    colProgress: 'PROGRESS',
+    colDue: 'DUE',
+    showingOf: 'Showing {filtered} of {total}',
+  },
+  id: {
+    statusInProgress: 'Berjalan',
+    statusOnTrack: 'Sesuai rencana',
+    statusAtRisk: 'Berisiko',
+    statusAwaitingApproval: 'Menunggu persetujuan',
+    statusCompleted: 'Selesai',
+    statusPlanned: 'Direncanakan',
+    statusOnHold: 'Ditunda',
+    pageTitle: 'Proyek',
+    filterAll: 'Semua',
+    newProjectModalTitle: 'Proyek baru',
+    newProject: 'Proyek baru',
+    nameLabel: 'NAMA',
+    descriptionLabel: 'DESKRIPSI',
+    startDateLabel: 'TANGGAL MULAI',
+    endDateLabel: 'TANGGAL SELESAI',
+    divisionLabel: 'DIVISI',
+    nameRequired: 'Nama wajib diisi',
+    projectNamePlaceholder: 'Nama proyek...',
+    descriptionPlaceholder: 'Ruang lingkup dan tujuan...',
+    divisionPlaceholder: 'Nama divisi atau unit',
+    creating: 'Membuat…',
+    createProject: 'Buat proyek',
+    projectCreated: 'Proyek berhasil dibuat!',
+    failedToCreate: 'Gagal membuat proyek',
+    subtitleCount: '{total} proyek · {active} aktif · {completed} selesai',
+    subtitleEmpty: 'Kelola dan pantau semua proyek tim',
+    totalProjects: 'Total Proyek',
+    allTime: 'sepanjang waktu',
+    activeStat: 'Aktif',
+    inProgressSub: 'sedang berjalan',
+    needsAttention: 'Perlu Perhatian',
+    atRiskPendingSub: 'berisiko / menunggu',
+    completedStat: 'Selesai',
+    thisQuarter: 'kuartal ini',
+    searchProjects: 'Cari proyek',
+    statusFilterLabel: 'Status: {label}',
+    sortDueDate: 'Urutkan: Tanggal jatuh tempo ↑',
+    sortNameAz: 'Urutkan: Nama A–Z',
+    sortStatus: 'Urutkan: Status',
+    noProjectsMatch: 'Tidak ada proyek yang cocok dengan filter Anda',
+    noProjectsYet: 'Belum ada proyek',
+    createFirstProject: 'Buat proyek pertama untuk memulai',
+    noProjectsCreated: 'Belum ada proyek yang dibuat',
+    colProject: 'PROYEK',
+    colOwner: 'PEMILIK',
+    colTeam: 'TIM',
+    colStatus: 'STATUS',
+    colProgress: 'PROGRES',
+    colDue: 'JATUH TEMPO',
+    showingOf: 'Menampilkan {filtered} dari {total}',
+  },
 };
 
-const STATUS_FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'active', label: 'In progress' },
-  { value: 'on_track', label: 'On track' },
-  { value: 'at_risk', label: 'At risk' },
-  { value: 'planned', label: 'Planned' },
-  { value: 'on_hold', label: 'On hold' },
-  { value: 'completed', label: 'Completed' },
-];
+const STATUS_CFG: Record<string, { labelKey: string; bg: string; color: string; dot: string; bar: string }> = {
+  active: { labelKey: 'statusInProgress', bg: '#eaf1f8', color: '#14406a', dot: '#14406a', bar: '#14406a' },
+  on_track: { labelKey: 'statusOnTrack', bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
+  at_risk: { labelKey: 'statusAtRisk', bg: '#fdeceb', color: '#a3231c', dot: '#b3261e', bar: '#b3261e' },
+  awaiting_approval: { labelKey: 'statusAwaitingApproval', bg: '#fbf3e0', color: '#8a6209', dot: '#c9971b', bar: '#c9971b' },
+  completed: { labelKey: 'statusCompleted', bg: '#e9f4ee', color: '#0f6144', dot: '#137a52', bar: '#137a52' },
+  planned: { labelKey: 'statusPlanned', bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
+  on_hold: { labelKey: 'statusOnHold', bg: '#f1f0ed', color: '#5c6470', dot: '#8a8f98', bar: '#8a8f98' },
+};
 
-function StatusBadge({ status }: { status: string }) {
+const STATUS_FILTER_VALUES = ['', 'active', 'on_track', 'at_risk', 'planned', 'on_hold', 'completed'];
+
+function StatusBadge({ status, t }: { status: string; t: ReturnType<typeof useT> }) {
   const cfg = STATUS_CFG[status] ?? STATUS_CFG.planned;
   return (
     <span
@@ -42,7 +142,7 @@ function StatusBadge({ status }: { status: string }) {
       style={{ background: cfg.bg, color: cfg.color }}
     >
       <span className="w-[5px] h-[5px] rounded-full flex-none" style={{ background: cfg.dot }} />
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
@@ -64,6 +164,7 @@ function fmtDate(iso: string) {
 }
 
 function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT(dict);
   const qc = useQueryClient();
   const {
     register,
@@ -75,37 +176,37 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     mutationFn: (data: any) => projectService.create(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projects'] });
-      toast.success('Project created!');
+      toast.success(t('projectCreated'));
       reset();
       onClose();
     },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to create project'),
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('failedToCreate')),
   });
 
   return (
-    <Modal open={open} onClose={onClose} title="New project">
+    <Modal open={open} onClose={onClose} title={t('newProjectModalTitle')}>
       <form onSubmit={handleSubmit((d) => mutate(d))} className="flex flex-col gap-[10px]">
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">NAME</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('nameLabel')}</label>
           <input
             {...register('name', { required: true })}
             className="mt-1 w-full h-[32px] px-[10px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none focus:border-navy-700"
-            placeholder="Project name..."
+            placeholder={t('projectNamePlaceholder')}
           />
-          {errors.name && <p className="text-[10.5px] text-danger mt-1">Name is required</p>}
+          {errors.name && <p className="text-[10.5px] text-danger mt-1">{t('nameRequired')}</p>}
         </div>
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">DESCRIPTION</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('descriptionLabel')}</label>
           <textarea
             {...register('description')}
             rows={3}
             className="mt-1 w-full px-[10px] py-[6px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white resize-none focus:outline-none"
-            placeholder="Scope and goals..."
+            placeholder={t('descriptionPlaceholder')}
           />
         </div>
         <div className="grid grid-cols-2 gap-[8px]">
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">START DATE</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('startDateLabel')}</label>
             <input
               {...register('start_date', { required: true })}
               type="date"
@@ -113,7 +214,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             />
           </div>
           <div>
-            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">END DATE</label>
+            <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('endDateLabel')}</label>
             <input
               {...register('end_date', { required: true })}
               type="date"
@@ -122,11 +223,11 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         </div>
         <div>
-          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">DIVISION</label>
+          <label className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral">{t('divisionLabel')}</label>
           <input
             {...register('division')}
             className="mt-1 w-full h-[32px] px-[10px] border border-border-button rounded-[5px] text-[12px] text-navy-800 bg-white focus:outline-none"
-            placeholder="Division or unit name"
+            placeholder={t('divisionPlaceholder')}
           />
         </div>
         <div className="flex gap-[6px] pt-[4px]">
@@ -135,7 +236,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             onClick={onClose}
             className="flex-1 h-[34px] border border-border-button rounded-[6px] text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
@@ -143,7 +244,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             className="flex-1 h-[34px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold disabled:opacity-60 transition-opacity"
             style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
           >
-            {isPending ? 'Creating…' : 'Create project'}
+            {isPending ? t('creating') : t('createProject')}
           </button>
         </div>
       </form>
@@ -151,7 +252,7 @@ function CreateProjectModal({ open, onClose }: { open: boolean; onClose: () => v
   );
 }
 
-function ProjectCard({ project, index }: { project: any; index: number }) {
+function ProjectCard({ project, index, t }: { project: any; index: number; t: ReturnType<typeof useT> }) {
   const cfg = STATUS_CFG[project.status] ?? STATUS_CFG.planned;
   return (
     <motion.div
@@ -165,7 +266,7 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
             <div className="w-[28px] h-[28px] rounded-[5px] bg-info-soft flex items-center justify-center flex-none">
               <FolderKanban className="w-[14px] h-[14px] text-navy-700" />
             </div>
-            <StatusBadge status={project.status} />
+            <StatusBadge status={project.status} t={t} />
           </div>
           <div>
             <div className="text-[12.5px] font-semibold text-navy-800 group-hover:text-navy-700 transition-colors leading-snug">
@@ -187,6 +288,7 @@ function ProjectCard({ project, index }: { project: any; index: number }) {
 }
 
 export default function ProjectsPage() {
+  const t = useT(dict);
   const { hasPermission } = useAuthStore();
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -220,14 +322,14 @@ export default function ProjectsPage() {
   const completed = (projects || []).filter((p: any) => p.status === 'completed').length;
 
   const subtitle = total
-    ? `${total} project${total !== 1 ? 's' : ''} · ${active} active · ${completed} completed`
-    : 'Manage and monitor all team projects';
+    ? t('subtitleCount', { total, plural: total !== 1 ? 's' : '', active, completed })
+    : t('subtitleEmpty');
 
   return (
     <AppLayout>
       <PageHeader
         section="PROJECTS"
-        title="Projects"
+        title={t('pageTitle')}
         subtitle={subtitle}
         actions={
           canCreate ? (
@@ -237,7 +339,7 @@ export default function ProjectsPage() {
               style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
             >
               <Plus className="w-3 h-3" strokeWidth={2.5} />
-              New project
+              {t('newProject')}
             </button>
           ) : undefined
         }
@@ -245,30 +347,30 @@ export default function ProjectsPage() {
 
       {/* StatCards */}
       <div className="grid grid-cols-4 gap-3">
-        <StatCard index={0} title="Total Projects" value={total} subtitle="all time" icon={FolderKanban} color="brand" progress={100} />
+        <StatCard index={0} title={t('totalProjects')} value={total} subtitle={t('allTime')} icon={FolderKanban} color="brand" progress={100} />
         <StatCard
           index={1}
-          title="Active"
+          title={t('activeStat')}
           value={active}
-          subtitle="in progress"
+          subtitle={t('inProgressSub')}
           icon={Activity}
           color="brand"
           progress={total > 0 ? Math.round((active / total) * 100) : 0}
         />
         <StatCard
           index={2}
-          title="Needs Attention"
+          title={t('needsAttention')}
           value={awaiting}
-          subtitle="at risk / pending"
+          subtitle={t('atRiskPendingSub')}
           icon={AlertTriangle}
           color="red"
           progress={total > 0 ? Math.round((awaiting / total) * 100) : 0}
         />
         <StatCard
           index={3}
-          title="Completed"
+          title={t('completedStat')}
           value={completed}
-          subtitle="this quarter"
+          subtitle={t('thisQuarter')}
           icon={CheckCircle2}
           color="green"
           progress={total > 0 ? Math.round((completed / total) * 100) : 0}
@@ -284,7 +386,7 @@ export default function ProjectsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 bg-transparent text-[12px] text-navy-800 placeholder:text-text-placeholder focus:outline-none"
-            placeholder="Search projects"
+            placeholder={t('searchProjects')}
           />
         </div>
 
@@ -295,8 +397,10 @@ export default function ProjectsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-[32px] pl-[11px] pr-[26px] border border-border-input rounded-[6px] text-[12px] font-medium text-text-secondary appearance-none bg-white focus:outline-none cursor-pointer"
           >
-            {STATUS_FILTERS.map((s) => (
-              <option key={s.value} value={s.value}>{`Status: ${s.label}`}</option>
+            {STATUS_FILTER_VALUES.map((v) => (
+              <option key={v} value={v}>
+                {t('statusFilterLabel', { label: v ? t(STATUS_CFG[v]?.labelKey ?? 'filterAll') : t('filterAll') })}
+              </option>
             ))}
           </select>
           <ChevronDown
@@ -312,9 +416,9 @@ export default function ProjectsPage() {
             onChange={(e) => setSortBy(e.target.value as any)}
             className="h-[32px] pl-[11px] pr-[26px] border border-border-input rounded-[6px] text-[12px] font-medium text-text-secondary appearance-none bg-white focus:outline-none cursor-pointer"
           >
-            <option value="due">Sort: Due date ↑</option>
-            <option value="name">Sort: Name A–Z</option>
-            <option value="status">Sort: Status</option>
+            <option value="due">{t('sortDueDate')}</option>
+            <option value="name">{t('sortNameAz')}</option>
+            <option value="status">{t('sortStatus')}</option>
           </select>
           <ChevronDown
             className="absolute right-[7px] top-1/2 -translate-y-1/2 w-[10px] h-[10px] text-text-placeholder pointer-events-none"
@@ -351,8 +455,8 @@ export default function ProjectsPage() {
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <EmptyState
               icon={FolderKanban}
-              title={search || statusFilter ? 'No projects match your filters' : 'No projects yet'}
-              subtitle={canCreate ? 'Create the first project to get started' : 'No projects have been created yet'}
+              title={search || statusFilter ? t('noProjectsMatch') : t('noProjectsYet')}
+              subtitle={canCreate ? t('createFirstProject') : t('noProjectsCreated')}
               action={
                 canCreate && !search && !statusFilter ? (
                   <button
@@ -361,7 +465,7 @@ export default function ProjectsPage() {
                     style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
                   >
                     <Plus className="w-3 h-3" strokeWidth={2.5} />
-                    New project
+                    {t('newProject')}
                   </button>
                 ) : undefined
               }
@@ -375,7 +479,7 @@ export default function ProjectsPage() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[10px]"
           >
             {filtered.map((p: any, i: number) => (
-              <ProjectCard key={p.id} project={p} index={i} />
+              <ProjectCard key={p.id} project={p} index={i} t={t} />
             ))}
           </motion.div>
         ) : (
@@ -390,7 +494,7 @@ export default function ProjectsPage() {
               className="grid px-[15px] h-[30px] items-center border-b border-border-subtle bg-surface-2"
               style={{ gridTemplateColumns: '1fr 132px 116px 130px 104px 78px' }}
             >
-              {['PROJECT', 'OWNER', 'TEAM', 'STATUS', 'PROGRESS', 'DUE'].map((h, i) => (
+              {[t('colProject'), t('colOwner'), t('colTeam'), t('colStatus'), t('colProgress'), t('colDue')].map((h, i) => (
                 <div
                   key={h}
                   className="font-mono text-[9.5px] font-semibold tracking-[0.1em] text-neutral"
@@ -470,7 +574,7 @@ export default function ProjectsPage() {
 
                   {/* Status */}
                   <div>
-                    <StatusBadge status={p.status} />
+                    <StatusBadge status={p.status} t={t} />
                   </div>
 
                   {/* Progress */}
@@ -489,9 +593,7 @@ export default function ProjectsPage() {
 
             {/* Footer */}
             <div className="h-[36px] flex items-center justify-between px-[15px] border-t border-border-subtle bg-surface-2">
-              <span className="text-[11px] text-neutral">
-                Showing {filtered.length} of {total}
-              </span>
+              <span className="text-[11px] text-neutral">{t('showingOf', { filtered: filtered.length, total })}</span>
             </div>
           </motion.div>
         )}

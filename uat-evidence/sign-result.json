@@ -1,0 +1,14 @@
+{
+  "signResp": [
+    {
+      "url": "/v1/esign/warmup",
+      "status": 200,
+      "body": "{\"data\":{\"upstream\":\"ok\",\"latency_ms\":201}}"
+    }
+  ],
+  "shots": [
+    "shots/3.6.1-1a_cr-menunggu-tanda-tangan.png",
+    "shots/3.6.1-1b_dialog-tanda-tangan.png",
+    "shots/3.6.1-1c_hasil-tanda-tangan.png"
+  ]
+}

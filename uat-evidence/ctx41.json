@@ -1,0 +1,19 @@
+{
+  "SPRINT": "Sprint UAT 627832",
+  "cardBtns": [
+    "Overview",
+    "Board",
+    "Sprints",
+    "Epics",
+    "Members",
+    "+ Create Sprint",
+    "Start Sprint"
+  ],
+  "addBacklogOk": false,
+  "nRows": 0,
+  "shots": {
+    "sBacklogModal": "shots/4.1-3a_pilih-backlog-untuk-sprint.png",
+    "sBacklogPick": "shots/4.1-3b_backlog-dipilih.png",
+    "sBacklogAfter": "shots/4.1-3c_backlog-masuk-sprint.png"
+  }
+}

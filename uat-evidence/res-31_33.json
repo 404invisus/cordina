@@ -1,0 +1,126 @@
+[
+  {
+    "id": "3.1-1",
+    "scenario": "Login dengan kredensial valid",
+    "verdict": "PASS",
+    "notes": "Login pm@test.com (role project_manager) berhasil dan sistem melakukan redirect otomatis ke /dashboard/project-manager, yaitu dashboard yang sesuai dengan role pengguna. Tidak ditemukan error konsol maupun HTTP selama proses login.",
+    "shots": [
+      "shots/3.1-1_login-valid-redirect.png"
+    ]
+  },
+  {
+    "id": "3.1-2",
+    "scenario": "Login dengan password salah",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Sistem menolak login: backend membalas HTTP 401 (terverifikasi) dan pengguna tetap ditahan di halaman login. Pesan error yang ditampilkan: \"Invalid credentials\". CATATAN KETIDAKSESUAIAN: dokumen mengharapkan pesan \"Email atau password salah\" dalam Bahasa Indonesia, sedangkan aplikasi menampilkan pesan dalam Bahasa Inggris.",
+    "shots": [
+      "shots/3.1-2_login-password-salah.png"
+    ]
+  },
+  {
+    "id": "3.1-3",
+    "scenario": "Logout dari sistem",
+    "verdict": "PASS",
+    "notes": "Klik \"Sign Out\" pada panel profil mengakhiri sesi dan mengalihkan pengguna ke /login. Verifikasi tambahan: percobaan membuka kembali halaman terproteksi /dashboard/project-manager setelah logout dialihkan otomatis ke /login, membuktikan token sesi tidak dapat digunakan kembali.",
+    "shots": [
+      "shots/3.1-3a_sebelum-logout.png",
+      "shots/3.1-3b_setelah-logout.png",
+      "shots/3.1-3c_akses-ulang-ditolak.png"
+    ]
+  },
+  {
+    "id": "3.2-1",
+    "scenario": "Dashboard Kepala Balai / Product Owner",
+    "verdict": "PASS",
+    "notes": "Login po@test.com diarahkan ke /dashboard/kepala-balai. Ekspektasi konten: ringkasan semua proyek, grafik, dan aktivitas tim. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Monitor all projects and team\",\"New project\",\"Change Request\",\"10 total CR\",\"View all\",\"0\",\"Draft\",\"4\",\"Submitted\",\"5\",\"Approved\",\"1\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-1_dashboard-po.png"
+    ]
+  },
+  {
+    "id": "3.2-2",
+    "scenario": "Dashboard Kepala Seksi / Product Manager",
+    "verdict": "PASS",
+    "notes": "Login pdm@test.com diarahkan ke /dashboard/kepala-seksi. Ekspektasi konten: sprint aktif, task, dan workload tim. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Supervise team workload distribution\",\"Workload\",\"Reports\",\"TOTAL PROJECTS\",\"0\",\"all projects\",\"ACTIVE PROJECTS\",\"0\",\"in progress\",\"WORKLOAD\",\"→\",\"team distribution\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-2_dashboard-pdm.png"
+    ]
+  },
+  {
+    "id": "3.2-3",
+    "scenario": "Dashboard Project Manager",
+    "verdict": "PASS",
+    "notes": "Login pm@test.com diarahkan ke /dashboard/project-manager. Ekspektasi konten: task dan jadwal, serta progress pekerjaan. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Welcome, Project Manager\",\"New Sprint\",\"TOTAL PROJECTS\",\"2\",\"2 active\",\"MY TASKS\",\"0\",\"0 completed\",\"IN PROGRESS\",\"0\",\"being worked on\",\"TO DO\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-3_dashboard-pm.png"
+    ]
+  },
+  {
+    "id": "3.2-4",
+    "scenario": "Dashboard Scrum Master",
+    "verdict": "PASS",
+    "notes": "Login sm@test.com diarahkan ke /dashboard/scrum-master. Ekspektasi konten: task dan jadwal, serta progress pekerjaan. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Dashboard\",\"Manage sprints and monitor burndown\",\"Workload\",\"TOTAL PROJECTS\",\"2\",\"all projects\",\"ACTIVE PROJECTS\",\"2\",\"in progress\",\"COMPLETED\",\"0\",\"finished\",\"WORKLOAD\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-4_dashboard-sm.png"
+    ]
+  },
+  {
+    "id": "3.2-5",
+    "scenario": "Dashboard Staff",
+    "verdict": "PASS",
+    "notes": "Login staff@test.com diarahkan ke /dashboard/staff. Ekspektasi konten: task pribadi dan jadwal terdekat. Elemen yang terbaca pada dashboard: [\"OVERVIEW\",\"Hello, Staff Satu\",\"Tasks assigned to you\",\"All Tasks\",\"Change Request\",\"7 total CR\",\"View all\",\"0\",\"Draft\",\"4\",\"Submitted\",\"2\",\"Approved\",\"1\"]. Error HTTP: tidak ada.",
+    "shots": [
+      "shots/3.2-5_dashboard-staff.png"
+    ]
+  },
+  {
+    "id": "3.3.1-1",
+    "scenario": "Lihat kalender bulanan/mingguan",
+    "verdict": "PASS",
+    "notes": "Halaman /calendar menyediakan toggle tampilan Day / Week / Month / Agenda. Pada tampilan Month periode yang ditampilkan adalah \"July 2026\"; setelah beralih ke Week periode berubah menjadi \"27 July – 2 August 2026\" dan grid tanggal menyesuaikan. Kegiatan tampil pada tanggal yang sesuai di kedua tampilan.",
+    "shots": [
+      "shots/3.3.1-1a_kalender-bulanan.png",
+      "shots/3.3.1-1b_kalender-mingguan.png"
+    ]
+  },
+  {
+    "id": "3.3.2-1",
+    "scenario": "Tambah agenda kegiatan",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Kegiatan \"UAT Rapat Publik 594097\" dibuat melalui /calendar -> \"New event\" dan tampil di kalender. Seluruh isian tersimpan: judul, tipe, visibility, tanggal 2026-07-31, waktu 09:00-11:00, lokasi, dan deskripsi. CATATAN KETIDAKSESUAIAN: form \"New event\" di /calendar TIDAK memiliki field peserta, sedangkan dokumen mengharapkan pengisian peserta pada langkah ini. Pengelolaan peserta hanya tersedia di /admin/calendar (khusus administrator).",
+    "shots": [
+      "shots/3.3.2-1a_form-tambah-kegiatan.png",
+      "shots/3.3.2-1b_kegiatan-muncul-di-kalender.png"
+    ]
+  },
+  {
+    "id": "3.3.3-2",
+    "scenario": "Acara publik vs privat",
+    "verdict": "PASS",
+    "notes": "Dibuat dua acara oleh pm@test.com: \"UAT Rapat Publik 594097\" (Public) dan \"UAT Rapat Privat 594097\" (Private). Dilihat oleh pemilik keduanya tampil (publik=1, privat=1). Dilihat oleh staff@test.com yang bukan peserta: acara publik TAMPIL, acara privat TIDAK TAMPIL. Perilaku sesuai ekspektasi — acara publik terlihat seluruh pengguna sedangkan acara privat hanya terlihat peserta yang diundang.",
+    "shots": [
+      "shots/3.3.3-2a_form-acara-privat.png",
+      "shots/3.3.3-2b_pemilik-melihat-kedua-acara.png",
+      "shots/3.3.3-2c_pengguna-lain-bukan-peserta.png"
+    ]
+  },
+  {
+    "id": "3.3.1-2",
+    "scenario": "Privasi kalender antar pengguna",
+    "verdict": "PASS",
+    "notes": "Login sebagai pengguna berbeda (staff@test.com) lalu membuka /calendar. Kalender hanya menampilkan kegiatan yang relevan/dibagikan sesuai hak akses: acara publik \"UAT Rapat Publik 594097\" terlihat, sedangkan acara privat milik pengguna lain \"UAT Rapat Privat 594097\" tidak terlihat. Catatan: sistem tidak menyediakan fitur \"membuka kalender milik pengguna lain\" secara eksplisit; pemisahan privasi dilakukan melalui kombinasi visibility (public/private) dan daftar peserta.",
+    "shots": [
+      "shots/3.3.3-2c_pengguna-lain-bukan-peserta.png"
+    ]
+  },
+  {
+    "id": "3.3.2-3",
+    "scenario": "Hapus agenda kegiatan",
+    "verdict": "PASS",
+    "notes": "Kegiatan \"UAT Rapat Privat 594097\" dibuka dari kalender, dipilih Delete, lalu dikonfirmasi. Setelah penghapusan kegiatan tersebut sudah tidak tampil lagi di kalender.",
+    "shots": [
+      "shots/3.3.2-3a_detail-sebelum-hapus.png",
+      "shots/3.3.2-3b_setelah-hapus.png"
+    ]
+  }
+]

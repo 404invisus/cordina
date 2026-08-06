@@ -3,20 +3,22 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { RefreshCw, AlertTriangle, Clock, FolderKanban, CheckSquare, GitMerge, Calendar, User } from 'lucide-react';
+import { RefreshCw, AlertTriangle, Clock, FolderKanban, CheckSquare, GitMerge, Calendar, User, FileSignature } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
-import { dailyBriefService, calendarService, changeRequestService, taskService } from '@/lib/api';
+import { dailyBriefService, calendarService, changeRequestService, taskService, tteSignService } from '@/lib/api';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import { useLocale, useT } from '@/lib/i18n';
+import type { Locale } from '@/lib/i18n';
 
-function fmtTime(d: Date) {
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+function fmtTime(d: Date, locale: Locale = 'en') {
+  return d.toLocaleTimeString(locale === 'id' ? 'id-ID' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
-function fmtDayDate(d: Date) {
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+function fmtDayDate(d: Date, locale: Locale = 'en') {
+  return d.toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 function todayStr() {
@@ -44,7 +46,21 @@ type ActionItem = {
 
 type MyTaskCounts = { overdue: number; dueToday: number; doneToday: number };
 
-function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCount: number): ActionItem[] {
+type WaitingItem = {
+  id: string;
+  Icon: React.ElementType;
+  href: string;
+  title: string;
+  meta: string;
+};
+
+function buildActionItems(
+  data: any,
+  myTasks: MyTaskCounts,
+  awaitingApprovalCount: number,
+  awaitingSignatureCount: number,
+  t: ReturnType<typeof useT>,
+): ActionItem[] {
   const items: ActionItem[] = [];
 
   const { overdue, dueToday, doneToday } = myTasks;
@@ -56,9 +72,9 @@ function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCoun
       Icon: AlertTriangle,
       iconBg: '#fdeceb',
       iconColor: '#a3231c',
-      title: `${overdue} of your task${overdue > 1 ? 's are' : ' is'} overdue`,
-      meta: 'These are assigned to you and have passed their due date',
-      cta: 'Open',
+      title: t('overdueTasksTitle', { count: overdue, s: overdue > 1 ? 's are' : ' is' }),
+      meta: t('overdueTasksMeta'),
+      cta: t('open'),
       href: '/tasks',
     });
   }
@@ -68,9 +84,9 @@ function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCoun
       Icon: Clock,
       iconBg: '#eaf1f8',
       iconColor: '#14406a',
-      title: `${dueToday} of your task${dueToday > 1 ? 's' : ''} due today`,
-      meta: `${doneToday} completed so far today`,
-      cta: 'View',
+      title: t('dueTodayTitle', { count: dueToday, s: dueToday > 1 ? 's' : '' }),
+      meta: t('dueTodayMeta', { count: doneToday }),
+      cta: t('common.view'),
       href: '/tasks',
     });
   }
@@ -80,10 +96,22 @@ function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCoun
       Icon: GitMerge,
       iconBg: '#fbf3e0',
       iconColor: '#8a6209',
-      title: `${awaitingApprovalCount} change request${awaitingApprovalCount > 1 ? 's' : ''} need your approval`,
-      meta: 'Your review is the next step in the workflow',
-      cta: 'Review',
+      title: t('approvalsTitle', { count: awaitingApprovalCount, s: awaitingApprovalCount > 1 ? 's' : '' }),
+      meta: t('approvalsMeta'),
+      cta: t('review'),
       href: '/change-management',
+    });
+  }
+  if (awaitingSignatureCount > 0) {
+    items.push({
+      id: 'signatures',
+      Icon: FileSignature,
+      iconBg: '#eaf1f8',
+      iconColor: '#14406a',
+      title: t('signaturesTitle', { count: awaitingSignatureCount, s: awaitingSignatureCount > 1 ? 's' : '' }),
+      meta: t('signaturesMeta'),
+      cta: t('sign'),
+      href: '/tte-sign',
     });
   }
   if (activePrj > 0) {
@@ -92,9 +120,9 @@ function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCoun
       Icon: FolderKanban,
       iconBg: '#eaf1f8',
       iconColor: '#14406a',
-      title: `${activePrj} active project${activePrj > 1 ? 's' : ''}`,
-      meta: `${data?.projects?.total ?? 0} projects total in the system`,
-      cta: 'View',
+      title: t('activeProjectsTitle', { count: activePrj, s: activePrj > 1 ? 's' : '' }),
+      meta: t('activeProjectsMeta', { count: data?.projects?.total ?? 0 }),
+      cta: t('common.view'),
       href: '/projects',
     });
   }
@@ -104,7 +132,7 @@ function buildActionItems(data: any, myTasks: MyTaskCounts, awaitingApprovalCoun
 
 type PulseStat = { label: string; value: number; pct?: number; barColor: string };
 
-function buildPulseStats(data: any, awaitingApprovalCount: number): PulseStat[] {
+function buildPulseStats(data: any, awaitingApprovalCount: number, t: ReturnType<typeof useT>): PulseStat[] {
   const totalPrj = data?.projects?.total ?? 0;
   const activePrj = data?.projects?.active ?? 0;
   const dueToday = data?.tasks?.due_today ?? 0;
@@ -113,24 +141,24 @@ function buildPulseStats(data: any, awaitingApprovalCount: number): PulseStat[] 
 
   return [
     {
-      label: 'ACTIVE PROJECTS',
+      label: t('activeProjectsLabel'),
       value: activePrj,
       barColor: '#14406a',
       pct: totalPrj > 0 ? Math.round((activePrj / totalPrj) * 100) : 0,
     },
     {
-      label: 'DUE TODAY',
+      label: t('dueTodayLabel'),
       value: dueToday,
       barColor: '#14406a',
       pct: dueToday + doneToday > 0 ? Math.round((doneToday / (dueToday + doneToday)) * 100) : undefined,
     },
     {
-      label: 'AWAITING APPROVAL',
+      label: t('awaitingApprovalLabel'),
       value: awaitingApprovalCount,
       barColor: '#c9971b',
     },
     {
-      label: 'OVERDUE',
+      label: t('overdueLabel'),
       value: overdue,
       barColor: '#b3261e',
       pct: overdue + dueToday > 0 ? Math.round((overdue / (overdue + dueToday)) * 100) : undefined,
@@ -138,7 +166,90 @@ function buildPulseStats(data: any, awaitingApprovalCount: number): PulseStat[] 
   ];
 }
 
+const dict = {
+  en: {
+    yourDay: 'YOUR DAY',
+    dailyBrief: 'Daily Brief',
+    subtitle: '{day} · {count} things need you · updated {time} WIB',
+    failedToLoad: 'Failed to load data',
+    overdueTasksTitle: '{count} of your task{s} overdue',
+    overdueTasksMeta: 'These are assigned to you and have passed their due date',
+    open: 'Open',
+    dueTodayTitle: '{count} of your task{s} due today',
+    dueTodayMeta: '{count} completed so far today',
+    approvalsTitle: '{count} change request{s} need your approval',
+    approvalsMeta: 'Your review is the next step in the workflow',
+    review: 'Review',
+    signaturesTitle: '{count} document{s} need your signature',
+    signaturesMeta: 'You are the next signer in the e-Sign order',
+    sign: 'Sign',
+    activeProjectsTitle: '{count} active project{s}',
+    activeProjectsMeta: '{count} projects total in the system',
+    activeProjectsLabel: 'ACTIVE PROJECTS',
+    dueTodayLabel: 'DUE TODAY',
+    awaitingApprovalLabel: 'AWAITING APPROVAL',
+    overdueLabel: 'OVERDUE',
+    needsYouToday: 'Needs you today',
+    nothingNeedsYouToday: 'Nothing needs you today',
+    allCaughtUp: "You're all caught up.",
+    institutionPulse: 'Institution pulse',
+    rightNow: 'RIGHT NOW',
+    yourAgenda: 'Your agenda',
+    today: 'TODAY',
+    noEventsToday: 'No events scheduled for today',
+    allDay: 'All day',
+    viewFullCalendar: 'View full calendar',
+    waitingOnOthers: 'Waiting on other people',
+    nothingWaiting: 'Nothing is waiting on others right now',
+    step: 'Step {current}/{total}',
+    signedCount: 'Signed {signed}/{total} · {note}',
+    youRequestedThis: 'you requested this',
+    earlierSignersFirst: 'earlier signers first',
+  },
+  id: {
+    yourDay: 'HARI ANDA',
+    dailyBrief: 'Ringkasan Harian',
+    subtitle: '{day} · {count} hal memerlukan perhatian Anda · diperbarui {time} WIB',
+    failedToLoad: 'Gagal memuat data',
+    overdueTasksTitle: '{count} tugas Anda terlambat',
+    overdueTasksMeta: 'Tugas ini ditugaskan kepada Anda dan telah melewati batas waktu',
+    open: 'Buka',
+    dueTodayTitle: '{count} tugas Anda jatuh tempo hari ini',
+    dueTodayMeta: '{count} selesai sejauh ini hari ini',
+    approvalsTitle: '{count} permintaan perubahan memerlukan persetujuan Anda',
+    approvalsMeta: 'Tinjauan Anda adalah langkah berikutnya dalam alur kerja',
+    review: 'Tinjau',
+    signaturesTitle: '{count} dokumen memerlukan tanda tangan Anda',
+    signaturesMeta: 'Anda adalah penanda tangan berikutnya dalam urutan e-Sign',
+    sign: 'Tanda Tangani',
+    activeProjectsTitle: '{count} proyek aktif',
+    activeProjectsMeta: '{count} proyek total dalam sistem',
+    activeProjectsLabel: 'PROYEK AKTIF',
+    dueTodayLabel: 'JATUH TEMPO HARI INI',
+    awaitingApprovalLabel: 'MENUNGGU PERSETUJUAN',
+    overdueLabel: 'TERLAMBAT',
+    needsYouToday: 'Memerlukan perhatian Anda hari ini',
+    nothingNeedsYouToday: 'Tidak ada yang memerlukan perhatian Anda hari ini',
+    allCaughtUp: 'Semua sudah selesai.',
+    institutionPulse: 'Denyut institusi',
+    rightNow: 'SAAT INI',
+    yourAgenda: 'Agenda Anda',
+    today: 'HARI INI',
+    noEventsToday: 'Tidak ada acara terjadwal hari ini',
+    allDay: 'Sepanjang hari',
+    viewFullCalendar: 'Lihat kalender lengkap',
+    waitingOnOthers: 'Menunggu orang lain',
+    nothingWaiting: 'Tidak ada yang sedang menunggu orang lain saat ini',
+    step: 'Langkah {current}/{total}',
+    signedCount: 'Ditandatangani {signed}/{total} · {note}',
+    youRequestedThis: 'Anda yang meminta ini',
+    earlierSignersFirst: 'penanda tangan sebelumnya terlebih dahulu',
+  },
+};
+
 export default function DailyBriefPage() {
+  const t = useT(dict);
+  const { locale } = useLocale();
   const { user } = useAuthStore();
 
   const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
@@ -165,17 +276,51 @@ export default function DailyBriefPage() {
     enabled: !!user?.id,
   });
 
+  const { data: myTteRequests } = useQuery({
+    queryKey: ['daily-brief-tte', user?.id],
+    queryFn: () => tteSignService.list().then((r) => r.data.data || []),
+    enabled: !!user?.id,
+  });
+
+  const awaitingSignature = useMemo(
+    () => (myTteRequests || []).filter((d: any) => d.can_sign),
+    [myTteRequests],
+  );
+
   const awaitingApproval = useMemo(
     () => (myChangeRequests || []).filter((cr: any) => isMyTurn(cr, user?.id || '')),
     [myChangeRequests, user?.id],
   );
-  const waitingOnOthers = useMemo(
-    () =>
-      (myChangeRequests || []).filter(
-        (cr: any) => cr.requester_id === user?.id && cr.status === 'submitted' && !isMyTurn(cr, user?.id || ''),
-      ),
-    [myChangeRequests, user?.id],
-  );
+  const waitingOnOthers = useMemo((): WaitingItem[] => {
+    const crs: WaitingItem[] = (myChangeRequests || [])
+      .filter((cr: any) => cr.requester_id === user?.id && cr.status === 'submitted' && !isMyTurn(cr, user?.id || ''))
+      .map((cr: any) => ({
+        id: `cr-${cr.id}`,
+        Icon: GitMerge,
+        href: '/change-management',
+        title: cr.title,
+        meta: t('step', { current: cr.current_step ?? 0, total: cr.total_steps ?? '-' }),
+      }));
+
+    const docs: WaitingItem[] = (myTteRequests || [])
+      .filter(
+        (d: any) =>
+          !d.can_sign && d.status === 'waiting_signature' && (d.my_role === 'signer' || d.my_role === 'creator'),
+      )
+      .map((d: any) => ({
+        id: `tte-${d.id}`,
+        Icon: FileSignature,
+        href: '/tte-sign',
+        title: d.title,
+        meta: t('signedCount', {
+          signed: d.signed_count ?? 0,
+          total: d.signer_count ?? 0,
+          note: d.my_role === 'creator' ? t('youRequestedThis') : t('earlierSignersFirst'),
+        }),
+      }));
+
+    return [...crs, ...docs];
+  }, [myChangeRequests, myTteRequests, user?.id, t]);
 
   const myTaskCounts = useMemo((): MyTaskCounts => {
     const todayMidnight = new Date();
@@ -190,17 +335,19 @@ export default function DailyBriefPage() {
   }, [myTasksRaw]);
 
   const now = new Date();
-  const updatedTime = dataUpdatedAt ? fmtTime(new Date(dataUpdatedAt)) : fmtTime(now);
-  const actionItems = data ? buildActionItems(data, myTaskCounts, awaitingApproval.length) : [];
-  const pulseStats = data ? buildPulseStats(data, awaitingApproval.length) : [];
-  const dayDateLabel = fmtDayDate(now);
+  const updatedTime = dataUpdatedAt ? fmtTime(new Date(dataUpdatedAt), locale) : fmtTime(now, locale);
+  const actionItems = data
+    ? buildActionItems(data, myTaskCounts, awaitingApproval.length, awaitingSignature.length, t)
+    : [];
+  const pulseStats = data ? buildPulseStats(data, awaitingApproval.length, t) : [];
+  const dayDateLabel = fmtDayDate(now, locale);
 
   return (
     <AppLayout>
       <PageHeader
-        section="YOUR DAY"
-        title="Daily Brief"
-        subtitle={`${dayDateLabel} · ${actionItems.length} things need you · updated ${updatedTime} WIB`}
+        section={t('yourDay')}
+        title={t('dailyBrief')}
+        subtitle={t('subtitle', { day: dayDateLabel, count: actionItems.length, time: updatedTime })}
         actions={
           <>
             <button
@@ -209,7 +356,7 @@ export default function DailyBriefPage() {
               className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary disabled:opacity-50 hover:bg-surface-2 transition-colors"
             >
               <RefreshCw className={cn('w-3 h-3', isFetching && 'animate-spin')} />
-              Refresh
+              {t('common.refresh')}
             </button>
           </>
         }
@@ -222,9 +369,9 @@ export default function DailyBriefPage() {
       ) : !data ? (
         <div className="bg-white border border-border rounded-[6px] p-12 text-center">
           <AlertTriangle className="w-7 h-7 text-border-button mx-auto mb-3" />
-          <p className="text-[12.5px] font-semibold text-text-placeholder">Failed to load data</p>
+          <p className="text-[12.5px] font-semibold text-text-placeholder">{t('failedToLoad')}</p>
           <button onClick={() => refetch()} className="mt-3 text-[12px] text-navy-700 font-semibold hover:underline">
-            Try again
+            {t('common.tryAgain')}
           </button>
         </div>
       ) : (
@@ -234,7 +381,7 @@ export default function DailyBriefPage() {
             {/* Needs you today */}
             <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden">
               <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                <span className="text-[12.5px] font-semibold text-navy-900">Needs you today</span>
+                <span className="text-[12.5px] font-semibold text-navy-900">{t('needsYouToday')}</span>
                 <div className="ml-auto">
                   <span className="inline-flex items-center h-[20px] px-[8px] rounded-[3px] bg-gold-500 text-navy-800 font-mono text-[10.5px] font-bold">
                     {actionItems.length}
@@ -245,8 +392,8 @@ export default function DailyBriefPage() {
               {actionItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center px-6">
                   <CheckSquare className="w-8 h-8 text-success mb-2" />
-                  <p className="text-[12.5px] font-semibold text-navy-900">Nothing needs you today</p>
-                  <p className="text-[11px] text-neutral mt-0.5">You&apos;re all caught up.</p>
+                  <p className="text-[12.5px] font-semibold text-navy-900">{t('nothingNeedsYouToday')}</p>
+                  <p className="text-[11px] text-neutral mt-0.5">{t('allCaughtUp')}</p>
                 </div>
               ) : (
                 actionItems.map((item, i) => (
@@ -281,8 +428,8 @@ export default function DailyBriefPage() {
             {/* Institution pulse */}
             <div className="bg-white border border-border rounded-[6px]">
               <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                <span className="text-[12.5px] font-semibold text-navy-900">Institution pulse</span>
-                <span className="ml-auto font-mono text-[9.5px] text-text-meta">RIGHT NOW</span>
+                <span className="text-[12.5px] font-semibold text-navy-900">{t('institutionPulse')}</span>
+                <span className="ml-auto font-mono text-[9.5px] text-text-meta">{t('rightNow')}</span>
               </div>
               <div className="px-[15px] py-[12px] grid grid-cols-4 gap-[14px]">
                 {pulseStats.map((s, i) => (
@@ -313,14 +460,14 @@ export default function DailyBriefPage() {
             {/* Your agenda */}
             <div className="bg-white border border-border rounded-[6px]">
               <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle gap-[10px]">
-                <span className="text-[12.5px] font-semibold text-navy-900">Your agenda</span>
-                <span className="ml-auto font-mono text-[9.5px] text-text-meta">TODAY</span>
+                <span className="text-[12.5px] font-semibold text-navy-900">{t('yourAgenda')}</span>
+                <span className="ml-auto font-mono text-[9.5px] text-text-meta">{t('today')}</span>
               </div>
               <div className="px-[15px] py-[13px] pb-[6px] flex flex-col">
                 {!todayEvents || todayEvents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-6 text-center">
                     <Calendar className="w-7 h-7 text-border mb-2" />
-                    <p className="text-[11px] text-neutral">No events scheduled for today</p>
+                    <p className="text-[11px] text-neutral">{t('noEventsToday')}</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-[9px] pb-[8px]">
@@ -331,7 +478,7 @@ export default function DailyBriefPage() {
                         className="flex items-center gap-[9px] hover:opacity-70 transition-opacity"
                       >
                         <span className="font-mono text-[10px] text-text-meta w-[42px] flex-none">
-                          {e.all_day ? 'All day' : (e.start_time?.slice(0, 5) ?? '-')}
+                          {e.all_day ? t('allDay') : (e.start_time?.slice(0, 5) ?? '-')}
                         </span>
                         <span className="text-[12px] text-navy-800 font-medium truncate flex-1 min-w-0">{e.title}</span>
                       </Link>
@@ -340,7 +487,7 @@ export default function DailyBriefPage() {
                 )}
                 <div className="pt-[8px] border-t border-border-subtle mt-[2px]">
                   <Link href="/calendar" className="text-[11px] text-navy-700 font-semibold hover:underline">
-                    View full calendar
+                    {t('viewFullCalendar')}
                   </Link>
                 </div>
               </div>
@@ -349,25 +496,23 @@ export default function DailyBriefPage() {
             {/* Waiting on other people */}
             <div className="bg-white border border-border rounded-[6px] flex flex-col overflow-hidden">
               <div className="h-[40px] flex-none flex items-center px-[15px] border-b border-border-subtle">
-                <span className="text-[12.5px] font-semibold text-navy-900">Waiting on other people</span>
+                <span className="text-[12.5px] font-semibold text-navy-900">{t('waitingOnOthers')}</span>
               </div>
               <div className="px-[15px] py-[11px] flex flex-col gap-[10px]">
                 {waitingOnOthers.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-4 text-center">
                     <User className="w-6 h-6 text-border mb-2" />
-                    <p className="text-[11px] text-neutral">Nothing is waiting on others right now</p>
+                    <p className="text-[11px] text-neutral">{t('nothingWaiting')}</p>
                   </div>
                 ) : (
-                  waitingOnOthers.slice(0, 5).map((cr: any) => (
-                    <Link key={cr.id} href="/change-management" className="flex items-center gap-[9px] hover:opacity-70 transition-opacity">
+                  waitingOnOthers.slice(0, 5).map((item) => (
+                    <Link key={item.id} href={item.href} className="flex items-center gap-[9px] hover:opacity-70 transition-opacity">
                       <div className="w-[26px] h-[26px] flex-none rounded-[5px] bg-pending-soft flex items-center justify-center">
-                        <GitMerge className="w-[13px] h-[13px] text-pending-text" strokeWidth={1.5} />
+                        <item.Icon className="w-[13px] h-[13px] text-pending-text" strokeWidth={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[11.5px] font-semibold text-navy-800 truncate">{cr.title}</div>
-                        <div className="text-[10.5px] text-neutral">
-                          Step {cr.current_step ?? 0}/{cr.total_steps ?? '-'}
-                        </div>
+                        <div className="text-[11.5px] font-semibold text-navy-800 truncate">{item.title}</div>
+                        <div className="text-[10.5px] text-neutral truncate">{item.meta}</div>
                       </div>
                     </Link>
                   ))

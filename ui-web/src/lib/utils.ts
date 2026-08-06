@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { commonDict } from '@/lib/i18n/common-dict';
+import type { Locale } from '@/lib/i18n/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,15 +18,8 @@ export function getRoleBadgeColor(role: string) {
   return colors[role] || 'bg-border-subtle text-text-secondary';
 }
 
-export function getRoleLabel(role: string) {
-  const labels: Record<string, string> = {
-    kepala_balai: 'Product Owner',
-    kepala_seksi: 'Product Manager',
-    project_manager: 'Project Manager',
-    scrum_master: 'Scrum Master',
-    staff: 'Staff',
-  };
-  return labels[role] || role;
+export function getRoleLabel(role: string, locale: Locale = 'en') {
+  return commonDict[locale][`role_${role}`] ?? commonDict.en[`role_${role}`] ?? role;
 }
 
 export function getInitials(name: string) {

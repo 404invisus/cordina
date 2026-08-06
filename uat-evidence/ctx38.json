@@ -1,0 +1,30 @@
+{
+  "NAME": "Pengguna UAT 75937",
+  "EMAIL": "uat75937@test.com",
+  "STAMP": "75937",
+  "roleChanged": false,
+  "menu": {
+    "ok": true,
+    "labels": [
+      "(ikon)"
+    ]
+  },
+  "afterMenuBtns": [
+    "Sign Out",
+    "A",
+    "Export PDF",
+    "Add User",
+    "All",
+    "Kepala Balai · 2",
+    "Kepala Seksi · 1",
+    "Project Manager · 1",
+    "Scrum Master · 1",
+    "Staff · 8",
+    "Administrator · 1",
+    "Edit User",
+    "Change Role",
+    "Manage Privileges",
+    "Deactivate",
+    "Delete"
+  ]
+}

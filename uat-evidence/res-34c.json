@@ -1,0 +1,13 @@
+[
+  {
+    "id": "3.4.2-1",
+    "scenario": "Tambah Epic ke proyek",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Pada detail proyek \"Proyek UAT 627832\" dibuka tab Epics -> \"Create Epic\", diisi judul \"Epic UAT 627832\", deskripsi, status, dan periode, lalu disimpan (respons HTTP 201). Epic muncul di daftar Epic proyek sesuai hierarki Proyek > Epic > Backlog/Task, lengkap dengan penanda status dan rentang tanggal. CATATAN CACAT MINOR: dropdown Status pada form tampil KOSONG saat modal dibuka, karena nilai bawaan form adalah \"active\" sedangkan opsi yang tersedia hanya [\"todo\",\"in_progress\",\"done\"] — nilai bawaan tidak cocok dengan opsi manapun (terverifikasi: nilai select = \"\" saat modal dibuka). Data tetap tersimpan karena backend menormalkan status menjadi \"open\", sehingga terdapat tiga kosakata status yang tidak konsisten antara nilai bawaan form, opsi dropdown, dan nilai yang tersimpan di basis data.",
+    "shots": [
+      "shots/3.4.2-1a_tab-epic.png",
+      "shots/3.4.2-1b_form-tambah-epic.png",
+      "shots/3.4.2-1c_epic-di-daftar.png"
+    ]
+  }
+]

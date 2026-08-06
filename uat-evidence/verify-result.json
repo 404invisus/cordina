@@ -1,0 +1,44 @@
+{
+  "vresp": [
+    {
+      "s": 200,
+      "b": "{\"data\":{\"warning\":[\"The algorithm RSA with key size 2048 is no longer considered reliable for signature creation!\"],\"signatureCount\":1,\"description\":\"Dokumen valid, Sertifikat yang digunakan terpercaya\",\"conclusion\":\"VALID\",\"signatureInformations\":[{\"location\":\"null\",\"id\":\"S-2ED63E1922C39B3C3B2F86F83C57993E65EF8D5636526A5B93F5F6BC9BA22523\",\"fieldName\":\"Signature1\",\"digestAlgorithm\":null,\"signatur"
+    }
+  ],
+  "vtxt": [
+    "ConnectOne",
+    "BLPID · BSSN",
+    "WORKSPACE",
+    "Dashboard",
+    "Projects",
+    "Tasks",
+    "Workload",
+    "Calendar",
+    "Reports",
+    "Notifications",
+    "20",
+    "RECORDS",
+    "Storage",
+    "Physical Assets",
+    "Official Documents",
+    "GOVERNANCE",
+    "Change Management",
+    "e-Sign",
+    "e-Sign Distribution",
+    "BRIEFING",
+    "Daily Brief",
+    "PM",
+    "Project Manager",
+    "PROJECT MANAGER",
+    "Settings",
+    "Sign Out",
+    "Friday, 31 July 2026",
+    "Search",
+    "PM",
+    "Verify signature"
+  ],
+  "shots": [
+    "shots/3.6.3-1a_daftar-dokumen-tte.png",
+    "shots/3.6.3-1b_hasil-verifikasi.png"
+  ]
+}

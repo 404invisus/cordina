@@ -1,0 +1,47 @@
+{
+  "txt": [
+    "GOVERNANCE",
+    "e-Sign Distribution",
+    "Multi-signatory electronic signature",
+    "New e-Sign Request",
+    "dokumen tes distri",
+    "Awaiting Signature",
+    "Creator",
+    "Your turn!",
+    "24 Jul 2026, 04:15",
+    "0/2 signed",
+    "tes dokumen UAT",
+    "Fully Signed",
+    "Creator",
+    "21 Jul 2026, 03:34",
+    "4/4 signed",
+    "tes distribusi"
+  ],
+  "atxt": [
+    "tes dokumen UAT",
+    "Fully Signed",
+    "Info & Signatories",
+    "Audit Trail",
+    "Document created",
+    "Kepala Balai · 21 Jul 2026, 03:34",
+    "Dokumen dibuat dengan 4 penandatangan",
+    "Signed",
+    "Kepala Balai · 31 Jul 2026, 16:45",
+    "Ditandatangani oleh Kepala Balai (urutan ke-1)",
+    "Signed",
+    "Kepala Seksi · 31 Jul 2026, 16:47",
+    "Ditandatangani oleh Kepala Seksi (urutan ke-2)",
+    "Signed",
+    "Scrum Master · 31 Jul 2026, 16:47",
+    "Ditandatangani oleh Scrum Master (urutan ke-3)",
+    "Signed",
+    "Project Manager · 31 Jul 2026, 16:47",
+    "Ditandatangani oleh Project Manager (urutan ke-4)",
+    "All signatories completed"
+  ],
+  "shots": [
+    "shots/3.6.2-1d_semua-penandatangan-selesai.png",
+    "shots/3.6.2-1e_urutan-penandatangan-lengkap.png",
+    "shots/3.6.2-1f_audit-trail.png"
+  ]
+}

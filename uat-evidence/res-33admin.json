@@ -1,0 +1,23 @@
+[
+  {
+    "id": "3.3.3-1",
+    "scenario": "Undang beberapa peserta sekaligus",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Melalui /admin/calendar dibuat kegiatan \"UAT Agenda Peserta 069487\" dengan memilih 3 peserta sekaligus dari daftar anggota organisasi (Staff Satu, Kepala Seksi, Scrum Master). Seluruh peserta (3/3) terverifikasi tersimpan dan tampil pada panel detail kegiatan, serta kegiatan muncul di kalender masing-masing peserta. Sistem juga menyediakan pemilihan berbasis grup melalui \"Participant Groups\". CATATAN KETIDAKSESUAIAN: pemilihan peserta hanya tersedia di /admin/calendar (khusus administrator); halaman /calendar yang digunakan pengguna umum tidak memiliki field peserta.",
+    "shots": [
+      "shots/3.3.3-1a_form-pilih-banyak-peserta.png",
+      "shots/3.3.3-1b_kegiatan-tersimpan.png",
+      "shots/3.3.3-1c_daftar-peserta-terdaftar.png"
+    ]
+  },
+  {
+    "id": "3.3.2-2",
+    "scenario": "Edit agenda kegiatan",
+    "verdict": "PASS (dengan catatan penting)",
+    "notes": "Diuji melalui /admin/calendar: judul kegiatan diubah menjadi \"UAT Agenda Peserta 069487 [DIUBAH]\", lokasi menjadi \"Ruang Rapat Lantai 5 (lokasi diubah)\", dan tanggal dipindah ke 2026-08-01. Perubahan TERSIMPAN dan tampil di kalender pada periode \"August 2026\". CATATAN KETIDAKSESUAIAN PENTING: pada halaman /calendar — jalur yang disebut dokumen (\"Klik kegiatan di kalender, pilih Edit\") — TIDAK TERSEDIA tombol Edit untuk mengubah data kegiatan. Modal \"Event details\" hanya menyediakan tombol \"+ Add report\" yang mengubah status, notulensi, hasil pembahasan, dan tindak lanjut; judul, tanggal, waktu, dan lokasi tidak dapat diubah dari sana. Perubahan data inti kegiatan hanya dapat dilakukan administrator melalui /admin/calendar.",
+    "shots": [
+      "shots/3.3.2-2a_form-edit-kegiatan.png",
+      "shots/3.3.2-2b_perubahan-tersimpan.png"
+    ]
+  }
+]

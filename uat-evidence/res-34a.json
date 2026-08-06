@@ -1,0 +1,30 @@
+[
+  {
+    "id": "3.4.1-1",
+    "scenario": "Buat proyek baru",
+    "verdict": "PASS (dengan catatan)",
+    "notes": "Melalui /projects -> \"New project\" diisi nama \"Proyek UAT 627832\", deskripsi lingkup dan tujuan, tanggal mulai 2026-07-30, tanggal selesai 2026-09-28, serta divisi. Proyek baru berhasil tersimpan dan muncul di daftar proyek. CATATAN KETIDAKSESUAIAN: form pembuatan proyek TIDAK memiliki field \"tetapkan PM\" seperti disebut dokumen. Field yang tersedia hanya NAME, DESCRIPTION, START DATE, END DATE, dan DIVISION. Penetapan Project Manager dilakukan terpisah melalui penambahan anggota proyek beserta perannya (lihat 3.4.1-4).",
+    "shots": [
+      "shots/3.4.1-1a_form-buat-proyek.png",
+      "shots/3.4.1-1b_proyek-baru-di-daftar.png"
+    ]
+  },
+  {
+    "id": "3.4.1-2",
+    "scenario": "Lihat daftar proyek",
+    "verdict": "PASS",
+    "notes": "Halaman /projects menampilkan seluruh proyek yang dapat diakses beserta metadata (nama, status, progress, periode, divisi), dilengkapi kolom pencarian dan filter status. Proyek yang tampil antara lain: Proyek UAT 627832.",
+    "shots": [
+      "shots/3.4.1-2_daftar-proyek.png"
+    ]
+  },
+  {
+    "id": "3.4.1-3",
+    "scenario": "Detail proyek",
+    "verdict": "PASS",
+    "notes": "Klik proyek membuka halaman detail /projects/{id} yang menampilkan informasi proyek (nama, deskripsi, status, periode, progress) beserta tab: Overview, Board, Sprints, Epics, dan Members. Tab Members memuat daftar anggota proyek, tab Sprints memuat sprint, dan tab Board menampilkan papan Kanban task.",
+    "shots": [
+      "shots/3.4.1-3_detail-proyek.png"
+    ]
+  }
+]
