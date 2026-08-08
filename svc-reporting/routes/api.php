@@ -13,6 +13,7 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
     Route::get('/reports/export/sprint/{id}',     [ReportController::class, 'exportSprint']);
     Route::get('/reports/export/velocity',         [ReportController::class, 'exportVelocity']);
     Route::get('/reports/export/time-tracking',    [ReportController::class, 'exportTimeTracking']);
+    Route::get('/reports/export/calendar',         [ReportController::class, 'exportCalendar']);
 
     Route::prefix('admin/reports/export')->middleware(\App\Http\Middleware\EnsureAdminRole::class)->group(function () {
         Route::get('/users',    [ReportController::class, 'adminExportUsers']);

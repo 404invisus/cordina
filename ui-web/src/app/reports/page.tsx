@@ -37,7 +37,6 @@ const dict = {
     reporting: 'REPORTING',
     reports: 'Reports',
     subtitle: 'Same layout on screen and in the exported PDF',
-    schedule: 'Schedule',
     exporting: 'Exporting…',
     exportPdf: 'Export PDF',
     exportFailed: 'Export failed',
@@ -86,7 +85,6 @@ const dict = {
     reporting: 'PELAPORAN',
     reports: 'Laporan',
     subtitle: 'Tata letak yang sama di layar dan pada PDF yang diekspor',
-    schedule: 'Jadwalkan',
     exporting: 'Mengekspor…',
     exportPdf: 'Ekspor PDF',
     exportFailed: 'Ekspor gagal',
@@ -267,9 +265,6 @@ export default function ReportsPage() {
         subtitle={t('subtitle')}
         actions={
           <>
-            <button className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              {t('schedule')}
-            </button>
             <button
               onClick={handleExport}
               disabled={exportLoading || !hasData}

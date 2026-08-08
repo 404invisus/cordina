@@ -209,10 +209,23 @@ class ReportService
 
     public function adminCalendar(string $from, string $to): array
     {
+        return $this->fetchCalendar($from, $to, null);
+    }
+
+    /** Kalender yang boleh dilihat satu pengguna (acara publik + privat miliknya). */
+    public function userCalendar(string $from, string $to, string $viewerId): array
+    {
+        return $this->fetchCalendar($from, $to, $viewerId);
+    }
+
+    private function fetchCalendar(string $from, string $to, ?string $viewerId): array
+    {
         try {
             $workloadUrl = rtrim(config('services.workload.url', 'http://svc-workload'), '/');
+            $params      = compact('from', 'to');
+            if ($viewerId) $params['viewer_id'] = $viewerId;
             $response    = \Illuminate\Support\Facades\Http::timeout(10)
-                ->get("{$workloadUrl}/api/v1/internal/calendar/all", compact('from', 'to'));
+                ->get("{$workloadUrl}/api/v1/internal/calendar/all", $params);
             return $response->successful() ? ($response->json('data') ?? []) : [];
         } catch (\Throwable $e) {
             return [];

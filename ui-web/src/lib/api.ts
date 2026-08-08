@@ -184,6 +184,8 @@ export const reportExportService = {
   sprint: (sprint_id: string) => api.get(`/api/v1/reports/export/sprint/${sprint_id}`, { responseType: 'blob' }),
   velocity: (project_id: string) => api.get('/api/v1/reports/export/velocity', { params: { project_id }, responseType: 'blob' }),
   timeTracking: (params: any) => api.get('/api/v1/reports/export/time-tracking', { params, responseType: 'blob' }),
+  calendar: (from: string, to: string) =>
+    api.get('/api/v1/reports/export/calendar', { params: { from, to }, responseType: 'blob' }),
 };
 
 export const reportService = {
@@ -263,6 +265,8 @@ export const changeRequestService = {
   reject: (id: string, note: string) => api.post(`/api/v1/change-requests/${id}/reject`, { note }),
   implement: (id: string, catatan?: string) => api.post(`/api/v1/change-requests/${id}/implement`, { catatan }),
   logs: (id: string) => api.get(`/api/v1/change-requests/${id}/logs`),
+  setImplementers: (id: string, pelaksana_ids: string[]) =>
+    api.post(`/api/v1/change-requests/${id}/implementers`, { pelaksana_ids }),
   getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
 };
 

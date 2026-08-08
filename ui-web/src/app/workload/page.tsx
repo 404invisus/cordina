@@ -7,11 +7,12 @@ import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import { LoadingSpinner, EmptyState } from '@/components/ui/EmptyState';
-import { workloadService, projectService, sprintService } from '@/lib/api';
+import { workloadService, projectService, sprintService, reportExportService } from '@/lib/api';
 import { BurndownChart, VelocityChart } from '@/components/charts/WorkloadCharts';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import { useT } from '@/lib/i18n';
+import toast from 'react-hot-toast';
 
 type CapacityLevel = 'overloaded' | 'near_limit' | 'healthy' | 'available';
 
@@ -34,7 +35,10 @@ const dict = {
     allMembersOption: 'All Members ▾',
     memberOption: 'Member ▾',
     exportPdf: 'Export PDF',
-    rebalance: 'Rebalance',
+    exporting: 'Exporting…',
+    selectSprintFirst: 'Select a project and sprint first',
+    exported: 'Report downloaded',
+    exportFailed: 'Failed to download report',
     emptyTitle: 'Select a project and sprint',
     emptySubtitle: 'Choose from the dropdowns above to view team workload data',
     statAvgUtilTitle: 'Avg Utilisation',
@@ -76,7 +80,10 @@ const dict = {
     allMembersOption: 'Semua Anggota ▾',
     memberOption: 'Anggota ▾',
     exportPdf: 'Ekspor PDF',
-    rebalance: 'Seimbangkan Ulang',
+    exporting: 'Mengekspor…',
+    selectSprintFirst: 'Pilih proyek dan sprint terlebih dahulu',
+    exported: 'Laporan berhasil diunduh',
+    exportFailed: 'Gagal mengunduh laporan',
     emptyTitle: 'Pilih proyek dan sprint',
     emptySubtitle: 'Pilih dari menu tarik-turun di atas untuk melihat data beban kerja tim',
     statAvgUtilTitle: 'Rata-rata Utilisasi',
@@ -147,9 +154,11 @@ function memberInitials(name: string) {
 
 export default function WorkloadPage() {
   const t = useT(dict);
-  const { hasRole } = useAuthStore();
+  const { hasRole, hasPermission } = useAuthStore();
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedSprint, setSelectedSprint] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const canExport = hasPermission('report.export');
   const [selectedMember, setSelectedMember] = useState('');
   const canViewAll = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
 
@@ -200,6 +209,28 @@ export default function WorkloadPage() {
   const overloaded = loadPcts.filter((p) => p >= 100).length;
   const available = loadPcts.filter((p) => p < 40).length;
   const sprintVelocity = velocity?.length > 0 ? (velocity[velocity.length - 1]?.total_points ?? 0) : 0;
+
+  const handleExport = async () => {
+    if (!selectedSprint) {
+      toast.error(t('selectSprintFirst'));
+      return;
+    }
+    setExporting(true);
+    try {
+      const res = await reportExportService.workload(selectedSprint);
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workload_${new Date().toISOString().slice(0, 10)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t('exported'));
+    } catch {
+      toast.error(t('exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -271,15 +302,15 @@ export default function WorkloadPage() {
               </div>
             )}
 
-            <button className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              {t('exportPdf')}
-            </button>
-            <button
-              className="h-[34px] flex items-center gap-[6px] px-[14px] rounded-[6px] bg-navy-700 text-white text-[12px] font-bold"
-              style={{ boxShadow: '0 1px 2px rgba(180,130,10,.35)' }}
-            >
-              {t('rebalance')}
-            </button>
+            {canExport && (
+              <button
+                onClick={handleExport}
+                disabled={exporting || !selectedSprint}
+                className="h-[34px] flex items-center gap-[6px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {exporting ? t('exporting') : t('exportPdf')}
+              </button>
+            )}
           </>
         }
       />

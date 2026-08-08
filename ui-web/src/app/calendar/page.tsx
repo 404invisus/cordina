@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Plus, AlertTriangle } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import Modal from '@/components/ui/Modal';
-import { calendarService } from '@/lib/api';
+import { calendarService, reportExportService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -111,6 +111,9 @@ const dict = {
     calendar: 'Calendar',
     agenda: 'AGENDA',
     exportPdf: 'Export PDF',
+    exporting: 'Exporting…',
+    exported: 'Calendar downloaded',
+    exportFailed: 'Failed to download calendar',
     conflictCount: '{count} conflict{s}',
     invited: 'invited',
     monthEventCount: '{month} {year} · {count} event{s} · {today} involve you today',
@@ -165,6 +168,9 @@ const dict = {
     calendar: 'Kalender',
     agenda: 'AGENDA',
     exportPdf: 'Ekspor PDF',
+    exporting: 'Mengekspor…',
+    exported: 'Kalender berhasil diunduh',
+    exportFailed: 'Gagal mengunduh kalender',
     conflictCount: '{count} konflik',
     invited: 'diundang',
     monthEventCount: '{month} {year} · {count} acara · {today} melibatkan Anda hari ini',
@@ -609,6 +615,7 @@ export default function CalendarPage() {
   const { user } = useAuthStore();
   const qc = useQueryClient();
   const todayStr = dateStr(today);
+  const [exporting, setExporting] = useState(false);
 
   const { fromDate, toDate } = useMemo(() => {
     if (view === 'month') {
@@ -624,6 +631,24 @@ export default function CalendarPage() {
       return { fromDate: s, toDate: s };
     }
   }, [view, currentDate]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await reportExportService.calendar(fromDate, toDate);
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calendar_${fromDate}_${toDate}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t('exported'));
+    } catch {
+      toast.error(t('exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data: events = [] } = useQuery({
     queryKey: ['calendar', fromDate, toDate],
@@ -988,8 +1013,12 @@ export default function CalendarPage() {
             >
               {t('common.today')}
             </button>
-            <button className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors">
-              {t('exportPdf')}
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="h-[34px] px-[13px] border border-border-button rounded-[6px] bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? t('exporting') : t('exportPdf')}
             </button>
             <button
               onClick={() => openCreate(todayStr)}

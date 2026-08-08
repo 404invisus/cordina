@@ -8,7 +8,6 @@ import {
   X,
   Search,
   Download,
-  Eye,
   Pencil,
   Clock,
   AlertTriangle,
@@ -72,8 +71,6 @@ const dict = {
     inESignQueue: 'in e-Sign queue',
     expiresInDays: '{title} expires in {days} days',
     renewalRemindersText: 'Renewal reminders are sent to the document owner at 30, 14 and 3 days before expiry.',
-    notificationRulesButton: 'Notification rules',
-    startRenewalButton: 'Start renewal',
     searchPlaceholder: 'Search title or document number',
     categoryAllOption: 'Category: All',
     statusAllOption: 'Status: All',
@@ -136,8 +133,6 @@ const dict = {
     inESignQueue: 'dalam antrean e-Sign',
     expiresInDays: '{title} kedaluwarsa dalam {days} hari',
     renewalRemindersText: 'Pengingat perpanjangan dikirim ke pemilik dokumen pada 30, 14, dan 3 hari sebelum kedaluwarsa.',
-    notificationRulesButton: 'Aturan notifikasi',
-    startRenewalButton: 'Mulai perpanjangan',
     searchPlaceholder: 'Cari judul atau nomor dokumen',
     categoryAllOption: 'Kategori: Semua',
     statusAllOption: 'Status: Semua',
@@ -545,12 +540,6 @@ export default function DocumentsPage() {
             </div>
             <div className="text-[11.5px] text-text-tertiary mt-0.5">{t('renewalRemindersText')}</div>
           </div>
-          <button className="h-[34px] flex-none flex items-center px-[13px] border border-border-button rounded-md bg-white text-[12px] font-semibold text-text-secondary hover:bg-surface-2 whitespace-nowrap">
-            {t('notificationRulesButton')}
-          </button>
-          <button className="h-[30px] flex-none flex items-center px-[13px] rounded-md bg-navy-700 text-white text-[11.5px] font-bold hover:bg-navy-900 transition-colors whitespace-nowrap">
-            {t('startRenewalButton')}
-          </button>
         </motion.div>
       )}
 
@@ -686,9 +675,6 @@ export default function DocumentsPage() {
                         <Download className="w-[13px] h-[13px]" />
                       </button>
                     )}
-                    <button title={t('common.view')} className="text-text-placeholder hover:text-navy-700 transition-colors">
-                      <Eye className="w-[13px] h-[13px]" />
-                    </button>
                     {canEdit && (
                       <>
                         <button

@@ -49,7 +49,7 @@ class ReportController extends Controller
 
     public function exportWorkload(Request $request): mixed
     {
-        $this->requireRole(['administrator', 'kepala_balai', 'kepala_seksi']);
+        $this->requirePermission('report.export');
         $sprintId = $request->query('sprint_id');
         $data     = $this->service->workloadReport($sprintId ?? '');
         $sprint   = $sprintId ? "Sprint ID: {$sprintId}" : "Semua Sprint";
@@ -59,7 +59,7 @@ class ReportController extends Controller
 
     public function exportVelocity(Request $request): mixed
     {
-        $this->requirePermission('report.view');
+        $this->requirePermission('report.export');
         $request->validate(['project_id' => 'required|uuid']);
         $data = $this->service->velocityReport($request->project_id);
         $pdfService = new \App\Services\ReportPdfService();
@@ -68,7 +68,7 @@ class ReportController extends Controller
 
     public function exportTimeTracking(Request $request): mixed
     {
-        $this->requirePermission('report.view');
+        $this->requirePermission('report.export');
         $request->validate([
             'project_id' => 'required|uuid',
             'from'       => 'required|date',
@@ -82,7 +82,7 @@ class ReportController extends Controller
 
     public function exportSprint(Request $request, string $sprintId): mixed
     {
-        $this->requireRole(['administrator', 'kepala_balai', 'kepala_seksi']);
+        $this->requirePermission('report.export');
         $data = $this->service->sprintReport($sprintId);
         $pdfService = new \App\Services\ReportPdfService();
         return $pdfService->sprint($data, "Sprint {$sprintId}");
@@ -93,6 +93,23 @@ class ReportController extends Controller
         $this->requirePermission('report.view');
         $request->validate(['project_id' => 'required|uuid']);
         return response()->json(['data' => $this->service->velocityReport($request->project_id)]);
+    }
+
+    public function exportCalendar(Request $request): mixed
+    {
+        $this->requirePermission('calendar.view');
+        $request->validate([
+            'from' => 'required|date',
+            'to'   => 'required|date|after_or_equal:from',
+        ]);
+        // Pemegang calendar.manage melihat seluruh acara di layar, jadi ekspornya
+        // pun tidak disaring: isi PDF harus sama dengan yang tampil di kalender.
+        $data = $this->hasPermission('calendar.manage')
+            ? $this->service->adminCalendar($request->from, $request->to)
+            : $this->service->userCalendar($request->from, $request->to, (string) $this->authId());
+        $period = $request->from . ' s/d ' . $request->to;
+        $pdfService = new \App\Services\ReportPdfService();
+        return $pdfService->adminCalendar($data, $period);
     }
 
     // ── Admin Export ────────────────────────────────────────────────────────────

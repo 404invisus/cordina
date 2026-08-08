@@ -20,7 +20,6 @@ const dict = {
     emailRequired: 'Email is required',
     invalidEmail: 'Invalid email format',
     passwordRequired: 'Password is required',
-    or: 'or',
     welcome: 'Welcome, {name}!',
     incorrectCredentials: 'Incorrect email or password.',
   },
@@ -31,7 +30,6 @@ const dict = {
     emailRequired: 'Email wajib diisi',
     invalidEmail: 'Format email tidak valid',
     passwordRequired: 'Kata sandi wajib diisi',
-    or: 'atau',
     welcome: 'Selamat datang, {name}!',
     incorrectCredentials: 'Email atau kata sandi salah.',
   },
@@ -215,16 +213,6 @@ export default function LoginPage() {
                 </button>
               </div>
             </form>
-
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px bg-navy-700/10" />
-              <span className="text-[11px] font-semibold text-navy-700/35 uppercase tracking-wider">{t('or')}</span>
-              <div className="flex-1 h-px bg-navy-700/10" />
-            </div>
-
-            <button type="button" className="w-full flex items-center justify-center">
-              <img src="/login-with-connectidn.png" alt="Login with CONNECTIDN" className="h-11 object-contain" />
-            </button>
           </motion.div>
         </div>
       </div>

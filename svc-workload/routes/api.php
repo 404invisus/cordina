@@ -70,11 +70,12 @@ Route::prefix('v1')->middleware('jwt.auth')->group(function () {
 Route::prefix('v1')->middleware('internal')->group(function () {
     Route::get('/internal/calendar/all', function (Request $request) {
         $request->validate([
-            'from' => 'required|date',
-            'to'   => 'required|date|after_or_equal:from',
+            'from'      => 'required|date',
+            'to'        => 'required|date|after_or_equal:from',
+            'viewer_id' => 'nullable|uuid',
         ]);
 
-        $events = \App\Models\CalendarEvent::withCount('participants')
+        $query = \App\Models\CalendarEvent::withCount('participants')
             ->where(function ($q) use ($request) {
                 $q->whereBetween('start_date', [$request->from, $request->to])
                   ->orWhereBetween('end_date', [$request->from, $request->to])
@@ -82,9 +83,25 @@ Route::prefix('v1')->middleware('internal')->group(function () {
                       $span->where('start_date', '<=', $request->from)
                            ->where('end_date', '>=', $request->to);
                   });
-            })
-            ->orderBy('start_date')
-            ->get();
+            });
+
+        // Tanpa viewer_id pemanggil melihat seluruh acara (dipakai ekspor admin).
+        // Dengan viewer_id, batasi persis seperti CalendarEventController::index
+        // supaya acara privat milik orang lain tidak ikut terekspor.
+        if ($viewerId = $request->query('viewer_id')) {
+            $query->where(function ($vis) use ($viewerId) {
+                $vis->where('visibility', 'public')
+                    ->orWhere(function ($priv) use ($viewerId) {
+                        $priv->where('visibility', 'private')
+                             ->where(function ($owner) use ($viewerId) {
+                                 $owner->where('user_id', $viewerId)
+                                       ->orWhereHas('participants', fn($p) => $p->where('user_id', $viewerId));
+                             });
+                    });
+            });
+        }
+
+        $events = $query->orderBy('start_date')->get();
 
         $userIds = $events->pluck('user_id')->unique()->filter()->values()->toArray();
         $users   = [];

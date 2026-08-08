@@ -360,16 +360,6 @@ export default function NotificationsPage() {
                           {meta && <span className="text-[11.5px] text-text-tertiary">{meta}</span>}
                         </div>
                         <div className="flex items-center gap-[7px] flex-none">
-                          {cfg.cta && (
-                            <button
-                              className={cn(
-                                'h-[26px] flex items-center px-[10px] rounded-[5px] text-[11px] font-semibold',
-                                cfg.ctaPrimary ? 'bg-navy-700 text-white' : 'border border-border-button bg-white text-text-secondary',
-                              )}
-                            >
-                              {cfg.cta}
-                            </button>
-                          )}
                           {n.status === 'sent' && <span className="w-[7px] h-[7px] rounded-full bg-gold-500 flex-none" />}
                         </div>
                       </motion.div>
