@@ -127,10 +127,9 @@ class TteSignRequestController extends Controller
             'updated_at'             => now(),
         ]);
 
-        // Tambah creator sebagai signer pertama (order 1)
-        $signerIds = array_values(array_unique(array_filter($request->signer_ids)));
-        // Pastikan creator selalu order 1
-        $allSigners = array_merge([$userId], array_filter($signerIds, fn($id) => $id !== $userId));
+        // Urutan penandatangan mengikuti persis pilihan pembuat. Pembuat hanya
+        // ikut menandatangani bila ia memilih dirinya sendiri.
+        $allSigners = array_values(array_unique(array_filter($request->signer_ids)));
 
         foreach ($allSigners as $order => $signerId) {
             DB::table('tte_sign_request_signers')->insert([

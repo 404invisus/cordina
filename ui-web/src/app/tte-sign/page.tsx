@@ -46,8 +46,8 @@ const dict = {
     pdfFileLabel: 'PDF File *',
     maxSizeNote: '(max. 20 MB)',
     clickToUploadPdf: 'Click to upload PDF',
-    additionalSignatoriesLabel: 'Additional Signatories',
-    firstSignatoryNote: 'You are automatically the first signatory (order 1)',
+    additionalSignatoriesLabel: 'Signatories',
+    firstSignatoryNote: 'Signing order follows the order you pick. Include yourself if you also need to sign.',
     creating: 'Creating...',
     createRequestBtn: 'Create e-Sign Request',
     noUsersAvailable: 'No users available',
@@ -113,8 +113,8 @@ const dict = {
     pdfFileLabel: 'File PDF *',
     maxSizeNote: '(maks. 20 MB)',
     clickToUploadPdf: 'Klik untuk mengunggah PDF',
-    additionalSignatoriesLabel: 'Penanda Tangan Tambahan',
-    firstSignatoryNote: 'Anda otomatis menjadi penanda tangan pertama (urutan 1)',
+    additionalSignatoriesLabel: 'Penanda Tangan',
+    firstSignatoryNote: 'Urutan tanda tangan mengikuti urutan pemilihan. Pilih diri Anda bila Anda juga perlu menandatangani.',
     creating: 'Membuat...',
     createRequestBtn: 'Buat Permintaan e-Sign',
     noUsersAvailable: 'Tidak ada pengguna yang tersedia',
@@ -297,7 +297,7 @@ function CreateModal({ open, onClose }: { open: boolean; onClose: () => void }) 
           <div>
             <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">{t('additionalSignatoriesLabel')}</label>
             <p className="text-xs text-text-placeholder mt-0.5">{t('firstSignatoryNote')}</p>
-            <UserMultiSelect users={allUsers.filter((u: any) => u.id !== (user as any)?.id)} selected={signerIds} onChange={setSignerIds} />
+            <UserMultiSelect users={allUsers} selected={signerIds} onChange={setSignerIds} />
           </div>
         </div>
 
