@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
         Route::post('change-requests/{id}/attachments',                     [CrAttachmentController::class, 'store']);
         Route::get('change-requests/{id}/attachments/{attachId}/download',  [CrAttachmentController::class, 'download']);
         Route::delete('change-requests/{id}/attachments/{attachId}',        [CrAttachmentController::class, 'destroy']);
+        Route::post('change-requests/{id}/implementers', [ChangeRequestController::class, 'setImplementers']);
         Route::post('change-requests/{id}/approve',[ChangeRequestController::class, 'approve']);
         Route::post('change-requests/{id}/reject', [ChangeRequestController::class, 'reject']);
 

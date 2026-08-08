@@ -36,7 +36,7 @@ class NotificationDispatcher
                 'telegram' => $this->dispatchTelegram(
                     $notif->id, $userId, $chatId, $message,
                     groupOnly: (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'public') || $type === 'calendar.event_done',
-                    privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'tte.sign_requested', 'tte.all_signed', 'tte.distributed', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
+                    privateOnly: in_array($type, ['calendar.event_assigned', 'calendar.deadline_reminder', 'tte.sign_requested', 'tte.all_signed', 'tte.distributed', 'change_request.submitted', 'change_request.review_request', 'change_request.approved', 'change_request.rejected', 'change_request.implementer_assigned']) || (in_array($type, ['calendar.event_created']) && ($payload['visibility'] ?? '') === 'private'),
                     type: $type,
                 ),
                 'in_app'   => $this->dispatchInApp($notif->id),
@@ -238,6 +238,12 @@ Silakan buka di ConnectOne untuk melihat dan mengunduh.",
                 "*[change request disetujui]* CR *\"%s\"* telah disetujui.%s",
                 $payload['cr_title'] ?? 'N/A',
                 !empty($payload['reviewer_note']) ? "\nCatatan: " . $payload['reviewer_note'] : ''
+            ),
+            'change_request.implementer_assigned' => sprintf(
+                "*[change request]* Anda ditetapkan sebagai pelaksana CR: *\"%s\"*\nPrioritas: %s | Tipe: %s\n\nBuka aplikasi ConnectOne untuk melihat rinciannya.",
+                $payload['cr_title'] ?? 'N/A',
+                strtoupper($payload['cr_priority'] ?? 'medium'),
+                ucfirst($payload['cr_type'] ?? 'normal')
             ),
             'change_request.implemented' => sprintf(
                 "*[change request diimplementasikan]* CR *\"%s\"* telah diimplementasikan.",

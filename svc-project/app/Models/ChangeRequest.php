@@ -19,6 +19,7 @@ class ChangeRequest extends Model
         'rincian', 'rencana_waktu', 'dependensi_layanan',
         'si_terdampak', 'langkah_mitigasi', 'risiko_tidak_dilakukan',
         'langkah_penanganan_kegagalan', 'pelaksana_ids',
+        'pelaksana_set_by', 'pelaksana_set_at',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class ChangeRequest extends Model
         'total_steps'   => 'integer',
         'rencana_waktu' => 'date',
         'pelaksana_ids' => 'array',
+        'pelaksana_set_at' => 'datetime',
     ];
 
     public function approvals()

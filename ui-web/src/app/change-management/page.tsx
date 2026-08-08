@@ -83,6 +83,15 @@ const dict = {
     failureHandlingPlaceholder: 'Rollback plan in case of failure',
     personnel: 'Personnel',
     implementersLabel: 'Implementers',
+    implementersSectionTitle: 'Implementers',
+    implementersEmptyForReviewer: 'Not set yet. As a reviewer, you may assign the implementers for this change request.',
+    implementersEmptyForOthers: 'Not set yet. Implementers are assigned by one of the reviewers during review.',
+    implementersLockedNote: 'Assigned by {name}. Only the first reviewer to assign them can do so.',
+    assignImplementersBtn: 'Assign implementers',
+    saveImplementersBtn: 'Save implementers',
+    implementersSaved: 'Implementers assigned',
+    implementersFailed: 'Failed to assign implementers',
+    selectAtLeastOneImplementer: 'Select at least one implementer',
     reviewersLabel: 'Reviewers * (order matches selection)',
     signatoryLabel: 'Signatory * (1 person, signs via e-Sign)',
     selectSignatoryOption: '-- Select signatory --',
@@ -111,6 +120,7 @@ const dict = {
     documentSignedSuccess: 'Document signed successfully!',
     failedToSignDocument: 'Failed to sign document',
     actionCreated: 'CR Dibuat',
+    actionImplementersSet: 'Pelaksana Ditetapkan',
     actionSubmitted: 'CR Diajukan',
     actionReviewed: 'Ditinjau',
     actionApproved: 'Disetujui',
@@ -226,6 +236,15 @@ const dict = {
     failureHandlingPlaceholder: 'Rencana pemulihan jika terjadi kegagalan',
     personnel: 'Personel',
     implementersLabel: 'Pelaksana',
+    implementersSectionTitle: 'Pelaksana',
+    implementersEmptyForReviewer: 'Belum ditetapkan. Sebagai penilai, Anda dapat menetapkan pelaksana permintaan perubahan ini.',
+    implementersEmptyForOthers: 'Belum ditetapkan. Pelaksana ditetapkan oleh salah satu penilai pada saat peninjauan.',
+    implementersLockedNote: 'Ditetapkan oleh {name}. Hanya penilai pertama yang menetapkan yang dapat mengisinya.',
+    assignImplementersBtn: 'Tetapkan pelaksana',
+    saveImplementersBtn: 'Simpan pelaksana',
+    implementersSaved: 'Pelaksana berhasil ditetapkan',
+    implementersFailed: 'Gagal menetapkan pelaksana',
+    selectAtLeastOneImplementer: 'Pilih minimal satu pelaksana',
     reviewersLabel: 'Penilai * (urutan sesuai pilihan)',
     signatoryLabel: 'Penandatangan * (1 orang, menandatangani melalui e-Sign)',
     selectSignatoryOption: '-- Pilih penandatangan --',
@@ -255,6 +274,7 @@ const dict = {
     documentSignedSuccess: 'Dokumen berhasil ditandatangani!',
     failedToSignDocument: 'Gagal menandatangani dokumen',
     actionCreated: 'CR Dibuat',
+    actionImplementersSet: 'Pelaksana Ditetapkan',
     actionSubmitted: 'CR Diajukan',
     actionReviewed: 'Ditinjau',
     actionApproved: 'Disetujui',
@@ -541,18 +561,15 @@ function CRModal({
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [reviewerIds, setReviewerIds] = useState<string[]>([]);
   const [signerId, setSignerId] = useState('');
-  const [pelaksanaIds, setPelaksanaIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       if (editData) {
         setForm({ ...EMPTY_FORM, ...editData });
-        setPelaksanaIds(editData.pelaksana_ids || []);
       } else {
         setForm(EMPTY_FORM);
         setReviewerIds([]);
         setSignerId('');
-        setPelaksanaIds([]);
       }
     }
   }, [editData, open]);
@@ -590,8 +607,8 @@ function CRModal({
     if (!editData && reviewerIds.length === 0) return toast.error(t('selectAtLeastOneReviewer'));
     if (!editData && !signerId) return toast.error(t('selectASignatory'));
     const payload = editData
-      ? { ...form, pelaksana_ids: pelaksanaIds }
-      : { ...form, reviewer_ids: reviewerIds, signer_id: signerId, pelaksana_ids: pelaksanaIds };
+      ? { ...form }
+      : { ...form, reviewer_ids: reviewerIds, signer_id: signerId };
     mutation.mutate(payload);
   };
 
@@ -747,7 +764,6 @@ function CRModal({
 
           <div className="bg-surface-2 rounded-[6px] p-4 space-y-3">
             <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider">{t('personnel')}</div>
-            <UserMultiSelect label={t('implementersLabel')} users={users} selected={pelaksanaIds} onChange={setPelaksanaIds} />
             {!editData && (
               <>
                 <UserMultiSelect
@@ -958,6 +974,7 @@ const ACTION_CONFIG: Record<string, { labelKey: string; color: string }> = {
   rejected: { labelKey: 'actionRejected', color: 'text-danger-text' },
   implemented: { labelKey: 'actionImplemented', color: 'text-navy-700' },
   signed: { labelKey: 'actionSigned', color: 'text-navy-700' },
+  implementers_set: { labelKey: 'actionImplementersSet', color: 'text-navy-700' },
   attachment_added: { labelKey: 'actionAttachmentAdded', color: 'text-text-tertiary' },
   attachment_deleted: { labelKey: 'actionAttachmentDeleted', color: 'text-danger' },
 };
@@ -1121,6 +1138,101 @@ function CRAttachments({ crId, canUpload }: { crId: string; canUpload: boolean }
   );
 }
 
+/**
+ * Pelaksana CR ditetapkan oleh penilai, bukan oleh pengaju. Penilai mana pun
+ * boleh mengisinya, namun hanya sekali: setelah terisi, panel berubah menjadi
+ * daftar baca-saja bagi semua orang, termasuk penilai berikutnya.
+ */
+function CRImplementers({ cr, userId, usersMap }: { cr: any; userId: string; usersMap: Record<string, string> }) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['cr-users'],
+    queryFn: () => changeRequestService.getUsers().then((r: any) => r.data.data?.data || r.data.data || []),
+    staleTime: 60000,
+  });
+
+  const approvals: any[] = cr.approvals || [];
+  const isReviewer = approvals.some((a: any) => a.role === 'reviewer' && a.approver_id === userId);
+  const alreadySet = !!cr.pelaksana_set_by;
+  const canAssign = isReviewer && !alreadySet && cr.status === 'submitted';
+  const ids: string[] = cr.pelaksana_ids || [];
+
+  const mutation = useMutation({
+    mutationFn: () => changeRequestService.setImplementers(cr.id, picked),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['change-requests'] });
+      toast.success(t('implementersSaved'));
+      setEditing(false);
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('implementersFailed')),
+  });
+
+  return (
+    <div className="px-5 pt-4 pb-4 mt-4 border-t border-border-subtle">
+      <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">
+        {t('implementersSectionTitle')}
+      </div>
+
+      {ids.length > 0 ? (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {ids.map((uid) => (
+              <span
+                key={uid}
+                className="inline-flex items-center text-xs bg-navy-700/10 text-navy-700 px-2 py-0.5 rounded-full font-medium"
+              >
+                {usersMap?.[uid] || uid}
+              </span>
+            ))}
+          </div>
+          {alreadySet && (
+            <p className="text-[11px] text-text-placeholder mt-1.5">
+              {t('implementersLockedNote', { name: usersMap?.[cr.pelaksana_set_by] || '...' })}
+            </p>
+          )}
+        </>
+      ) : editing ? (
+        <div className="space-y-2">
+          <UserMultiSelect label={t('implementersLabel')} users={users} selected={picked} onChange={setPicked} />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditing(false)}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:bg-surface-2"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              onClick={() => (picked.length ? mutation.mutate() : toast.error(t('selectAtLeastOneImplementer')))}
+              disabled={mutation.isPending}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-50"
+            >
+              {mutation.isPending ? t('saving') : t('saveImplementersBtn')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-text-placeholder">
+            {canAssign ? t('implementersEmptyForReviewer') : t('implementersEmptyForOthers')}
+          </p>
+          {canAssign && (
+            <button
+              onClick={() => setEditing(true)}
+              className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900"
+            >
+              {t('assignImplementersBtn')}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function CRCard({
   cr,
   onEdit,
@@ -1255,6 +1367,7 @@ function CRCard({
           {expanded && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <CRTimeline cr={cr} usersMap={usersMap} />
+              <CRImplementers cr={cr} userId={userId} usersMap={usersMap} />
               <CRAttachments crId={cr.id} canUpload={isMyTurn || (cr.requester_id === userId && cr.status === 'draft')} />
               <CRAuditLog crId={cr.id} usersMap={usersMap} />
             </motion.div>

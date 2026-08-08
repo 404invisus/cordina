@@ -131,8 +131,6 @@ class ChangeRequestController extends Controller
             'langkah_mitigasi'            => 'nullable|string',
             'risiko_tidak_dilakukan'      => 'nullable|string',
             'langkah_penanganan_kegagalan'=> 'nullable|string',
-            'pelaksana_ids'               => 'nullable|array',
-            'pelaksana_ids.*'             => 'uuid',
             'reviewer_ids'                => 'required|array|min:1',
             'reviewer_ids.*'              => 'required|uuid',
             'signer_id'                   => 'required|uuid',
@@ -214,8 +212,6 @@ class ChangeRequestController extends Controller
             'langkah_mitigasi'            => 'nullable|string',
             'risiko_tidak_dilakukan'      => 'nullable|string',
             'langkah_penanganan_kegagalan'=> 'nullable|string',
-            'pelaksana_ids'               => 'nullable|array',
-            'pelaksana_ids.*'             => 'uuid',
         ]);
 
         $cr->update($data);
@@ -249,6 +245,52 @@ class ChangeRequestController extends Controller
     }
 
     // ── POST /v1/change-requests/{id}/approve ──
+    /**
+     * POST /v1/change-requests/{id}/implementers
+     *
+     * Pelaksana ditetapkan oleh penilai, bukan oleh pengaju. Penilai mana pun
+     * boleh menetapkannya, tetapi hanya sekali: begitu penilai 1 mengisi,
+     * penilai 2 tidak dapat mengubahnya lagi.
+     */
+    public function setImplementers(string $id, Request $request): JsonResponse
+    {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        $isReviewer = $cr->approvals
+            ->where('role', 'reviewer')
+            ->where('approver_id', $userId)
+            ->isNotEmpty();
+        abort_if(!$isReviewer, 403, 'Hanya penilai CR ini yang dapat menetapkan pelaksana');
+
+        abort_if($cr->status !== 'submitted', 422, 'Pelaksana hanya dapat ditetapkan selama CR dalam peninjauan');
+
+        abort_if(
+            !empty($cr->pelaksana_set_by),
+            422,
+            'Pelaksana sudah ditetapkan oleh penilai sebelumnya dan tidak dapat diubah'
+        );
+
+        $data = $request->validate([
+            'pelaksana_ids'   => 'required|array|min:1',
+            'pelaksana_ids.*' => 'uuid',
+        ]);
+
+        $cr->update([
+            'pelaksana_ids'    => array_values(array_unique($data['pelaksana_ids'])),
+            'pelaksana_set_by' => $userId,
+            'pelaksana_set_at' => now(),
+        ]);
+
+        $this->log($cr->id, $userId, 'implementers_set', 'Menetapkan ' . count($cr->pelaksana_ids) . ' pelaksana');
+
+        foreach ($cr->pelaksana_ids as $pid) {
+            $this->notifyUser($pid, 'change_request.implementer_assigned', $this->notifyPayload($cr));
+        }
+
+        return response()->json(['data' => $cr->fresh('approvals')]);
+    }
+
     public function approve(string $id, Request $request): JsonResponse
     {
         $cr     = ChangeRequest::with('approvals')->findOrFail($id);
