@@ -1,7 +1,10 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Kosong = relatif terhadap origin halaman, lalu diproksikan oleh Next.js ke
+// gateway (lihat rewrites di next.config.ts). Isi NEXT_PUBLIC_API_URL hanya
+// bila frontend perlu menembak gateway di host lain secara langsung.
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 90000 });
 

@@ -138,6 +138,10 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// `api` sengaja dikecualikan: permintaan API hanya diteruskan ke gateway lewat
+// rewrites, dan middleware di atas memang tidak melakukan apa pun untuknya.
+// Bila ikut tertangkap matcher, Next akan mem-buffer body permintaan dan
+// menolak unggahan di atas 10 MB, sehingga unggah dokumen 20 MB gagal.
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|login|.*\.png|.*\.jpg|.*\.svg|.*\.ico|.*\.webp).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login|.*\.png|.*\.jpg|.*\.svg|.*\.ico|.*\.webp).*)'],
 };
