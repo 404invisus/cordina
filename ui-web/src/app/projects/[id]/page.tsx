@@ -7,7 +7,7 @@ import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import Modal from '@/components/ui/Modal';
 import { LoadingSpinner } from '@/components/ui/EmptyState';
-import { projectService, sprintService, epicService, storyService } from '@/lib/api';
+import { projectService, sprintService, epicService, storyService, userGroupService } from '@/lib/api';
 import { getStatusLabel } from '@/lib/status';
 import { formatDate } from '@/lib/format';
 import { useAuthStore } from '@/store/authStore';
@@ -87,6 +87,13 @@ const dict = {
     epicCreateFailed: 'Failed to create epic',
 
     addMemberTitle: 'Add Member',
+    individualsLabel: 'Individuals',
+    memberGroupsLabel: 'User Groups',
+    groupAddNote: 'Every member of the selected group is added to the project, and can then be assigned tasks and mentioned.',
+    noGroupsAvailable: 'No user groups yet',
+    membersCount: '{count} members',
+    selectAtLeastOneMember: 'Select at least one person or group',
+    membersAdded: '{count} member(s) added',
     searchUserLabel: 'Search User',
     searchUserPlaceholder: 'Nama atau email...',
     selectUserLabel: 'Select User',
@@ -104,6 +111,7 @@ const dict = {
     projectNotFoundDesc: 'The project you are looking for is not available or has been deleted.',
     backToProjects: 'Back to Projects',
     openBoard: 'Open Board',
+    openRoadmap: 'Roadmap',
 
     projectDetailsTitle: 'Project Details',
     fieldDivision: 'Division',
@@ -196,6 +204,13 @@ const dict = {
     epicCreateFailed: 'Gagal membuat epik',
 
     addMemberTitle: 'Tambah Anggota',
+    individualsLabel: 'Perorangan',
+    memberGroupsLabel: 'Grup Pengguna',
+    groupAddNote: 'Seluruh anggota grup yang dipilih akan ditambahkan ke proyek, dan setelahnya dapat ditugaskan task serta di-mention.',
+    noGroupsAvailable: 'Belum ada grup pengguna',
+    membersCount: '{count} anggota',
+    selectAtLeastOneMember: 'Pilih minimal satu orang atau grup',
+    membersAdded: '{count} anggota ditambahkan',
     searchUserLabel: 'Cari Pengguna',
     searchUserPlaceholder: 'Nama atau email...',
     selectUserLabel: 'Pilih Pengguna',
@@ -213,6 +228,7 @@ const dict = {
     projectNotFoundDesc: 'Proyek yang Anda cari tidak tersedia atau telah dihapus.',
     backToProjects: 'Kembali ke Proyek',
     openBoard: 'Buka Papan',
+    openRoadmap: 'Peta Jalan',
 
     projectDetailsTitle: 'Detail Proyek',
     fieldDivision: 'Divisi',
@@ -991,12 +1007,21 @@ function AddMemberModal({
   const qc = useQueryClient();
   const [focused, setFocused] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { register, handleSubmit, reset, watch } = useForm();
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [role, setRole] = useState('member');
 
   const { data: allUsers } = useQuery({
     queryKey: ['all-users'],
     queryFn: () => api.get('/api/v1/users').then((r) => r.data.data?.data || r.data.data || []),
     enabled: open,
+  });
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ['user-groups-project'],
+    queryFn: () => userGroupService.list().then((r) => r.data.data || []),
+    enabled: open,
+    staleTime: 60000,
   });
 
   const existingIds = new Set(existingMembers?.map((m: any) => m.user_id || m.id));
@@ -1006,49 +1031,124 @@ function AddMemberModal({
       (u.full_name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase())),
   );
 
+  const reset = () => {
+    setUserIds([]);
+    setGroupIds([]);
+    setSearch('');
+    setRole('member');
+  };
+
   const { mutate, isPending } = useMutation({
     mutationFn: (data: any) => projectService.addMember(projectId, data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ['members', projectId] });
-      toast.success(t('memberAdded'));
+      const n = res?.data?.added ?? 0;
+      toast.success(n > 1 ? t('membersAdded', { count: n }) : t('memberAdded'));
       reset();
       onClose();
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || t('memberAddFailed')),
   });
 
+  const submit = () => {
+    if (!userIds.length && !groupIds.length) {
+      toast.error(t('selectAtLeastOneMember'));
+      return;
+    }
+    mutate({ user_ids: userIds, group_ids: groupIds, role });
+  };
+
+  const toggle = (list: string[], setList: (v: string[]) => void, id: string) =>
+    setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  const CountBadge = ({ n }: { n: number }) =>
+    n > 0 ? (
+      <span className="ml-2 bg-navy-700 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+        {t('selectedCount', { count: n })}
+      </span>
+    ) : null;
+
   return (
     <Modal open={open} onClose={onClose} title={t('addMemberTitle')}>
-      <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
+      <div className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('searchUserLabel')}</label>
-          <div className="rounded-[6px] border-2 border-border hover:border-border-button transition-all">
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">
+            {t('individualsLabel')}
+            <CountBadge n={userIds.length} />
+          </label>
+          <div className="rounded-[6px] border-2 border-border hover:border-border-button transition-all mb-2">
             <input value={search} onChange={(e) => setSearch(e.target.value)} className={fieldCls} placeholder={t('searchUserPlaceholder')} />
           </div>
+          <div className="border border-border rounded-[6px] overflow-hidden">
+            <div className="max-h-40 overflow-y-auto divide-y divide-surface-2">
+              {filtered.length === 0 && (
+                <div className="px-3 py-3 text-sm text-text-placeholder">{t('noUsersAvailable')}</div>
+              )}
+              {filtered.map((u: any) => {
+                const checked = userIds.includes(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    onClick={() => toggle(userIds, setUserIds, u.id)}
+                    className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-navy-700/8' : 'hover:bg-surface-2'}`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all ${checked ? 'bg-navy-700 border-navy-700 text-white' : 'border-border-button'}`}
+                    >
+                      {checked ? '✓' : ''}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-navy-800 truncate">{u.full_name}</div>
+                      <div className="text-xs text-text-placeholder truncate">{u.email}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
+
         <div>
-          <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('selectUserLabel')}</label>
-          <FieldWrap focused={focused} name="user">
-            <select
-              {...register('user_id', { required: true })}
-              onFocus={() => setFocused('user')}
-              onBlur={() => setFocused(null)}
-              className={fieldCls}
-            >
-              {filtered.length === 0 && <option disabled>{t('noUsersAvailable')}</option>}
-              {filtered.map((u: any) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name} - {u.email}
-                </option>
-              ))}
-            </select>
-          </FieldWrap>
+          <label className="block text-sm font-semibold text-text-secondary mb-1.5">
+            {t('memberGroupsLabel')}
+            <CountBadge n={groupIds.length} />
+          </label>
+          <div className="border border-border rounded-[6px] overflow-hidden">
+            <div className="max-h-32 overflow-y-auto divide-y divide-surface-2">
+              {groups.length === 0 && (
+                <div className="px-3 py-3 text-sm text-text-placeholder">{t('noGroupsAvailable')}</div>
+              )}
+              {groups.map((g: any) => {
+                const checked = groupIds.includes(g.id);
+                return (
+                  <div
+                    key={g.id}
+                    onClick={() => toggle(groupIds, setGroupIds, g.id)}
+                    className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${checked ? 'bg-navy-700/8' : 'hover:bg-surface-2'}`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all ${checked ? 'bg-navy-700 border-navy-700 text-white' : 'border-border-button'}`}
+                    >
+                      {checked ? '✓' : ''}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-navy-800 truncate">{g.name}</div>
+                      <div className="text-xs text-text-placeholder">{t('membersCount', { count: g.member_count || 0 })}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-text-placeholder mt-1.5">{t('groupAddNote')}</p>
         </div>
+
         <div>
           <label className="block text-sm font-semibold text-text-secondary mb-1.5">{t('projectRoleLabel')}</label>
           <FieldWrap focused={focused} name="role">
             <select
-              {...register('role', { required: true })}
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
               onFocus={() => setFocused('role')}
               onBlur={() => setFocused(null)}
               className={fieldCls}
@@ -1059,6 +1159,7 @@ function AddMemberModal({
             </select>
           </FieldWrap>
         </div>
+
         <div className="flex gap-3 pt-2">
           <button
             type="button"
@@ -1068,7 +1169,8 @@ function AddMemberModal({
             {t('common.cancel')}
           </button>
           <motion.button
-            type="submit"
+            type="button"
+            onClick={submit}
             disabled={isPending}
             whileTap={{ scale: 0.98 }}
             className="flex-1 bg-navy-700 text-white py-3 rounded-[6px] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-navy-900 transition-all shadow-navy-700/20 disabled:opacity-70"
@@ -1076,7 +1178,7 @@ function AddMemberModal({
             {isPending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t('addMemberBtn')}
           </motion.button>
         </div>
-      </form>
+      </div>
     </Modal>
   );
 }
@@ -1187,18 +1289,31 @@ export default function ProjectDetailPage() {
                 {project?.description && <p className="text-sm text-text-placeholder max-w-xl">{project.description}</p>}
               </div>
             </div>
-            <Link
-              href={`/projects/${id}/board`}
-              className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20 hover:-translate-y-0.5 flex-shrink-0"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-              </svg>{' '}
-              {t('openBoard')}
-            </Link>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                href={`/projects/${id}/roadmap`}
+                className="inline-flex items-center gap-2 bg-white text-navy-700 border border-border-subtle px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:border-navy-700 transition-all hover:-translate-y-0.5"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <circle cx="18" cy="6" r="3" />
+                  <circle cx="6" cy="18" r="3" />
+                  <path d="M18 9v3a3 3 0 01-3 3H9" />
+                </svg>{' '}
+                {t('openRoadmap')}
+              </Link>
+              <Link
+                href={`/projects/${id}/board`}
+                className="inline-flex items-center gap-2 bg-navy-700 text-white px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:bg-navy-900 transition-all shadow-navy-700/20 hover:-translate-y-0.5"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" className="w-4 h-4">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>{' '}
+                {t('openBoard')}
+              </Link>
+            </div>
           </div>
         </div>
 

@@ -64,18 +64,69 @@ class ProjectController extends Controller
         return response()->json(null, 204);
     }
 
+    /**
+     * Tambah anggota proyek, per orang maupun sekaligus satu grup pengguna.
+     * Menerima kombinasi user_id / user_ids[] / group_ids[]; anggota grup
+     * diambil dari svc-auth lalu didaftarkan satu per satu, sehingga sesudahnya
+     * mereka menjadi anggota biasa yang bisa ditugaskan task dan di-mention.
+     */
     public function addMember(Request $request, string $projectId): JsonResponse
     {
         $this->requirePermission('project.manage_members');
         $validated = $request->validate([
-            'user_id' => 'required|uuid',
-            'role'    => 'required|in:manager,scrum_master,member',
+            'user_id'     => 'nullable|uuid',
+            'user_ids'    => 'nullable|array',
+            'user_ids.*'  => 'uuid',
+            'group_ids'   => 'nullable|array',
+            'group_ids.*' => 'uuid',
+            'role'        => 'required|in:manager,scrum_master,member',
         ]);
         $this->service->findOrFail($projectId);
-        $member = ProjectMember::updateOrCreate(
-            ['project_id' => $projectId, 'user_id' => $validated['user_id']],
-            ['role' => $validated['role'], 'joined_at' => now()]
+
+        $userIds = array_merge(
+            !empty($validated['user_id']) ? [$validated['user_id']] : [],
+            $validated['user_ids'] ?? [],
         );
-        return response()->json(['data' => $member], 201);
+
+        $skippedGroups = [];
+        foreach ($validated['group_ids'] ?? [] as $groupId) {
+            $members = $this->fetchGroupMemberIds($groupId);
+            if ($members === null) {
+                $skippedGroups[] = $groupId;
+                continue;
+            }
+            $userIds = array_merge($userIds, $members);
+        }
+
+        $userIds = array_values(array_unique(array_filter($userIds)));
+        abort_if(empty($userIds), 422, 'Tidak ada pengguna yang dipilih');
+
+        $added = [];
+        foreach ($userIds as $uid) {
+            $added[] = ProjectMember::updateOrCreate(
+                ['project_id' => $projectId, 'user_id' => $uid],
+                ['role' => $validated['role'], 'joined_at' => now()]
+            );
+        }
+
+        return response()->json([
+            'data'    => $added,
+            'added'   => count($added),
+            'skipped_groups' => $skippedGroups,
+        ], 201);
+    }
+
+    /** ID anggota sebuah grup pengguna; null bila grup tidak bisa diambil. */
+    private function fetchGroupMemberIds(string $groupId): ?array
+    {
+        try {
+            $authUrl = rtrim(config('services.auth.url', 'http://svc-auth'), '/');
+            $res = \Illuminate\Support\Facades\Http::timeout(5)
+                ->get("{$authUrl}/api/v1/internal/user-groups/{$groupId}");
+            if (!$res->successful()) return null;
+            return collect($res->json('data.members') ?? [])->pluck('id')->filter()->values()->all();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }
