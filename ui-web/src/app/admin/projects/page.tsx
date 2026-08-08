@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -451,6 +452,96 @@ function EditProjectModal({ project, onClose }: { project: any; onClose: () => v
   );
 }
 
+
+const ACTION_MENU_WIDTH = 160; // w-40
+
+/**
+ * Menu aksi baris proyek.
+ *
+ * Dirender lewat portal ke document.body dengan posisi fixed, bukan absolute
+ * di dalam baris tabel. Kartu tabel memakai overflow-hidden agar sudutnya
+ * membulat rapi, dan itu memotong menu yang diposisikan absolute, sehingga
+ * pilihan paling bawah (Hapus) tidak dapat diklik. Pola ini mengikuti menu
+ * aksi pada halaman Kelola Pengguna.
+ */
+function ProjectRowActions({ project, openMenu, setOpenMenu, onView, onEdit, onDelete }: any) {
+  const t = useT(dict);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const isOpen = openMenu === project.id;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen, setOpenMenu]);
+
+  const handleToggle = () => {
+    if (!isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const MENU_HEIGHT = 132;
+      // buka ke atas bila ruang di bawah tidak cukup
+      const openUpward = rect.bottom + MENU_HEIGHT > window.innerHeight - 8;
+      setPosition({
+        top: openUpward ? rect.top - MENU_HEIGHT - 4 : rect.bottom + 4,
+        left: Math.max(8, rect.right - ACTION_MENU_WIDTH),
+      });
+    }
+    setOpenMenu(isOpen ? null : project.id);
+  };
+
+  const item = 'w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors';
+
+  return (
+    <div className="relative inline-block">
+      <button ref={btnRef} onClick={handleToggle} className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors">
+        <MoreVertical className="w-4 h-4 text-text-placeholder" />
+      </button>
+      {isOpen &&
+        position &&
+        createPortal(
+          <AnimatePresence>
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, scale: 0.95, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{ position: 'fixed', top: position.top, left: position.left }}
+              className="w-40 bg-white rounded-[6px] border border-border-subtle shadow-[0_8px_24px_rgba(13,43,72,0.16)] overflow-hidden z-50"
+            >
+              <button
+                onClick={() => { onView(); setOpenMenu(null); }}
+                className={`${item} text-text-secondary hover:bg-surface-2`}
+              >
+                <Eye className="w-3.5 h-3.5" /> {t('viewDetails')}
+              </button>
+              <button
+                onClick={() => { onEdit(); setOpenMenu(null); }}
+                className={`${item} text-text-secondary hover:bg-surface-2`}
+              >
+                <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
+              </button>
+              <div className="h-px bg-border-subtle mx-2" />
+              <button
+                onClick={() => { onDelete(); setOpenMenu(null); }}
+                className={`${item} text-danger-text hover:bg-danger-soft`}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}
+              </button>
+            </motion.div>
+          </AnimatePresence>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 export default function AdminProjectsPage() {
   const qc = useQueryClient();
   const t = useT(dict);
@@ -660,53 +751,14 @@ export default function AdminProjectsPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <div className="relative">
-                            <button
-                              onClick={() => setOpenMenu(openMenu === p.id ? null : p.id)}
-                              className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4 text-text-placeholder" />
-                            </button>
-                            <AnimatePresence>
-                              {openMenu === p.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95 }}
-                                  animate={{ opacity: 1, scale: 1 }}
-                                  exit={{ opacity: 0, scale: 0.95 }}
-                                  className="absolute right-0 top-full mt-1 w-40 bg-white rounded-[6px] border border-border-subtle overflow-hidden z-20"
-                                >
-                                  <button
-                                    onClick={() => {
-                                      setViewProject(p.id);
-                                      setOpenMenu(null);
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" /> {t('viewDetails')}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setEditProject(p);
-                                      setOpenMenu(null);
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-2"
-                                  >
-                                    <Pencil className="w-3.5 h-3.5" /> {t('common.edit')}
-                                  </button>
-                                  <div className="h-px bg-border-subtle mx-2" />
-                                  <button
-                                    onClick={() => {
-                                      setDeleteProject(p);
-                                      setOpenMenu(null);
-                                    }}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger-text hover:bg-danger-soft"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" /> {t('common.delete')}
-                                  </button>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
+                          <ProjectRowActions
+                            project={p}
+                            openMenu={openMenu}
+                            setOpenMenu={setOpenMenu}
+                            onView={() => setViewProject(p.id)}
+                            onEdit={() => setEditProject(p)}
+                            onDelete={() => setDeleteProject(p)}
+                          />
                         </div>
                       </td>
                     </motion.tr>
