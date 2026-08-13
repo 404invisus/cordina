@@ -344,7 +344,7 @@ function UserMultiSelect({
                 <div
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 text-[10px] font-bold transition-all ${checked ? 'bg-navy-700 border-navy-700 text-white' : 'border-border-button'}`}
                 >
-                  {checked ? (showOrder ? idx + 2 : '✓') : ''}
+                  {checked ? (showOrder ? idx + 1 : '✓') : ''}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-navy-800 truncate">{u.full_name || u.email}</div>
@@ -365,7 +365,7 @@ function UserMultiSelect({
                 key={uid}
                 className="inline-flex items-center gap-1 text-xs bg-navy-700/10 text-navy-900 px-2 py-0.5 rounded-full font-medium"
               >
-                {showOrder ? `${i + 2}. ` : ''}
+                {showOrder ? `${i + 1}. ` : ''}
                 {u?.full_name || uid}
                 <button
                   onClick={(e) => {
