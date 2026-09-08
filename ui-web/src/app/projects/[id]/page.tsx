@@ -66,7 +66,16 @@ const dict = {
     typeFeature: 'Feature',
     typeTask: 'Task',
     storyPointsLabel: 'Story Points',
+    storyPointsHelp: 'Fibonacci scale of relative effort. 1 = trivial, 2 = small, 3 = medium, 5 = large, 8 = big with uncertainty, 13 = very large (consider splitting), 21 = too large, must split.',
+    storyPointsPlaceholder: 'Pick effort...',
     estimatedHoursLabel: 'Estimated (Hours)',
+    deleteEpicBtn: 'Delete epic',
+    deleteBacklogBtn: 'Delete backlog',
+    deleteEpicConfirm: 'Delete this epic? All stories under it will be deleted too.',
+    deleteBacklogConfirm: 'Delete this backlog?',
+    epicDeleted: 'Epic deleted',
+    backlogDeleted: 'Backlog deleted',
+    deleteFailed: 'Failed to delete',
     dueDateLabel: 'Due Date',
     addBacklogSubmitBtn: '+ Add Backlog',
     backlogCreated: 'Backlog created!',
@@ -183,7 +192,16 @@ const dict = {
     typeFeature: 'Fitur',
     typeTask: 'Tugas',
     storyPointsLabel: 'Story Points',
+    storyPointsHelp: 'Skala Fibonacci untuk perkiraan usaha relatif. 1 = sepele, 2 = kecil, 3 = sedang, 5 = besar, 8 = besar dan ada ketidakpastian, 13 = sangat besar (sebaiknya dipecah), 21 = terlalu besar, wajib dipecah.',
+    storyPointsPlaceholder: 'Pilih ukuran usaha...',
     estimatedHoursLabel: 'Estimasi (Jam)',
+    deleteEpicBtn: 'Hapus epic',
+    deleteBacklogBtn: 'Hapus backlog',
+    deleteEpicConfirm: 'Hapus epic ini? Semua story di dalamnya juga akan ikut terhapus.',
+    deleteBacklogConfirm: 'Hapus backlog ini?',
+    epicDeleted: 'Epic dihapus',
+    backlogDeleted: 'Backlog dihapus',
+    deleteFailed: 'Gagal menghapus',
     dueDateLabel: 'Tanggal Jatuh Tempo',
     addBacklogSubmitBtn: '+ Tambah Backlog',
     backlogCreated: 'Backlog berhasil dibuat!',
@@ -703,17 +721,24 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
           <div>
             <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('storyPointsLabel')}</label>
             <div className={fw('points')}>
-              <input
-                type="number"
-                {...register('story_points')}
+              <select
+                {...register('story_points', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+                defaultValue=""
                 onFocus={() => setFocused('points')}
                 onBlur={() => setFocused(null)}
                 className={inp}
-                placeholder="0"
-                min={1}
-                max={100}
-              />
+              >
+                <option value="">{t('storyPointsPlaceholder')}</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="8">8</option>
+                <option value="13">13</option>
+                <option value="21">21</option>
+              </select>
             </div>
+            <p className="text-[11px] text-text-placeholder mt-1 leading-snug">{t('storyPointsHelp')}</p>
           </div>
           <div>
             <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('estimatedHoursLabel')}</label>
@@ -766,14 +791,43 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
   );
 }
 
-function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: boolean; onAddStory: () => void }) {
+function EpicCard({
+  epic: e,
+  canManage,
+  canAdmin,
+  onAddStory,
+}: {
+  epic: any;
+  canManage: boolean;
+  canAdmin: boolean;
+  onAddStory: () => void;
+}) {
   const t = useT(dict);
   const { locale } = useLocale();
+  const qc = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const { data: stories } = useQuery({
     queryKey: ['stories', e.id],
     queryFn: () => storyService.list(e.id).then((r) => r.data.data),
     enabled: expanded,
+  });
+
+  const deleteEpicMutation = useMutation({
+    mutationFn: () => epicService.delete(e.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['epics', e.project_id] });
+      toast.success(t('epicDeleted'));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || t('deleteFailed')),
+  });
+
+  const deleteStoryMutation = useMutation({
+    mutationFn: (storyId: string) => storyService.delete(storyId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stories', e.id] });
+      toast.success(t('backlogDeleted'));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || t('deleteFailed')),
   });
   const PRIORITY_DOT: Record<string, string> = {
     critical: 'bg-danger',
@@ -813,6 +867,21 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
           <div className="flex items-center gap-2 flex-shrink-0">
             {e.color && <div className="w-4 h-4 rounded-full border-2 border-white " style={{ background: e.color }} />}
             <StatusBadge status={e.status || 'todo'} />
+            {canAdmin && (
+              <button
+                onClick={() => window.confirm(t('deleteEpicConfirm')) && deleteEpicMutation.mutate()}
+                disabled={deleteEpicMutation.isPending}
+                title={t('deleteEpicBtn')}
+                className="p-1.5 rounded-lg hover:bg-danger/10 text-text-placeholder hover:text-danger transition-colors disabled:opacity-50"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                </svg>
+              </button>
+            )}
             <button
               onClick={() => setExpanded((v) => !v)}
               className="p-1.5 rounded-lg hover:bg-border-subtle transition-colors text-text-placeholder"
@@ -850,6 +919,21 @@ function EpicCard({ epic: e, canManage, onAddStory }: { epic: any; canManage: bo
                 >
                   {s.sprint_id ? t('inSprint') : t('backlogLabel')}
                 </span>
+                {canManage && (
+                  <button
+                    onClick={() => window.confirm(t('deleteBacklogConfirm')) && deleteStoryMutation.mutate(s.id)}
+                    disabled={deleteStoryMutation.isPending}
+                    title={t('deleteBacklogBtn')}
+                    className="p-1 rounded hover:bg-danger/10 text-text-placeholder hover:text-danger transition-colors disabled:opacity-50"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))
           ) : (
@@ -1192,9 +1276,7 @@ export default function ProjectDetailPage() {
   const [createEpicOpen, setCreateEpicOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createStoryEpicId, setCreateStoryEpicId] = useState<string | null>(null);
-  const { hasRole } = useAuthStore();
-  const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
-  const canAdmin = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+  const { hasRole, user } = useAuthStore();
 
   const {
     data: project,
@@ -1222,8 +1304,18 @@ export default function ProjectDetailPage() {
   const { data: members } = useQuery({
     queryKey: ['members', id],
     queryFn: () => projectService.members(id).then((r) => r.data.data),
-    enabled: tab === 'members' || tab === 'overview',
   });
+
+  // canAdmin dan canManage mencakup peran JWT global plus dua kondisi
+  // per-proyek: pemilik proyek (owner_id) dan anggota dengan role manager
+  // (canManage juga ikut role scrum_master, sesuai izin backend story).
+  const isOwner = !!user?.id && project?.owner_id === user.id;
+  const myMemberRole = members?.find((m: any) => m.user_id === user?.id)?.role;
+  const isProjectManager = myMemberRole === 'manager';
+  const isProjectScrumMaster = myMemberRole === 'scrum_master';
+  const canAdmin =
+    hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']) || isOwner || isProjectManager;
+  const canManage = canAdmin || hasRole(['scrum_master']) || isProjectScrumMaster;
 
   if (isLoading)
     return (
@@ -1477,7 +1569,7 @@ export default function ProjectDetailPage() {
                 )}
                 <div className="space-y-3">
                   {epics?.map((e: any) => (
-                    <EpicCard key={e.id} epic={e} canManage={canManage} onAddStory={() => setCreateStoryEpicId(e.id)} />
+                    <EpicCard key={e.id} epic={e} canManage={canManage} canAdmin={canAdmin} onAddStory={() => setCreateStoryEpicId(e.id)} />
                   ))}
                   {(!epics || epics.length === 0) && (
                     <div className="bg-white rounded-[6px] border border-border-subtle flex flex-col items-center justify-center py-16 text-border-button">
