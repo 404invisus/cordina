@@ -1013,7 +1013,7 @@ function AddMemberModal({
 
   const { data: allUsers } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => api.get('/api/v1/users').then((r) => r.data.data?.data || r.data.data || []),
+    queryFn: () => api.get('/api/v1/users', { params: { per_page: 500 } }).then((r) => r.data.data?.data || r.data.data || []),
     enabled: open,
   });
 
