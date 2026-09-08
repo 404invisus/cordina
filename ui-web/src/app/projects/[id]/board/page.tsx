@@ -524,7 +524,7 @@ export default function BoardPage() {
               <div key={col.id} className="flex items-center gap-1.5">
                 {i > 0 && <div className="w-px h-3 bg-border mx-1" />}
                 <span className={`w-2 h-2 rounded-full ${col.dot}`} />
-                <span className="text-xs text-text-tertiary">{col.label}</span>
+                <span className="text-xs text-text-tertiary">{t(col.label)}</span>
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${col.count}`}>{col.tasks.length}</span>
               </div>
             ))}
@@ -556,7 +556,7 @@ export default function BoardPage() {
               <div className="px-4 pt-4 pb-3.5 flex items-center justify-between border-b border-white/60">
                 <div className="flex items-center gap-2">
                   <span className={`w-2.5 h-2.5 rounded-full ${col.dot}`} />
-                  <span className={`text-sm font-bold ${col.header}`}>{col.label}</span>
+                  <span className={`text-sm font-bold ${col.header}`}>{t(col.label)}</span>
                 </div>
                 <span className={`min-w-6 h-6 px-2 rounded-lg text-xs font-bold flex items-center justify-center ${col.count}`}>
                   {col.tasks.length}

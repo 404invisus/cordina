@@ -66,7 +66,7 @@ const dict = {
     typeFeature: 'Feature',
     typeTask: 'Task',
     storyPointsLabel: 'Story Points',
-    storyPointsHelp: 'Fibonacci scale of relative effort. 1 = trivial, 2 = small, 3 = medium, 5 = large, 8 = big with uncertainty, 13 = very large (consider splitting), 21 = too large, must split.',
+    storyPointsHelp: 'Fibonacci scale of relative effort. 1 = very small, 2 = small, 3 = medium, 5 = large, 8 = big with uncertainty, 13 = very large (consider splitting), 21 = too large, must split.',
     storyPointsPlaceholder: 'Pick effort...',
     estimatedHoursLabel: 'Estimated (Hours)',
     deleteEpicBtn: 'Delete epic',
@@ -192,7 +192,7 @@ const dict = {
     typeFeature: 'Fitur',
     typeTask: 'Tugas',
     storyPointsLabel: 'Story Points',
-    storyPointsHelp: 'Skala Fibonacci untuk perkiraan usaha relatif. 1 = sepele, 2 = kecil, 3 = sedang, 5 = besar, 8 = besar dan ada ketidakpastian, 13 = sangat besar (sebaiknya dipecah), 21 = terlalu besar, wajib dipecah.',
+    storyPointsHelp: 'Skala Fibonacci untuk perkiraan usaha relatif. 1 = sangat kecil, 2 = kecil, 3 = sedang, 5 = besar, 8 = besar dan ada ketidakpastian, 13 = sangat besar (sebaiknya dipecah), 21 = terlalu besar, wajib dipecah.',
     storyPointsPlaceholder: 'Pilih ukuran usaha...',
     estimatedHoursLabel: 'Estimasi (Jam)',
     deleteEpicBtn: 'Hapus epic',
@@ -308,136 +308,12 @@ const TABS = [
   },
 ];
 
-function AddBacklogToSprintModal({
-  open,
-  onClose,
-  sprintId,
-  projectId,
-}: {
-  open: boolean;
-  onClose: () => void;
-  sprintId: string;
-  projectId: string;
-}) {
-  const t = useT(dict);
-  const qc = useQueryClient();
-  const [selected, setSelected] = useState<string[]>([]);
-
-  const { data: epics } = useQuery({
-    queryKey: ['epics', projectId],
-    queryFn: () => epicService.list(projectId).then((r) => r.data.data),
-    enabled: open,
-  });
-
-  const { data: allStories, isLoading } = useQuery({
-    queryKey: ['all-stories-unassigned', projectId],
-    queryFn: async () => {
-      if (!epics) return [];
-      const results = await Promise.all(
-        epics.map((e: any) => storyService.list(e.id).then((r) => r.data.data.map((s: any) => ({ ...s, epic_title: e.title })))),
-      );
-      return results.flat().filter((s: any) => !s.sprint_id);
-    },
-    enabled: open && !!epics,
-  });
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => Promise.all(selected.map((id) => storyService.update(id, { sprint_id: sprintId }))),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sprints', projectId] });
-      qc.invalidateQueries({ queryKey: ['all-stories-unassigned', projectId] });
-      epics?.forEach((e: any) => qc.invalidateQueries({ queryKey: ['stories', e.id] }));
-      toast.success(t('backlogsAddedToSprint', { count: selected.length }));
-      setSelected([]);
-      onClose();
-    },
-    onError: () => toast.error(t('addBacklogFailed')),
-  });
-
-  const toggle = (id: string) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  const PRIORITY_COLOR: Record<string, string> = {
-    critical: 'text-danger-text bg-danger-soft',
-    high: 'text-orange-600 bg-orange-50',
-    medium: 'text-amber-600 bg-amber-50',
-    low: 'text-success-text bg-success-soft',
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title={t('selectBacklogForSprintTitle')}>
-      <div className="space-y-3">
-        {isLoading && <div className="py-8 text-center text-sm text-text-placeholder">{t('loadingBacklogs')}</div>}
-        {!isLoading && (!allStories || allStories.length === 0) && (
-          <div className="py-8 text-center text-sm text-text-placeholder">{t('noBacklogOutsideSprint')}</div>
-        )}
-        {allStories && allStories.length > 0 && (
-          <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
-            {allStories.map((s: any) => (
-              <div
-                key={s.id}
-                onClick={() => toggle(s.id)}
-                className={`flex items-center gap-3 p-3 rounded-[6px] border-2 cursor-pointer transition-all ${selected.includes(s.id) ? 'border-navy-700 bg-navy-700/4' : 'border-border-subtle hover:border-border'}`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${selected.includes(s.id) ? 'bg-navy-700 border-navy-700' : 'border-border-button'}`}
-                >
-                  {selected.includes(s.id) && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-3 h-3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-navy-800 truncate">{s.title}</div>
-                  <div className="text-xs text-text-placeholder mt-0.5">{s.epic_title}</div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {s.story_points && (
-                    <span className="text-xs font-semibold text-text-placeholder bg-border-subtle px-2 py-0.5 rounded-lg">
-                      {s.story_points} {t('ptsSuffix')}
-                    </span>
-                  )}
-                  {s.priority && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${PRIORITY_COLOR[s.priority] || ''}`}>{s.priority}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
-          <span className="text-xs text-text-placeholder">{t('selectedCount', { count: selected.length })}</span>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-border-subtle transition-colors"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              onClick={() => mutate()}
-              disabled={isPending || selected.length === 0}
-              className="px-5 py-2 rounded-[6px] text-sm font-semibold bg-navy-700 text-white hover:bg-navy-900 transition-colors disabled:opacity-60 flex items-center gap-2"
-            >
-              {isPending ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                t('addCount', { count: selected.length })
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
 function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
   const t = useT(dict);
   const { locale } = useLocale();
   const qc = useQueryClient();
   const { hasRole } = useAuthStore();
   const canManage = hasRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
-  const [addBacklogOpen, setAddBacklogOpen] = useState(false);
 
   const startMutation = useMutation({
     mutationFn: () => sprintService.start(projectId, sprint.id),
@@ -502,19 +378,6 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
               {t('complete')}
             </motion.button>
           )}
-          {sprint.status !== 'completed' && (
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setAddBacklogOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs border-2 border-border text-text-secondary px-3.5 py-2 rounded-[6px] font-semibold hover:border-navy-700 hover:text-navy-700 transition-all"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>{' '}
-              {t('addBacklogBtn')}
-            </motion.button>
-          )}
           <Link
             href={`/projects/${projectId}/board?sprint_id=${sprint.id}`}
             className="inline-flex items-center gap-1.5 text-xs border-2 border-border text-text-secondary px-3.5 py-2 rounded-[6px] font-semibold hover:border-navy-700 hover:text-navy-700 transition-all"
@@ -529,7 +392,6 @@ function SprintCard({ sprint, projectId }: { sprint: any; projectId: string }) {
           </Link>
         </div>
       )}
-      <AddBacklogToSprintModal open={addBacklogOpen} onClose={() => setAddBacklogOpen(false)} sprintId={sprint.id} projectId={projectId} />
     </div>
   );
 }
