@@ -10,6 +10,7 @@ class ProjectResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'description' => $this->description,
+            'division'    => $this->division,
             'status'      => $this->status,
             'owner_id'    => $this->owner_id,
             'start_date'  => $this->start_date?->toDateString(),

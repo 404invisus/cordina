@@ -9,6 +9,7 @@ class UpdateProjectRequest extends FormRequest
         return [
             'name'        => 'sometimes|string|max:255',
             'description' => 'nullable|string',
+            'division'    => 'nullable|string|max:100',
             'status'      => 'sometimes|in:active,archived,completed',
             'start_date'  => 'nullable|date',
             'end_date'    => 'nullable|date|after_or_equal:start_date',

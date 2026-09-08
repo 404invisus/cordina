@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FolderKanban, Plus, Search, LayoutGrid, List, TrendingUp, CheckCircle2, AlertTriangle, Activity, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
-import { projectService } from '@/lib/api';
+import { projectService, adminUserService } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -301,6 +301,15 @@ export default function ProjectsPage() {
     queryFn: () => projectService.list().then((r) => r.data.data),
   });
 
+  // Direktori pengguna untuk memetakan owner_id ke nama; svc-project hanya
+  // menyimpan ID sehingga UI harus menerjemahkannya sendiri.
+  const { data: usersList } = useQuery({
+    queryKey: ['all-users-lookup'],
+    queryFn: () => adminUserService.list({ per_page: 500 }).then((r) => r.data.data?.data || r.data.data || []),
+    staleTime: 5 * 60 * 1000,
+  });
+  const usersMap = new Map<string, string>((usersList || []).map((u: any) => [u.id, u.full_name]));
+
   const filtered = [...(projects || [])]
     .filter((p: any) => {
       const q = search.toLowerCase();
@@ -508,7 +517,7 @@ export default function ProjectsPage() {
             {/* Rows */}
             {filtered.map((p: any, i: number) => {
               const cfg = STATUS_CFG[p.status] ?? STATUS_CFG.planned;
-              const ownerName = p.owner_name || p.created_by_name || p.manager_name || '';
+              const ownerName = p.owner_name || p.created_by_name || p.manager_name || (p.owner_id ? usersMap.get(p.owner_id) : '') || '';
               const progress = p.progress ?? (p.status === 'completed' ? 100 : 0);
               const teamMembers: any[] = p.members?.slice(0, 3) || [];
               const extraCount = (p.members?.length || 0) - 3;

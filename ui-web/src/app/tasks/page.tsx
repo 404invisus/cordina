@@ -8,7 +8,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
-import { taskService } from '@/lib/api';
+import { taskService, adminUserService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useT } from '@/lib/i18n';
 
@@ -149,9 +149,18 @@ export default function TasksPage() {
       const params: any = {};
       if (tab === 'mine' && user?.id) params.assignee_id = user.id;
       if (tab === 'done') params.status = 'done';
-      return taskService.list(params).then((r) => r.data.data);
+      return taskService.list(params).then((r) => r.data.data?.data || r.data.data || []);
     },
   });
+
+  // Direktori pengguna untuk menerjemahkan assignee_id ke nama pengguna,
+  // karena TaskResource hanya mengembalikan ID.
+  const { data: usersList } = useQuery({
+    queryKey: ['all-users-lookup'],
+    queryFn: () => adminUserService.list({ per_page: 500 }).then((r) => r.data.data?.data || r.data.data || []),
+    staleTime: 5 * 60 * 1000,
+  });
+  const usersMap = new Map<string, string>((usersList || []).map((u: any) => [u.id, u.full_name]));
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -304,7 +313,11 @@ export default function TasksPage() {
             const priCfg = PRIORITY_CFG[task.priority] ?? PRIORITY_CFG.medium;
             const progress =
               task.estimated_hours > 0 ? Math.min(100, Math.round(((task.actual_hours || 0) / task.estimated_hours) * 100)) : null;
-            const assigneeName = task.assignee_name || task.assigned_to_name || '';
+            const assigneeName =
+              task.assignee_name ||
+              task.assigned_to_name ||
+              (task.assignee_id ? usersMap.get(task.assignee_id) : '') ||
+              '';
 
             return (
               <motion.div

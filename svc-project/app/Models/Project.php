@@ -9,7 +9,7 @@ class Project extends Model
     use HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'name', 'description', 'status',
+        'name', 'description', 'division', 'status',
         'owner_id', 'start_date', 'end_date', 'settings',
     ];
 

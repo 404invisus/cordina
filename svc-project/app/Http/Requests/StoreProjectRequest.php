@@ -9,6 +9,7 @@ class StoreProjectRequest extends FormRequest
         return [
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
+            'division'    => 'nullable|string|max:100',
             'start_date'  => 'nullable|date',
             'end_date'    => 'nullable|date|after_or_equal:start_date',
             'settings'    => 'nullable|array',
