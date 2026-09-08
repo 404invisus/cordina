@@ -8,7 +8,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import { EmptyState, LoadingSpinner } from '@/components/ui/EmptyState';
-import { taskService, adminUserService } from '@/lib/api';
+import { taskService, userService } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useT } from '@/lib/i18n';
 
@@ -153,11 +153,11 @@ export default function TasksPage() {
     },
   });
 
-  // Direktori pengguna untuk menerjemahkan assignee_id ke nama pengguna,
-  // karena TaskResource hanya mengembalikan ID.
+  // Direktori pengguna untuk menerjemahkan assignee_id ke nama pengguna;
+  // pakai endpoint /users (svc-auth) yang terbuka bagi semua user login.
   const { data: usersList } = useQuery({
     queryKey: ['all-users-lookup'],
-    queryFn: () => adminUserService.list({ per_page: 500 }).then((r) => r.data.data?.data || r.data.data || []),
+    queryFn: () => userService.list({ per_page: 500 }).then((r) => r.data.data?.data || r.data.data || []),
     staleTime: 5 * 60 * 1000,
   });
   const usersMap = new Map<string, string>((usersList || []).map((u: any) => [u.id, u.full_name]));
