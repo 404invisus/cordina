@@ -319,12 +319,15 @@ function AddBacklogModal({ open, onClose, sprintId, projectId, existingStoryIds 
       }
       return taskService.create({
         title: story?.title,
-        type: 'task',
+        description: story?.description || undefined,
+        type: ['task', 'bug', 'subtask'].includes(story?.type) ? story.type : 'task',
         story_id: selected,
         sprint_id: sprintId,
         assignee_id: assigneeIds[0] || undefined,
         assignee_ids: assigneeIds.length > 0 ? assigneeIds : undefined,
         priority: story?.priority || 'medium',
+        due_date: story?.due_date || undefined,
+        estimated_hours: story?.estimated_hours ?? undefined,
       });
     },
     onSuccess: () => {
