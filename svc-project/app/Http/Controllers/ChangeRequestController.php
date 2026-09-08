@@ -3,6 +3,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ChangeRequest;
 use App\Models\CrApproval;
+use App\Models\Epic;
+use App\Models\Story;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -176,7 +178,7 @@ class ChangeRequestController extends Controller
     // ── GET /v1/change-requests/{id} ──
     public function show(string $id, Request $request): JsonResponse
     {
-        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $cr     = ChangeRequest::with(['approvals', 'epic'])->findOrFail($id);
         $userId = $request->attributes->get('jwt_user_id');
         $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
 
@@ -586,4 +588,147 @@ class ChangeRequestController extends Controller
         return response()->json(['data' => $logs]);
     }
 
+    /**
+     * Kumpulan epic yang boleh dipilih penilai untuk disambungkan ke CR.
+     * Admin/kepala melihat semua; pengguna lain dibatasi pada epic dari
+     * proyek tempat ia menjadi anggota.
+     */
+    public function accessibleEpics(Request $request): JsonResponse
+    {
+        $userId = $request->attributes->get('jwt_user_id');
+        $roles  = (array) ($request->attributes->get('jwt_roles') ?? []);
+        $canSeeAll = !empty(array_intersect($roles, ['administrator', 'kepala_balai', 'kepala_seksi']));
+
+        $query = Epic::query()
+            ->with(['project:id,name'])
+            ->orderBy('title');
+
+        if (!$canSeeAll) {
+            $projectIds = DB::table('project_members')
+                ->where('user_id', $userId)
+                ->pluck('project_id');
+            $query->whereIn('project_id', $projectIds);
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    /**
+     * Mengunci penilai yang menyambungkan CR ke sebuah epic. Penilai lain
+     * tidak boleh mengubah maupun membuat story lagi setelah dikunci; hanya
+     * pemegang kunci yang boleh melepas sambungan.
+     */
+    public function linkEpic(Request $request, string $id): JsonResponse
+    {
+        $cr     = ChangeRequest::with('approvals')->findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        $isReviewer = $cr->approvals
+            ->where('role', 'reviewer')
+            ->where('approver_id', $userId)
+            ->isNotEmpty();
+        abort_if(!$isReviewer, 403, 'Hanya penilai CR ini yang dapat menyambungkan epic');
+        abort_if($cr->status !== 'submitted', 422, 'Epic hanya dapat disambungkan selama CR dalam peninjauan');
+        abort_if(
+            !empty($cr->epic_linked_by) && $cr->epic_linked_by !== $userId,
+            422,
+            'CR sudah disambungkan ke epic oleh penilai lain'
+        );
+
+        $data = $request->validate([
+            'epic_id' => 'required|uuid|exists:epics,id',
+        ]);
+
+        $this->authorizeEpicAccess($data['epic_id']);
+
+        $cr->update([
+            'epic_id'        => $data['epic_id'],
+            'epic_linked_by' => $userId,
+            'epic_linked_at' => now(),
+        ]);
+
+        $this->log($cr->id, $userId, 'epic_linked', 'Menyambungkan CR ke epic', ['epic_id' => $data['epic_id']]);
+
+        return response()->json(['data' => $cr->fresh(['approvals', 'epic'])]);
+    }
+
+    /**
+     * Melepas sambungan CR-epic. Hanya boleh dilakukan oleh penilai yang
+     * awalnya mengunci sambungan; story yang sudah dibuat dibiarkan hidup
+     * dengan cr_id di-null-kan agar pekerjaan tim tidak hilang.
+     */
+    public function unlinkEpic(string $id, Request $request): JsonResponse
+    {
+        $cr     = ChangeRequest::findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        abort_if(empty($cr->epic_id), 422, 'CR belum disambungkan ke epic manapun');
+        abort_if($cr->epic_linked_by !== $userId, 403, 'Hanya penilai yang menyambungkan yang boleh melepasnya');
+        abort_if($cr->status !== 'submitted', 422, 'CR sudah tidak dalam peninjauan');
+
+        DB::transaction(function () use ($cr) {
+            Story::where('cr_id', $cr->id)->update(['cr_id' => null]);
+            $cr->update([
+                'epic_id'        => null,
+                'epic_linked_by' => null,
+                'epic_linked_at' => null,
+            ]);
+        });
+
+        $this->log($cr->id, $userId, 'epic_unlinked', 'Melepas sambungan epic dari CR');
+
+        return response()->json(['data' => $cr->fresh(['approvals', 'epic'])]);
+    }
+
+    /**
+     * Story turunan CR yang sudah dibuat penilai. Dapat dilihat oleh siapapun
+     * yang berhak mengakses CR (requester, penilai, pelaksana lewat CR access).
+     */
+    public function indexStories(string $id, Request $request): JsonResponse
+    {
+        $this->authorizeCrAccess($id, $request);
+        $stories = Story::where('cr_id', $id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+        return response()->json(['data' => $stories]);
+    }
+
+    /**
+     * Membuat story di epic yang tersambung. Hanya boleh dipanggil oleh
+     * penilai yang memegang kunci sambungan; story otomatis tercatat cr_id
+     * dan epic_id sesuai CR.
+     */
+    public function storeStory(Request $request, string $id): JsonResponse
+    {
+        $cr     = ChangeRequest::findOrFail($id);
+        $userId = $request->attributes->get('jwt_user_id');
+
+        abort_if(empty($cr->epic_id), 422, 'Sambungkan CR ke epic terlebih dahulu');
+        abort_if($cr->epic_linked_by !== $userId, 403, 'Hanya penilai yang menyambungkan epic yang boleh membuat story');
+        abort_if($cr->status !== 'submitted', 422, 'Story hanya dapat dibuat selama CR dalam peninjauan');
+
+        $data = $request->validate([
+            'title'           => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'sprint_id'       => 'nullable|uuid|exists:sprints,id',
+            'story_points'    => 'nullable|integer|min:1|max:100',
+            'priority'        => 'nullable|in:low,medium,high,critical',
+            'assignee_id'     => 'nullable|uuid',
+            'due_date'        => 'nullable|date',
+            'estimated_hours' => 'nullable|integer|min:1',
+            'type'            => 'nullable|in:story,bug,feature,task',
+        ]);
+
+        $story = Story::create(array_merge($data, [
+            'epic_id' => $cr->epic_id,
+            'cr_id'   => $cr->id,
+        ]));
+
+        $this->log($cr->id, $userId, 'story_created', $story->title, [
+            'story_id' => $story->id,
+            'epic_id'  => $cr->epic_id,
+        ]);
+
+        return response()->json(['data' => $story], 201);
+    }
 }

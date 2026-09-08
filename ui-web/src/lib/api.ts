@@ -271,6 +271,12 @@ export const changeRequestService = {
   setImplementers: (id: string, pelaksana_ids: string[]) =>
     api.post(`/api/v1/change-requests/${id}/implementers`, { pelaksana_ids }),
   getUsers: () => api.get('/api/v1/admin/users', { params: { per_page: 100 } }),
+
+  accessibleEpics: () => api.get('/api/v1/change-requests/accessible-epics'),
+  linkEpic: (id: string, epic_id: string) => api.post(`/api/v1/change-requests/${id}/link-epic`, { epic_id }),
+  unlinkEpic: (id: string) => api.delete(`/api/v1/change-requests/${id}/link-epic`),
+  listStories: (id: string) => api.get(`/api/v1/change-requests/${id}/stories`),
+  createStory: (id: string, data: any) => api.post(`/api/v1/change-requests/${id}/stories`, data),
 };
 
 export const crAttachmentService = {

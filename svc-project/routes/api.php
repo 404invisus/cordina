@@ -31,7 +31,8 @@ Route::prefix('v1')->group(function () {
         // Change Management
         Route::get('change-requests',              [ChangeRequestController::class, 'index']);
         Route::post('change-requests',             [ChangeRequestController::class, 'store']);
-        Route::get('change-requests/summary',           [ChangeRequestController::class, 'summary']);
+        Route::get('change-requests/summary',            [ChangeRequestController::class, 'summary']);
+        Route::get('change-requests/accessible-epics',   [ChangeRequestController::class, 'accessibleEpics']);
         Route::get('change-requests/{id}',               [ChangeRequestController::class, 'show']);
         Route::put('change-requests/{id}',               [ChangeRequestController::class, 'update']);
         Route::delete('change-requests/{id}',            [ChangeRequestController::class, 'destroy']);
@@ -52,6 +53,13 @@ Route::prefix('v1')->group(function () {
         Route::post('change-requests/{id}/implementers', [ChangeRequestController::class, 'setImplementers']);
         Route::post('change-requests/{id}/approve',[ChangeRequestController::class, 'approve']);
         Route::post('change-requests/{id}/reject', [ChangeRequestController::class, 'reject']);
+
+        // CR ↔ Epic/Story linkage (penilai yang menyambungkan mendapat kunci
+        // untuk membuat story turunan di epic yang tersambung).
+        Route::post('change-requests/{id}/link-epic',     [ChangeRequestController::class, 'linkEpic']);
+        Route::delete('change-requests/{id}/link-epic',   [ChangeRequestController::class, 'unlinkEpic']);
+        Route::get('change-requests/{id}/stories',        [ChangeRequestController::class, 'indexStories']);
+        Route::post('change-requests/{id}/stories',       [ChangeRequestController::class, 'storeStory']);
 
         Route::apiResource('projects', ProjectController::class);
         Route::post('projects/{project}/members', [ProjectController::class, 'addMember']);

@@ -182,6 +182,30 @@ const dict = {
     noRequestsSubmittedByMe: 'You have not submitted any requests',
     noClosedRequests: 'No closed requests',
     noChangeRequestsYet: 'No change requests yet',
+    epicSectionTitle: 'EPIC & STORY',
+    epicNoneLinked: 'This CR is not linked to any epic yet',
+    epicLinkPromptForReviewer: 'Select an epic to link so you can create stories from this CR',
+    epicLinkPromptForOthers: 'Not linked to any epic. The linking reviewer can attach one.',
+    epicSelectPlaceholder: 'Select epic...',
+    epicLinkBtn: 'Link epic',
+    epicUnlinkBtn: 'Unlink',
+    epicLinkedBy: 'Linked by {name}',
+    epicLinkedSuccess: 'Epic linked',
+    epicUnlinkedSuccess: 'Epic unlinked',
+    epicLinkFailed: 'Failed to link epic',
+    epicUnlinkFailed: 'Failed to unlink epic',
+    epicUnlinkConfirm: 'Unlink this epic from the CR? Stories created stay but lose their CR link.',
+    storyCreateBtn: 'Create story',
+    storyCreateTitle: 'New story from CR',
+    storyTitlePlaceholder: 'Story title',
+    storyDescriptionPlaceholder: 'Description (optional)',
+    storyPointsLabel: 'Points',
+    storyPriorityLabel: 'Priority',
+    storyCreateSubmit: 'Create',
+    storyCreated: 'Story created',
+    storyCreateFailed: 'Failed to create story',
+    storiesListTitle: 'Stories created from this CR',
+    storiesEmpty: 'No stories yet',
   },
   id: {
     statusDraftLabel: 'Draf',
@@ -336,6 +360,30 @@ const dict = {
     noRequestsSubmittedByMe: 'Anda belum mengajukan permintaan apa pun',
     noClosedRequests: 'Tidak ada permintaan yang selesai',
     noChangeRequestsYet: 'Belum ada permintaan perubahan',
+    epicSectionTitle: 'EPIC & STORY',
+    epicNoneLinked: 'CR ini belum tersambung ke epic manapun',
+    epicLinkPromptForReviewer: 'Pilih epic untuk disambungkan agar Anda bisa membuat story dari CR ini',
+    epicLinkPromptForOthers: 'Belum tersambung ke epic. Penilai yang menyambungkan yang boleh mengaturnya.',
+    epicSelectPlaceholder: 'Pilih epic...',
+    epicLinkBtn: 'Sambungkan epic',
+    epicUnlinkBtn: 'Lepas sambungan',
+    epicLinkedBy: 'Disambungkan oleh {name}',
+    epicLinkedSuccess: 'Epic tersambung',
+    epicUnlinkedSuccess: 'Sambungan epic dilepas',
+    epicLinkFailed: 'Gagal menyambungkan epic',
+    epicUnlinkFailed: 'Gagal melepas sambungan',
+    epicUnlinkConfirm: 'Lepas sambungan epic dari CR? Story yang sudah dibuat tetap ada tapi kehilangan tautan ke CR.',
+    storyCreateBtn: 'Buat story',
+    storyCreateTitle: 'Story baru dari CR',
+    storyTitlePlaceholder: 'Judul story',
+    storyDescriptionPlaceholder: 'Deskripsi (opsional)',
+    storyPointsLabel: 'Poin',
+    storyPriorityLabel: 'Prioritas',
+    storyCreateSubmit: 'Buat',
+    storyCreated: 'Story dibuat',
+    storyCreateFailed: 'Gagal membuat story',
+    storiesListTitle: 'Story yang dibuat dari CR ini',
+    storiesEmpty: 'Belum ada story',
   },
 };
 
@@ -1233,6 +1281,238 @@ function CRImplementers({ cr, userId, usersMap }: { cr: any; userId: string; use
   );
 }
 
+/**
+ * Penilai boleh menyambungkan CR ke sebuah epic. Yang duluan menyambung
+ * memegang kunci: hanya dia yang boleh melepas sambungan dan membuat story
+ * turunan. Bagian ini muncul untuk siapapun yang berhak melihat CR, namun
+ * tombol-tombol aksi hanya aktif untuk penilai dengan status pending pada
+ * gilirannya.
+ */
+function CREpicStory({ cr, userId, usersMap }: { cr: any; userId: string; usersMap: Record<string, string> }) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+  const [pickedEpic, setPickedEpic] = useState<string>('');
+  const [creating, setCreating] = useState(false);
+  const [storyForm, setStoryForm] = useState({ title: '', description: '', story_points: '', priority: 'medium' });
+
+  const approvals: any[] = cr.approvals || [];
+  const isReviewer = approvals.some((a: any) => a.role === 'reviewer' && a.approver_id === userId);
+  const linkedEpicId: string | null = cr.epic_id || null;
+  const lockedBy: string | null = cr.epic_linked_by || null;
+  const isLockHolder = lockedBy === userId;
+  const canLink = isReviewer && !lockedBy && cr.status === 'submitted';
+  const canManage = isLockHolder && cr.status === 'submitted';
+
+  const { data: epics = [] } = useQuery({
+    queryKey: ['cr-accessible-epics'],
+    queryFn: () => changeRequestService.accessibleEpics().then((r: any) => r.data.data || []),
+    enabled: canLink,
+    staleTime: 60000,
+  });
+
+  const { data: stories = [] } = useQuery({
+    queryKey: ['cr-stories', cr.id],
+    queryFn: () => changeRequestService.listStories(cr.id).then((r: any) => r.data.data || []),
+    enabled: !!linkedEpicId,
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: (epicId: string) => changeRequestService.linkEpic(cr.id, epicId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['change-requests'] });
+      toast.success(t('epicLinkedSuccess'));
+      setPickedEpic('');
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('epicLinkFailed')),
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: () => changeRequestService.unlinkEpic(cr.id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['change-requests'] });
+      qc.invalidateQueries({ queryKey: ['cr-stories', cr.id] });
+      toast.success(t('epicUnlinkedSuccess'));
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('epicUnlinkFailed')),
+  });
+
+  const storyMutation = useMutation({
+    mutationFn: () => changeRequestService.createStory(cr.id, {
+      title: storyForm.title,
+      description: storyForm.description || null,
+      story_points: storyForm.story_points ? Number(storyForm.story_points) : null,
+      priority: storyForm.priority,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cr-stories', cr.id] });
+      toast.success(t('storyCreated'));
+      setCreating(false);
+      setStoryForm({ title: '', description: '', story_points: '', priority: 'medium' });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('storyCreateFailed')),
+  });
+
+  const linkedEpic = cr.epic;
+
+  return (
+    <div className="px-5 pt-4 pb-4 mt-4 border-t border-border-subtle">
+      <div className="text-xs font-bold text-text-placeholder uppercase tracking-wider mb-2">
+        {t('epicSectionTitle')}
+      </div>
+
+      {linkedEpicId ? (
+        <>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="inline-flex items-center gap-1.5 text-xs bg-navy-700/10 text-navy-700 px-2.5 py-1 rounded-full font-semibold"
+              style={linkedEpic?.color ? { backgroundColor: linkedEpic.color + '22', color: linkedEpic.color } : undefined}
+            >
+              {linkedEpic?.title || linkedEpicId.slice(0, 8)}
+            </span>
+            {linkedEpic?.project?.name && (
+              <span className="text-[11px] text-text-placeholder">· {linkedEpic.project.name}</span>
+            )}
+            {canManage && (
+              <button
+                onClick={() => window.confirm(t('epicUnlinkConfirm')) && unlinkMutation.mutate()}
+                disabled={unlinkMutation.isPending}
+                className="text-[11px] font-semibold px-2 py-0.5 rounded-md border border-border text-text-secondary hover:bg-surface-2 disabled:opacity-50"
+              >
+                {t('epicUnlinkBtn')}
+              </button>
+            )}
+          </div>
+          {lockedBy && (
+            <p className="text-[11px] text-text-placeholder mt-1.5">
+              {t('epicLinkedBy', { name: usersMap?.[lockedBy] || '...' })}
+            </p>
+          )}
+
+          <div className="mt-3">
+            <div className="text-[11px] font-semibold text-text-secondary mb-1.5">
+              {t('storiesListTitle')} ({stories.length})
+            </div>
+            {stories.length === 0 ? (
+              <p className="text-xs text-text-placeholder">{t('storiesEmpty')}</p>
+            ) : (
+              <ul className="space-y-1">
+                {stories.map((s: any) => (
+                  <li key={s.id} className="text-xs text-text-secondary flex items-center gap-1.5">
+                    <Check className="w-3 h-3 text-navy-700 shrink-0" />
+                    <span className="truncate">{s.title}</span>
+                    {s.story_points && (
+                      <span className="text-[10px] text-text-placeholder">· {s.story_points} pts</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {canManage && !creating && (
+              <button
+                onClick={() => setCreating(true)}
+                className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900"
+              >
+                {t('storyCreateBtn')}
+              </button>
+            )}
+
+            {canManage && creating && (
+              <div className="mt-2 space-y-2 p-2.5 rounded-lg border border-border bg-surface-1">
+                <div className="text-[11px] font-semibold text-text-secondary">{t('storyCreateTitle')}</div>
+                <input
+                  type="text"
+                  value={storyForm.title}
+                  onChange={(e) => setStoryForm({ ...storyForm, title: e.target.value })}
+                  placeholder={t('storyTitlePlaceholder')}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-border bg-white focus:outline-none focus:border-navy-700"
+                />
+                <textarea
+                  value={storyForm.description}
+                  onChange={(e) => setStoryForm({ ...storyForm, description: e.target.value })}
+                  placeholder={t('storyDescriptionPlaceholder')}
+                  rows={2}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-border bg-white focus:outline-none focus:border-navy-700 resize-none"
+                />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-text-placeholder">{t('storyPointsLabel')}</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={storyForm.story_points}
+                      onChange={(e) => setStoryForm({ ...storyForm, story_points: e.target.value })}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-border bg-white focus:outline-none focus:border-navy-700"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-text-placeholder">{t('storyPriorityLabel')}</label>
+                    <select
+                      value={storyForm.priority}
+                      onChange={(e) => setStoryForm({ ...storyForm, priority: e.target.value })}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-border bg-white focus:outline-none focus:border-navy-700"
+                    >
+                      <option value="low">{t('priorityLow')}</option>
+                      <option value="medium">{t('priorityMedium')}</option>
+                      <option value="high">{t('priorityHigh')}</option>
+                      <option value="critical">{t('priorityCritical')}</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setCreating(false); setStoryForm({ title: '', description: '', story_points: '', priority: 'medium' }); }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:bg-surface-2"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                  <button
+                    onClick={() => storyForm.title.trim() && storyMutation.mutate()}
+                    disabled={storyMutation.isPending || !storyForm.title.trim()}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-50"
+                  >
+                    {storyMutation.isPending ? t('saving') : t('storyCreateSubmit')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      ) : canLink ? (
+        <div className="space-y-2">
+          <p className="text-xs text-text-placeholder">{t('epicLinkPromptForReviewer')}</p>
+          <div className="flex gap-2">
+            <select
+              value={pickedEpic}
+              onChange={(e) => setPickedEpic(e.target.value)}
+              className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-border bg-white focus:outline-none focus:border-navy-700"
+            >
+              <option value="">{t('epicSelectPlaceholder')}</option>
+              {epics.map((e: any) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}{e.project?.name ? ` — ${e.project.name}` : ''}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => pickedEpic && linkMutation.mutate(pickedEpic)}
+              disabled={!pickedEpic || linkMutation.isPending}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-50"
+            >
+              {linkMutation.isPending ? t('saving') : t('epicLinkBtn')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-text-placeholder">
+          {isReviewer ? t('epicNoneLinked') : t('epicLinkPromptForOthers')}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CRCard({
   cr,
   onEdit,
@@ -1368,6 +1648,7 @@ function CRCard({
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
               <CRTimeline cr={cr} usersMap={usersMap} />
               <CRImplementers cr={cr} userId={userId} usersMap={usersMap} />
+              <CREpicStory cr={cr} userId={userId} usersMap={usersMap} />
               <CRAttachments crId={cr.id} canUpload={isMyTurn || (cr.requester_id === userId && cr.status === 'draft')} />
               <CRAuditLog crId={cr.id} usersMap={usersMap} />
             </motion.div>

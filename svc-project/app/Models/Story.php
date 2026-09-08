@@ -9,10 +9,11 @@ class Story extends Model
     protected $fillable = [
         'epic_id', 'sprint_id', 'title', 'description',
         'status', 'story_points', 'priority', 'assignee_id',
-        'due_date', 'estimated_hours', 'type',
+        'due_date', 'estimated_hours', 'type', 'cr_id',
     ];
 
-    public function epic()     { return $this->belongsTo(Epic::class); }
-    public function sprint()   { return $this->belongsTo(Sprint::class); }
-    public function tasks()    { return $this->hasMany(Task::class); }
+    public function epic()          { return $this->belongsTo(Epic::class); }
+    public function sprint()        { return $this->belongsTo(Sprint::class); }
+    public function tasks()         { return $this->hasMany(Task::class); }
+    public function changeRequest() { return $this->belongsTo(ChangeRequest::class, 'cr_id'); }
 }

@@ -20,6 +20,7 @@ class ChangeRequest extends Model
         'si_terdampak', 'langkah_mitigasi', 'risiko_tidak_dilakukan',
         'langkah_penanganan_kegagalan', 'pelaksana_ids',
         'pelaksana_set_by', 'pelaksana_set_at',
+        'epic_id', 'epic_linked_by', 'epic_linked_at',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class ChangeRequest extends Model
         'rencana_waktu' => 'date',
         'pelaksana_ids' => 'array',
         'pelaksana_set_at' => 'datetime',
+        'epic_linked_at' => 'datetime',
     ];
 
     public function approvals()
@@ -42,5 +44,15 @@ class ChangeRequest extends Model
         return $this->hasOne(CrApproval::class, 'cr_id')
             ->where('status', 'pending')
             ->orderBy('order');
+    }
+
+    public function epic()
+    {
+        return $this->belongsTo(Epic::class);
+    }
+
+    public function stories()
+    {
+        return $this->hasMany(Story::class, 'cr_id');
     }
 }
