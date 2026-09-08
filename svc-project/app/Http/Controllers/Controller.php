@@ -93,12 +93,12 @@ abstract class Controller
             ->where('id', $projectId)->where('owner_id', $uid)->exists();
         if ($isOwner) return;
 
-        $isManager = \Illuminate\Support\Facades\DB::table('project_members')
+        $isProjectLead = \Illuminate\Support\Facades\DB::table('project_members')
             ->where('project_id', $projectId)
             ->where('user_id', $uid)
-            ->where('role', 'manager')
+            ->whereIn('role', ['owner', 'manager'])
             ->exists();
-        if ($isManager) return;
+        if ($isProjectLead) return;
 
         abort(403, 'Forbidden: hanya owner atau manager proyek yang dapat aksi ini');
     }

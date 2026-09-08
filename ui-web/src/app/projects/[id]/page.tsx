@@ -1173,10 +1173,10 @@ export default function ProjectDetailPage() {
   // (canManage juga ikut role scrum_master, sesuai izin backend story).
   const isOwner = !!user?.id && project?.owner_id === user.id;
   const myMemberRole = members?.find((m: any) => m.user_id === user?.id)?.role;
-  const isProjectManager = myMemberRole === 'manager';
+  const isProjectLead = myMemberRole === 'owner' || myMemberRole === 'manager';
   const isProjectScrumMaster = myMemberRole === 'scrum_master';
   const canAdmin =
-    hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']) || isOwner || isProjectManager;
+    hasRole(['kepala_balai', 'kepala_seksi', 'project_manager']) || isOwner || isProjectLead;
   const canManage = canAdmin || hasRole(['scrum_master']) || isProjectScrumMaster;
 
   if (isLoading)
