@@ -17,7 +17,7 @@ class EpicController extends Controller
 
     public function store(Request $request, string $projectId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
+        $this->requireProjectManage($projectId);
         $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -38,8 +38,8 @@ class EpicController extends Controller
 
     public function update(Request $request, string $epicId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
         $epic = Epic::findOrFail($epicId);
+        $this->requireProjectManage($epic->project_id);
         $validated = $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'nullable|string',
@@ -54,8 +54,9 @@ class EpicController extends Controller
 
     public function destroy(string $epicId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager']);
-        Epic::findOrFail($epicId)->delete();
+        $epic = Epic::findOrFail($epicId);
+        $this->requireProjectManage($epic->project_id);
+        $epic->delete();
         return response()->json(null, 204);
     }
 }

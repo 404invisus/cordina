@@ -72,6 +72,37 @@ abstract class Controller
         );
     }
 
+    /**
+     * Aksi tulis di sebuah proyek (mis. CRUD epic/story). Selain JWT role
+     * yang selalu punya kuasa penuh, owner proyek dan anggota proyek dengan
+     * peran manager juga boleh mengelolanya. $extraJwtRoles bisa dipakai
+     * untuk memberi peran tambahan (mis. scrum_master untuk story).
+     */
+    protected function requireProjectManage(string $projectId, array $extraJwtRoles = []): void
+    {
+        $globalRoles = array_merge(
+            ['administrator', 'kepala_balai', 'kepala_seksi', 'project_manager'],
+            $extraJwtRoles
+        );
+        if ($this->hasRole($globalRoles)) return;
+
+        $uid = $this->authId();
+        abort_if(!$uid, 401, 'Unauthenticated');
+
+        $isOwner = \Illuminate\Support\Facades\DB::table('projects')
+            ->where('id', $projectId)->where('owner_id', $uid)->exists();
+        if ($isOwner) return;
+
+        $isManager = \Illuminate\Support\Facades\DB::table('project_members')
+            ->where('project_id', $projectId)
+            ->where('user_id', $uid)
+            ->where('role', 'manager')
+            ->exists();
+        if ($isManager) return;
+
+        abort(403, 'Forbidden: hanya owner atau manager proyek yang dapat aksi ini');
+    }
+
     protected function hasPermission(string $permission): bool
     {
         $userId = $this->authId();

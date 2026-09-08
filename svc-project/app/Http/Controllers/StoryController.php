@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Epic;
 use App\Models\Story;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class StoryController extends Controller
 
     public function store(Request $request, string $epicId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
+        $epic = Epic::findOrFail($epicId);
+        $this->requireProjectManage($epic->project_id, ['scrum_master']);
         $validated = $request->validate([
             'title'           => 'required|string|max:255',
             'description'     => 'nullable|string',
@@ -42,8 +44,8 @@ class StoryController extends Controller
 
     public function update(Request $request, string $storyId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
-        $story = Story::findOrFail($storyId);
+        $story = Story::with('epic:id,project_id')->findOrFail($storyId);
+        $this->requireProjectManage($story->epic->project_id, ['scrum_master']);
         $validated = $request->validate([
             'title'           => 'sometimes|string|max:255',
             'description'     => 'nullable|string',
@@ -62,8 +64,9 @@ class StoryController extends Controller
 
     public function destroy(string $storyId): JsonResponse
     {
-        $this->requireRole(['kepala_balai', 'kepala_seksi', 'project_manager', 'scrum_master']);
-        Story::findOrFail($storyId)->delete();
+        $story = Story::with('epic:id,project_id')->findOrFail($storyId);
+        $this->requireProjectManage($story->epic->project_id, ['scrum_master']);
+        $story->delete();
         return response()->json(null, 204);
     }
 }
