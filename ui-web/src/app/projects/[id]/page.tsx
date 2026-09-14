@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -76,6 +76,23 @@ const dict = {
     epicDeleted: 'Epic deleted',
     backlogDeleted: 'Backlog deleted',
     deleteFailed: 'Failed to delete',
+    editProjectBtn: 'Edit Project',
+    editProjectTitle: 'Edit Project',
+    editStoryBtn: 'Edit',
+    editStoryTitle: 'Edit Backlog',
+    projectUpdated: 'Project updated',
+    storyUpdated: 'Backlog updated',
+    updateFailed: 'Failed to update',
+    fieldName: 'Name',
+    fieldDescription: 'Description',
+    fieldStatus: 'Status',
+    statusActive: 'Active',
+    statusPlanned: 'Planned',
+    statusOnTrack: 'On track',
+    statusAtRisk: 'At risk',
+    statusCompleted: 'Completed',
+    statusArchived: 'Archived',
+    saveBtn: 'Save changes',
     dueDateLabel: 'Due Date',
     addBacklogSubmitBtn: '+ Add Backlog',
     backlogCreated: 'Backlog created!',
@@ -202,6 +219,23 @@ const dict = {
     epicDeleted: 'Epic dihapus',
     backlogDeleted: 'Backlog dihapus',
     deleteFailed: 'Gagal menghapus',
+    editProjectBtn: 'Ubah Proyek',
+    editProjectTitle: 'Ubah Proyek',
+    editStoryBtn: 'Ubah',
+    editStoryTitle: 'Ubah Backlog',
+    projectUpdated: 'Proyek diperbarui',
+    storyUpdated: 'Backlog diperbarui',
+    updateFailed: 'Gagal memperbarui',
+    fieldName: 'Nama',
+    fieldDescription: 'Deskripsi',
+    fieldStatus: 'Status',
+    statusActive: 'Aktif',
+    statusPlanned: 'Direncanakan',
+    statusOnTrack: 'Berjalan sesuai rencana',
+    statusAtRisk: 'Berisiko',
+    statusCompleted: 'Selesai',
+    statusArchived: 'Diarsipkan',
+    saveBtn: 'Simpan perubahan',
     dueDateLabel: 'Tanggal Jatuh Tempo',
     addBacklogSubmitBtn: '+ Tambah Backlog',
     backlogCreated: 'Backlog berhasil dibuat!',
@@ -653,16 +687,256 @@ function CreateStoryModal({ open, onClose, epicId, projectId }: { open: boolean;
   );
 }
 
+/**
+ * Modal ubah proyek — pre-fill dengan data proyek sekarang, kirim hanya field
+ * yang divalidasi backend. Divisi ada di sini supaya proyek lama (yang dibuat
+ * sebelum kolom division ditambah) bisa diisi tanpa harus intervensi database.
+ */
+function EditProjectModal({
+  open,
+  onClose,
+  project,
+}: {
+  open: boolean;
+  onClose: () => void;
+  project: any;
+}) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+  const { register, handleSubmit, reset } = useForm<any>();
+  const [focused, setFocused] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (project) {
+      reset({
+        name: project.name || '',
+        description: project.description || '',
+        division: project.division || '',
+        start_date: project.start_date || '',
+        end_date: project.end_date || '',
+        status: project.status || 'active',
+      });
+    }
+  }, [project, reset]);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data: any) => projectService.update(project.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project', project.id] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      toast.success(t('projectUpdated'));
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('updateFailed')),
+  });
+
+  const fw = (name: string) =>
+    `mt-1 w-full h-[36px] px-3 border rounded-[6px] text-sm text-navy-800 bg-white focus:outline-none transition-colors ${focused === name ? 'border-navy-700' : 'border-border'}`;
+
+  return (
+    <Modal open={open} onClose={onClose} title={t('editProjectTitle')}>
+      <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-3">
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldName')}</label>
+          <input {...register('name', { required: true })} onFocus={() => setFocused('name')} onBlur={() => setFocused(null)} className={fw('name')} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldDescription')}</label>
+          <textarea
+            {...register('description')}
+            rows={3}
+            onFocus={() => setFocused('desc')}
+            onBlur={() => setFocused(null)}
+            className={`mt-1 w-full px-3 py-2 border rounded-[6px] text-sm text-navy-800 bg-white focus:outline-none resize-none transition-colors ${focused === 'desc' ? 'border-navy-700' : 'border-border'}`}
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldDivision')}</label>
+          <input {...register('division')} onFocus={() => setFocused('div')} onBlur={() => setFocused(null)} className={fw('div')} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldStart')}</label>
+            <input type="date" {...register('start_date')} onFocus={() => setFocused('sd')} onBlur={() => setFocused(null)} className={fw('sd')} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldEnd')}</label>
+            <input type="date" {...register('end_date')} onFocus={() => setFocused('ed')} onBlur={() => setFocused(null)} className={fw('ed')} />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldStatus')}</label>
+          <select {...register('status')} onFocus={() => setFocused('st')} onBlur={() => setFocused(null)} className={fw('st')}>
+            <option value="active">{t('statusActive')}</option>
+            <option value="archived">{t('statusArchived')}</option>
+            <option value="completed">{t('statusCompleted')}</option>
+          </select>
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-surface-2"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="px-5 py-2 rounded-[6px] text-sm font-semibold bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-60"
+          >
+            {isPending ? t('saving') : t('saveBtn')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/**
+ * Modal ubah story/backlog. Mengulang layout CreateStoryModal supaya konsisten
+ * secara visual, dengan story_points sebagai dropdown Fibonacci yang sama.
+ */
+function EditStoryModal({
+  open,
+  onClose,
+  story,
+}: {
+  open: boolean;
+  onClose: () => void;
+  story: any;
+}) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+  const { register, handleSubmit, reset } = useForm<any>();
+  const [focused, setFocused] = useState<string | null>(null);
+  const fw = (f: string) =>
+    `rounded-[6px] border-2 transition-all duration-200 ${focused === f ? 'border-navy-700 shadow-[0_0_0_4px_rgba(40,64,116,0.08)]' : 'border-border hover:border-border-button'}`;
+  const inp = 'w-full px-4 py-3 bg-transparent outline-none text-sm text-navy-800 placeholder:text-text-placeholder';
+
+  useEffect(() => {
+    if (story) {
+      reset({
+        title: story.title || '',
+        description: story.description || '',
+        priority: story.priority || 'medium',
+        type: story.type || 'story',
+        story_points: story.story_points ?? '',
+        estimated_hours: story.estimated_hours ?? '',
+        due_date: story.due_date ? String(story.due_date).slice(0, 10) : '',
+      });
+    }
+  }, [story, reset]);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data: any) => storyService.update(story.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['stories', story.epic_id] });
+      toast.success(t('storyUpdated'));
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('updateFailed')),
+  });
+
+  return (
+    <Modal open={open} onClose={onClose} title={t('editStoryTitle')}>
+      <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('backlogTitleLabel')}</label>
+          <div className={fw('title')}>
+            <input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={inp} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('descriptionLabel')}</label>
+          <div className={fw('desc')}>
+            <textarea {...register('description')} rows={3} onFocus={() => setFocused('desc')} onBlur={() => setFocused(null)} className={`${inp} h-20 resize-none`} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('priorityLabel')}</label>
+            <div className={fw('priority')}>
+              <select {...register('priority')} onFocus={() => setFocused('priority')} onBlur={() => setFocused(null)} className={inp}>
+                <option value="low">{t('common.status_low')}</option>
+                <option value="medium">{t('common.status_medium')}</option>
+                <option value="high">{t('common.status_high')}</option>
+                <option value="critical">{t('common.status_critical')}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('typeLabel')}</label>
+            <div className={fw('type')}>
+              <select {...register('type')} onFocus={() => setFocused('type')} onBlur={() => setFocused(null)} className={inp}>
+                <option value="story">{t('typeStory')}</option>
+                <option value="bug">{t('typeBug')}</option>
+                <option value="feature">{t('typeFeature')}</option>
+                <option value="task">{t('typeTask')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('storyPointsLabel')}</label>
+            <div className={fw('points')}>
+              <select
+                {...register('story_points', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+                onFocus={() => setFocused('points')}
+                onBlur={() => setFocused(null)}
+                className={inp}
+              >
+                <option value="">{t('storyPointsPlaceholder')}</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="8">8</option>
+                <option value="13">13</option>
+                <option value="21">21</option>
+              </select>
+            </div>
+            <p className="text-[11px] text-text-placeholder mt-1 leading-snug">{t('storyPointsHelp')}</p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('estimatedHoursLabel')}</label>
+            <div className={fw('hours')}>
+              <input type="number" {...register('estimated_hours', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })} onFocus={() => setFocused('hours')} onBlur={() => setFocused(null)} className={inp} min={1} />
+            </div>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-text-tertiary uppercase tracking-wide mb-1.5">{t('dueDateLabel')}</label>
+          <div className={fw('due')}>
+            <input type="date" {...register('due_date')} onFocus={() => setFocused('due')} onBlur={() => setFocused(null)} className={inp} />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-border-subtle">
+            {t('common.cancel')}
+          </button>
+          <button type="submit" disabled={isPending} className="px-5 py-2 rounded-[6px] text-sm font-semibold bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-60">
+            {isPending ? t('saving') : t('saveBtn')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function EpicCard({
   epic: e,
   canManage,
   canAdmin,
   onAddStory,
+  onEditStory,
 }: {
   epic: any;
   canManage: boolean;
   canAdmin: boolean;
   onAddStory: () => void;
+  onEditStory: (story: any) => void;
 }) {
   const t = useT(dict);
   const { locale } = useLocale();
@@ -782,19 +1056,31 @@ function EpicCard({
                   {s.sprint_id ? t('inSprint') : t('backlogLabel')}
                 </span>
                 {canManage && (
-                  <button
-                    onClick={() => window.confirm(t('deleteBacklogConfirm')) && deleteStoryMutation.mutate(s.id)}
-                    disabled={deleteStoryMutation.isPending}
-                    title={t('deleteBacklogBtn')}
-                    className="p-1 rounded hover:bg-danger/10 text-text-placeholder hover:text-danger transition-colors disabled:opacity-50"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6" />
-                      <path d="M10 11v6M14 11v6" />
-                      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-                    </svg>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => onEditStory(s)}
+                      title={t('editStoryBtn')}
+                      className="p-1 rounded hover:bg-navy-700/10 text-text-placeholder hover:text-navy-700 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => window.confirm(t('deleteBacklogConfirm')) && deleteStoryMutation.mutate(s.id)}
+                      disabled={deleteStoryMutation.isPending}
+                      title={t('deleteBacklogBtn')}
+                      className="p-1 rounded hover:bg-danger/10 text-text-placeholder hover:text-danger transition-colors disabled:opacity-50"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6" />
+                        <path d="M10 11v6M14 11v6" />
+                        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                      </svg>
+                    </button>
+                  </>
                 )}
               </div>
             ))
@@ -1135,6 +1421,8 @@ export default function ProjectDetailPage() {
   const { locale } = useLocale();
   const [tab, setTab] = useState('overview');
   const [createSprintOpen, setCreateSprintOpen] = useState(false);
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [editStoryTarget, setEditStoryTarget] = useState<any>(null);
   const [createEpicOpen, setCreateEpicOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createStoryEpicId, setCreateStoryEpicId] = useState<string | null>(null);
@@ -1244,6 +1532,18 @@ export default function ProjectDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              {canAdmin && (
+                <button
+                  onClick={() => setEditProjectOpen(true)}
+                  className="inline-flex items-center gap-2 bg-white text-navy-700 border border-border-subtle px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:border-navy-700 transition-all hover:-translate-y-0.5"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  {t('editProjectBtn')}
+                </button>
+              )}
               <Link
                 href={`/projects/${id}/roadmap`}
                 className="inline-flex items-center gap-2 bg-white text-navy-700 border border-border-subtle px-4 py-2.5 rounded-[6px] text-sm font-semibold hover:border-navy-700 transition-all hover:-translate-y-0.5"
@@ -1431,7 +1731,7 @@ export default function ProjectDetailPage() {
                 )}
                 <div className="space-y-3">
                   {epics?.map((e: any) => (
-                    <EpicCard key={e.id} epic={e} canManage={canManage} canAdmin={canAdmin} onAddStory={() => setCreateStoryEpicId(e.id)} />
+                    <EpicCard key={e.id} epic={e} canManage={canManage} canAdmin={canAdmin} onAddStory={() => setCreateStoryEpicId(e.id)} onEditStory={setEditStoryTarget} />
                   ))}
                   {(!epics || epics.length === 0) && (
                     <div className="bg-white rounded-[6px] border border-border-subtle flex flex-col items-center justify-center py-16 text-border-button">
@@ -1552,6 +1852,8 @@ export default function ProjectDetailPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+      <EditProjectModal open={editProjectOpen} onClose={() => setEditProjectOpen(false)} project={project} />
+      <EditStoryModal open={!!editStoryTarget} onClose={() => setEditStoryTarget(null)} story={editStoryTarget} />
     </AppLayout>
   );
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { ChevronLeft, Send, Plus } from 'lucide-react';
@@ -54,6 +54,16 @@ const dict = {
     assigneeRemoved: 'Assignee removed',
     assigneeRemoveFailed: 'Failed to remove assignee',
     fallbackUser: 'User',
+    editTaskBtn: 'Edit',
+    editTaskTitle: 'Edit Task',
+    titleLabel: 'Title',
+    priorityLabel: 'Priority',
+    typeLabel: 'Type',
+    statusLabel: 'Status',
+    estimatedHoursLabel: 'Estimated Hours',
+    saveBtn: 'Save changes',
+    taskUpdated: 'Task updated',
+    updateFailed: 'Failed to update',
   },
   id: {
     statusReviewLabel: 'Ditinjau',
@@ -93,6 +103,16 @@ const dict = {
     assigneeRemoved: 'Penanggung jawab dihapus',
     assigneeRemoveFailed: 'Gagal menghapus penanggung jawab',
     fallbackUser: 'Pengguna',
+    editTaskBtn: 'Ubah',
+    editTaskTitle: 'Ubah Tugas',
+    titleLabel: 'Judul',
+    priorityLabel: 'Prioritas',
+    typeLabel: 'Tipe',
+    statusLabel: 'Status',
+    estimatedHoursLabel: 'Estimasi Jam',
+    saveBtn: 'Simpan perubahan',
+    taskUpdated: 'Tugas diperbarui',
+    updateFailed: 'Gagal memperbarui',
   },
 };
 
@@ -147,6 +167,137 @@ function Avatar({ name, size = 'md', color = 'default' }: { name: string; size?:
   );
 }
 
+/**
+ * Modal ubah tugas — mengisi seluruh field yang bisa diubah reviewer
+ * (title, description, priority, type, status, due_date, estimated_hours).
+ * Task tanpa story sumber wajib diedit lewat sini karena backfill dari
+ * story tidak berlaku bagi mereka.
+ */
+function EditTaskModal({
+  open,
+  onClose,
+  task,
+}: {
+  open: boolean;
+  onClose: () => void;
+  task: any;
+}) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+  const { register, handleSubmit, reset } = useForm<any>();
+  const [focused, setFocused] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (task) {
+      reset({
+        title: task.title || '',
+        description: task.description || '',
+        priority: task.priority || 'medium',
+        type: task.type || 'task',
+        status: task.status || 'todo',
+        due_date: task.due_date ? String(task.due_date).slice(0, 10) : '',
+        estimated_hours: task.estimated_hours ?? '',
+      });
+    }
+  }, [task, reset]);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (data: any) => taskService.update(task.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['task', task.id] });
+      toast.success(t('taskUpdated'));
+      onClose();
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('updateFailed')),
+  });
+
+  const fw = (name: string) =>
+    `mt-1 w-full h-[36px] px-3 border rounded-[6px] text-sm text-navy-800 bg-white focus:outline-none transition-colors ${focused === name ? 'border-navy-700' : 'border-border'}`;
+
+  return (
+    <Modal open={open} onClose={onClose} title={t('editTaskTitle')}>
+      <form onSubmit={handleSubmit((d) => mutate(d))} className="space-y-3">
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('titleLabel')}</label>
+          <input {...register('title', { required: true })} onFocus={() => setFocused('title')} onBlur={() => setFocused(null)} className={fw('title')} />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('descriptionLabel')}</label>
+          <textarea
+            {...register('description')}
+            rows={3}
+            onFocus={() => setFocused('desc')}
+            onBlur={() => setFocused(null)}
+            className={`mt-1 w-full px-3 py-2 border rounded-[6px] text-sm text-navy-800 bg-white focus:outline-none resize-none transition-colors ${focused === 'desc' ? 'border-navy-700' : 'border-border'}`}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('priorityLabel')}</label>
+            <select {...register('priority')} className={fw('prio')} onFocus={() => setFocused('prio')} onBlur={() => setFocused(null)}>
+              <option value="low">{t('common.status_low')}</option>
+              <option value="medium">{t('common.status_medium')}</option>
+              <option value="high">{t('common.status_high')}</option>
+              <option value="critical">{t('common.status_critical')}</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('typeLabel')}</label>
+            <select {...register('type')} className={fw('type')} onFocus={() => setFocused('type')} onBlur={() => setFocused(null)}>
+              <option value="task">Task</option>
+              <option value="bug">Bug</option>
+              <option value="subtask">Subtask</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('fieldDueDate')}</label>
+            <input type="date" {...register('due_date')} className={fw('due')} onFocus={() => setFocused('due')} onBlur={() => setFocused(null)} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('estimatedHoursLabel')}</label>
+            <input
+              type="number"
+              min={0}
+              step="0.25"
+              {...register('estimated_hours', { setValueAs: (v) => (v === '' || v == null ? null : Number(v)) })}
+              className={fw('est')}
+              onFocus={() => setFocused('est')}
+              onBlur={() => setFocused(null)}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">{t('statusLabel')}</label>
+          <select {...register('status')} className={fw('st')} onFocus={() => setFocused('st')} onBlur={() => setFocused(null)}>
+            <option value="todo">{t('common.status_todo')}</option>
+            <option value="in_progress">{t('common.status_in_progress')}</option>
+            <option value="review">{t('statusReviewLabel')}</option>
+            <option value="done">{t('common.status_done')}</option>
+          </select>
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-[6px] text-sm font-semibold text-text-secondary hover:bg-surface-2"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="px-5 py-2 rounded-[6px] text-sm font-semibold bg-navy-700 text-white hover:bg-navy-900 disabled:opacity-60"
+          >
+            {isPending ? t('saving') : t('saveBtn')}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
@@ -155,6 +306,7 @@ export default function TaskDetailPage() {
   const { user, hasRole, hasPermission } = useAuthStore();
   const [assignOpen, setAssignOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -284,7 +436,7 @@ export default function TaskDetailPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <h1 className="text-xl font-bold text-navy-900 leading-snug">{task?.title}</h1>
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex gap-2 flex-shrink-0 items-center">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.text}`}
                       >
@@ -297,6 +449,18 @@ export default function TaskDetailPage() {
                         <span className={`w-1.5 h-1.5 rounded-full ${priority.dot}`} />
                         {t(priority.label)}
                       </span>
+                      {(canManage || task?.assignee_id === user?.id) && task && (
+                        <button
+                          onClick={() => setEditOpen(true)}
+                          title={t('editTaskBtn')}
+                          className="p-1.5 rounded-md hover:bg-navy-700/10 text-text-placeholder hover:text-navy-700 transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                   <p className="text-sm text-text-placeholder mt-2 leading-relaxed">
@@ -775,6 +939,7 @@ export default function TaskDetailPage() {
           </div>
         </form>
       </Modal>
+      <EditTaskModal open={editOpen} onClose={() => setEditOpen(false)} task={task} />
     </AppLayout>
   );
 }
