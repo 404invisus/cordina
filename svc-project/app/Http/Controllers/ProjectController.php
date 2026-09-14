@@ -116,6 +116,30 @@ class ProjectController extends Controller
         ], 201);
     }
 
+    /**
+     * Menghapus anggota proyek. Selain admin JWT, pengelola per-proyek
+     * (owner_id maupun member dengan role owner/manager) juga berhak.
+     * Owner proyek (owner_id) tidak boleh dihapus karena project.owner_id
+     * masih menunjuk ke mereka; ubah owner_id dulu jika perlu.
+     */
+    public function removeMember(string $projectId, string $userId): JsonResponse
+    {
+        $this->requireProjectManage($projectId);
+
+        $project = $this->service->findOrFail($projectId);
+        abort_if(
+            $project->owner_id === $userId,
+            422,
+            'Pemilik proyek tidak dapat dihapus dari daftar anggota'
+        );
+
+        ProjectMember::where('project_id', $projectId)
+            ->where('user_id', $userId)
+            ->delete();
+
+        return response()->json(null, 204);
+    }
+
     /** ID anggota sebuah grup pengguna; null bila grup tidak bisa diambil. */
     private function fetchGroupMemberIds(string $groupId): ?array
     {

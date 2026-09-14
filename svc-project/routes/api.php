@@ -125,18 +125,7 @@ Route::prefix('v1')->group(function () {
             return response()->json(['data' => $result]);
         });
 
-        Route::delete('projects/{project}/members/{user}', function (string $projectId, string $userId) {
-            $roles = [];
-            try { $roles = (array) auth()->payload()->get('roles'); } catch (\Throwable) {}
-            abort_if(
-                empty(array_intersect($roles, ['kepala_balai', 'kepala_seksi', 'project_manager'])),
-                403, 'Forbidden'
-            );
-            \App\Models\ProjectMember::where('project_id', $projectId)
-                ->where('user_id', $userId)
-                ->delete();
-            return response()->json(null, 204);
-        });
+        Route::delete('projects/{project}/members/{user}', [ProjectController::class, 'removeMember']);
 
         Route::delete('tasks/{task}/dependencies/{dependsOn}', function (string $taskId, string $dependsOnId) {
             $roles = [];

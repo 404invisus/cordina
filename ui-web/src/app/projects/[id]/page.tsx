@@ -80,6 +80,10 @@ const dict = {
     editProjectTitle: 'Edit Project',
     editStoryBtn: 'Edit',
     editStoryTitle: 'Edit Backlog',
+    removeMemberConfirm: 'Remove {name} from this project?',
+    memberRemoved: 'Member removed',
+    memberRemoveFailed: 'Failed to remove member',
+    ownerCannotBeRemoved: 'Project owner cannot be removed',
     projectUpdated: 'Project updated',
     storyUpdated: 'Backlog updated',
     updateFailed: 'Failed to update',
@@ -223,6 +227,10 @@ const dict = {
     editProjectTitle: 'Ubah Proyek',
     editStoryBtn: 'Ubah',
     editStoryTitle: 'Ubah Backlog',
+    removeMemberConfirm: 'Keluarkan {name} dari proyek ini?',
+    memberRemoved: 'Anggota dihapus',
+    memberRemoveFailed: 'Gagal menghapus anggota',
+    ownerCannotBeRemoved: 'Pemilik proyek tidak bisa dihapus',
     projectUpdated: 'Proyek diperbarui',
     storyUpdated: 'Backlog diperbarui',
     updateFailed: 'Gagal memperbarui',
@@ -922,6 +930,84 @@ function EditStoryModal({
         </div>
       </form>
     </Modal>
+  );
+}
+
+/**
+ * Kartu anggota proyek dengan tombol hapus (X) yang muncul untuk pengelola
+ * proyek. Owner proyek tidak menampilkan tombol karena backend akan menolak
+ * penghapusannya (project.owner_id masih menunjuk ke mereka).
+ */
+function MemberCard({
+  member,
+  projectId,
+  ownerId,
+  canManage,
+}: {
+  member: any;
+  projectId: string;
+  ownerId: string | null;
+  canManage: boolean;
+}) {
+  const t = useT(dict);
+  const qc = useQueryClient();
+
+  const memberUserId = member.user_id || member.id;
+  const name = member.full_name || member.user?.full_name || t('fallbackUser');
+  const initials = name
+    .trim()
+    .split(' ')
+    .slice(0, 2)
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase();
+
+  const ROLE_LABELS: Record<string, string> = {
+    owner: t('roleManagerOption'),
+    manager: t('roleManagerOption'),
+    scrum_master: t('common.role_scrum_master'),
+    member: t('roleMemberOption'),
+  };
+
+  const isOwner = memberUserId === ownerId;
+
+  const removeMutation = useMutation({
+    mutationFn: () => projectService.removeMember(projectId, memberUserId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['members', projectId] });
+      toast.success(t('memberRemoved'));
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || t('memberRemoveFailed')),
+  });
+
+  return (
+    <div className="relative bg-white rounded-[6px] border border-border-subtle p-4 flex items-center gap-3 hover:border-navy-700/20 hover:shadow-[0_4px_20px_rgba(40,64,116,0.08)] transition-all">
+      <div className="w-11 h-11 rounded-[6px] bg-navy-700 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+        {initials}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-navy-800 text-sm truncate">{name}</div>
+        <div className="text-xs text-text-placeholder mt-0.5">{member.division || '—'}</div>
+      </div>
+      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-navy-700/8 text-navy-700 flex-shrink-0">
+        {ROLE_LABELS[member.role] || member.role || t('roleMemberOption')}
+      </span>
+      {canManage && !isOwner && (
+        <button
+          onClick={() =>
+            window.confirm(t('removeMemberConfirm', { name })) && removeMutation.mutate()
+          }
+          disabled={removeMutation.isPending}
+          title={t('common.delete')}
+          className="p-1 rounded hover:bg-danger/10 text-text-placeholder hover:text-danger transition-colors disabled:opacity-50 flex-shrink-0"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -1774,38 +1860,15 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {members?.map((m: any) => {
-                    const name = m.full_name || m.user?.full_name || t('fallbackUser');
-                    const initials = name
-                      .trim()
-                      .split(' ')
-                      .slice(0, 2)
-                      .map((w: string) => w[0])
-                      .join('')
-                      .toUpperCase();
-                    const ROLE_LABELS: Record<string, string> = {
-                      manager: t('roleManagerOption'),
-                      scrum_master: t('common.role_scrum_master'),
-                      member: t('roleMemberOption'),
-                    };
-                    return (
-                      <div
-                        key={m.user_id || m.id}
-                        className="bg-white rounded-[6px] border border-border-subtle p-4 flex items-center gap-3 hover:border-navy-700/20 hover:shadow-[0_4px_20px_rgba(40,64,116,0.08)] transition-all"
-                      >
-                        <div className="w-11 h-11 rounded-[6px] bg-navy-700 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                          {initials}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-navy-800 text-sm truncate">{name}</div>
-                          <div className="text-xs text-text-placeholder mt-0.5">{m.division || '—'}</div>
-                        </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-navy-700/8 text-navy-700 flex-shrink-0">
-                          {ROLE_LABELS[m.role] || m.role || t('roleMemberOption')}
-                        </span>
-                      </div>
-                    );
-                  })}
+                  {members?.map((m: any) => (
+                    <MemberCard
+                      key={m.user_id || m.id}
+                      member={m}
+                      projectId={id}
+                      ownerId={project?.owner_id || null}
+                      canManage={canAdmin}
+                    />
+                  ))}
                   {(!members || members.length === 0) && (
                     <div className="sm:col-span-2 lg:col-span-3 bg-white rounded-[6px] border border-border-subtle flex flex-col items-center justify-center py-16 text-border-button">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 mb-3">
