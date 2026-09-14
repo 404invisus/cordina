@@ -311,8 +311,15 @@ export default function TasksPage() {
             const statusKey = isOverdue && task.status !== 'done' ? 'overdue' : task.status;
             const statusCfg = STATUS_CFG[statusKey] ?? STATUS_CFG.todo;
             const priCfg = PRIORITY_CFG[task.priority] ?? PRIORITY_CFG.medium;
+            // Task yang sudah done selalu 100% — kolom actual_hours yang lebih
+            // kecil dari estimated_hours menandakan efisiensi, bukan progress
+            // yang belum penuh.
             const progress =
-              task.estimated_hours > 0 ? Math.min(100, Math.round(((task.actual_hours || 0) / task.estimated_hours) * 100)) : null;
+              task.status === 'done'
+                ? 100
+                : task.estimated_hours > 0
+                  ? Math.min(100, Math.round(((task.actual_hours || 0) / task.estimated_hours) * 100))
+                  : null;
             const assigneeName =
               task.assignee_name ||
               task.assigned_to_name ||

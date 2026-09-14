@@ -132,8 +132,13 @@ function TaskCard({ task, onMove, colId }: { task: any; onMove: (id: string, sta
   const [menuOpen, setMenuOpen] = useState(false);
   const p = PRIORITY[task.priority] || PRIORITY.medium;
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && colId !== 'done';
+  // Task di kolom done selalu 100%, apapun rasio actual/estimated hours.
   const progressPct =
-    task.estimated_hours && task.actual_hours ? Math.min(100, Math.round((task.actual_hours / task.estimated_hours) * 100)) : null;
+    colId === 'done' || task.status === 'done'
+      ? 100
+      : task.estimated_hours && task.actual_hours
+        ? Math.min(100, Math.round((task.actual_hours / task.estimated_hours) * 100))
+        : null;
 
   return (
     <motion.div

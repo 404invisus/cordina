@@ -407,7 +407,14 @@ export default function TaskDetailPage() {
 
   const status = STATUS_CONFIG[task?.status] || STATUS_CONFIG.todo;
   const priority = PRIORITY_CONFIG[task?.priority] || PRIORITY_CONFIG.medium;
-  const progressPct = task?.estimated_hours ? Math.min(100, Math.round(((task.actual_hours || 0) / task.estimated_hours) * 100)) : 0;
+  // Task yang sudah done selalu 100%; actual < estimated hanya berarti pekerjaan
+  // lebih efisien, bukan progres belum penuh.
+  const progressPct =
+    task?.status === 'done'
+      ? 100
+      : task?.estimated_hours
+        ? Math.min(100, Math.round(((task.actual_hours || 0) / task.estimated_hours) * 100))
+        : 0;
   const isOverdue = task?.due_date && new Date(task.due_date) < new Date() && task?.status !== 'done';
   const canUpdateStatus = canManage || task?.assignee_id === user?.id;
   const statuses = ['todo', 'in_progress', 'review', 'done'];
